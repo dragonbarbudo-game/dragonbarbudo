@@ -129,6 +129,15 @@ main { padding: 30px; overflow: hidden; }
 /* FRIENDS */
 .friends-panel { background: var(--bg2); border-left: 1px solid var(--border); padding: 25px 15px; }
 .friend-title { margin-bottom: 20px; font-size: 16px; }
+.friend-search { display: flex; gap: 6px; margin-bottom: 10px; }
+.friend-search input { flex: 1; padding: 9px; background: #181a20; border: 1px solid var(--border); color: white; border-radius: 8px; font-family: inherit; font-size: 13px; }
+.friend-search .btn { padding: 9px 12px; font-size: 13px; }
+.friend-section { margin-top: 18px; }
+.friend-section h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 8px; }
+.friend-empty { color: var(--muted); font-size: 12px; }
+.friend-result-card, .friend-request-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; font-size: 13px; }
+.friend-result-card .btn, .friend-request-card .btn { padding: 6px 10px; font-size: 12px; }
+.friend-msg { font-size: 12px; color: var(--muted); margin-top: 4px; }
 .friend { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-radius: 8px; }
 .friend:hover { background: var(--panel); }
 .friend-info { flex: 1; }
@@ -452,25 +461,26 @@ main { padding: 30px; overflow: hidden; }
     <!-- AMIGOS -->
     <aside class="friends-panel">
         <div class="friend-title"><h3>👥 Amigos</h3></div>
-        <div class="friend">
-            <div class="avatar-stage size-sm frame-ring" id="friendCarlos"></div>
-            <div class="friend-info"><div class="friend-name">Carlos</div><div class="friend-status">Jugando</div></div>
-            <div class="status playing"></div>
+
+        <div class="friend-search">
+            <input type="text" id="friendSearchInput" placeholder="Buscar usuario exacto...">
+            <button class="btn btn-primary" onclick="searchUser()">Buscar</button>
         </div>
-        <div class="friend">
-            <div class="avatar-stage size-sm frame-ring" id="friendLaura"></div>
-            <div class="friend-info"><div class="friend-name">Laura</div><div class="friend-status">En línea</div></div>
-            <div class="status online"></div>
+        <div id="friendSearchResult"></div>
+
+        <div class="friend-section">
+            <h4>Solicitudes recibidas</h4>
+            <div id="incomingRequests"><p class="friend-empty">Sin solicitudes.</p></div>
         </div>
-        <div class="friend">
-            <div class="avatar-stage size-sm frame-ring" id="friendMiguel"></div>
-            <div class="friend-info"><div class="friend-name">Miguel</div><div class="friend-status">Desconectado</div></div>
-            <div class="status offline"></div>
+
+        <div class="friend-section">
+            <h4>Solicitudes enviadas</h4>
+            <div id="sentRequests"><p class="friend-empty">Ninguna pendiente.</p></div>
         </div>
-        <div class="friend">
-            <div class="avatar-stage size-sm frame-ring" id="friendAna"></div>
-            <div class="friend-info"><div class="friend-name">Ana</div><div class="friend-status">En línea</div></div>
-            <div class="status online"></div>
+
+        <div class="friend-section">
+            <h4>Tus amigos</h4>
+            <div id="friendsList"><p class="friend-empty">Todavía no tienes amigos.</p></div>
         </div>
     </aside>
 </div>
@@ -643,23 +653,12 @@ function renderStage(el, equipped) {
   `;
 }
 
-const FRIEND_LOOKS = {
-  Carlos: { base:'guerrera', hat:'corona', weapon:'espada', pet:'none', aura:'none' },
-  Laura: { base:'elfo', hat:'estelar', weapon:'daga', pet:'none', aura:'arcana' },
-  Miguel: { base:'mago', hat:'none', weapon:'none', pet:'none', aura:'none' },
-  Ana: { base:'robot', hat:'none', weapon:'none', pet:'buho', aura:'none' }
-};
-
 function renderAvatarsEverywhere() {
   renderStage(document.getElementById('sidebarAvatar'), state.equipped);
   renderStage(document.getElementById('profileAvatar'), state.equipped);
   renderStage(document.getElementById('avatarPreview'), state.equipped);
   renderStage(document.getElementById('diceAvatarPlayer'), state.equipped);
-  renderStage(document.getElementById('diceAvatarRival'), FRIEND_LOOKS.Carlos);
-  renderStage(document.getElementById('friendCarlos'), FRIEND_LOOKS.Carlos);
-  renderStage(document.getElementById('friendLaura'), FRIEND_LOOKS.Laura);
-  renderStage(document.getElementById('friendMiguel'), FRIEND_LOOKS.Miguel);
-  renderStage(document.getElementById('friendAna'), FRIEND_LOOKS.Ana);
+  renderStage(document.getElementById('diceAvatarRival'), state.equipped);
 }
 
 /* =========================
@@ -1013,6 +1012,9 @@ async function handleLogin(event) {
 }
 
 async function handleLogout() {
+  if (heartbeatIntervalId) clearInterval(heartbeatIntervalId);
+  if (friendsIntervalId) clearInterval(friendsIntervalId);
+  currentUserId = null;
   await supabaseClient.auth.signOut();
   showAuthScreen();
 }
@@ -1039,6 +1041,175 @@ async function enterApp(user) {
   document.getElementById('profileUsername').textContent = displayName;
 
   initGameUI();
+  currentUserId = user.id;
+  startFriendsSystem();
+}
+
+/* =========================
+   AMIGOS (conectado a Supabase)
+========================= */
+let currentUserId = null;
+let friendsIntervalId = null;
+let heartbeatIntervalId = null;
+
+function translateFriendError(error) {
+  if (!error) return '';
+  const msg = error.message || '';
+  if (msg.includes('duplicate key value')) return 'Ya existe una solicitud o ya sois amigos.';
+  if (msg.includes('different_users')) return 'No puedes enviarte una solicitud a ti mismo.';
+  return 'No se pudo completar la acción: ' + msg;
+}
+
+async function updateLastSeen() {
+  if (!currentUserId) return;
+  await supabaseClient.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', currentUserId);
+}
+
+function startFriendsSystem() {
+  updateLastSeen();
+  loadFriendsPanel();
+  if (heartbeatIntervalId) clearInterval(heartbeatIntervalId);
+  if (friendsIntervalId) clearInterval(friendsIntervalId);
+  heartbeatIntervalId = setInterval(updateLastSeen, 45000);
+  friendsIntervalId = setInterval(loadFriendsPanel, 30000);
+}
+
+function isOnline(lastSeen) {
+  if (!lastSeen) return false;
+  return (Date.now() - new Date(lastSeen).getTime()) < 120000;
+}
+
+async function searchUser() {
+  const input = document.getElementById('friendSearchInput');
+  const resultBox = document.getElementById('friendSearchResult');
+  const username = input.value.trim();
+  if (!username) return;
+
+  const { data, error } = await supabaseClient
+    .from('profiles')
+    .select('id, username, avatar')
+    .eq('username', username)
+    .maybeSingle();
+
+  if (error || !data) {
+    resultBox.innerHTML = `<div class="friend-msg">No se ha encontrado a nadie con ese nombre exacto.</div>`;
+    return;
+  }
+  if (data.id === currentUserId) {
+    resultBox.innerHTML = `<div class="friend-msg">Ese eres tú 🙂</div>`;
+    return;
+  }
+  resultBox.innerHTML = `
+    <div class="friend-result-card">
+      <span>${data.avatar || '🧙'} ${data.username}</span>
+      <button class="btn btn-primary" onclick="sendFriendRequest('${data.id}')">Enviar solicitud</button>
+    </div>`;
+}
+
+async function sendFriendRequest(targetId) {
+  const { error } = await supabaseClient
+    .from('friendships')
+    .insert({ user_id: currentUserId, friend_id: targetId, status: 'pending' });
+
+  if (error) {
+    toast('❌ ' + translateFriendError(error));
+    return;
+  }
+  toast('✅ Solicitud enviada.');
+  document.getElementById('friendSearchResult').innerHTML = '';
+  document.getElementById('friendSearchInput').value = '';
+  loadFriendsPanel();
+}
+
+async function respondRequest(requestId, accept) {
+  if (accept) {
+    const { error } = await supabaseClient.from('friendships').update({ status: 'accepted' }).eq('id', requestId);
+    if (error) { toast('❌ ' + translateFriendError(error)); return; }
+    toast('🤝 Ahora sois amigos.');
+  } else {
+    const { error } = await supabaseClient.from('friendships').delete().eq('id', requestId);
+    if (error) { toast('❌ ' + translateFriendError(error)); return; }
+    toast('Solicitud rechazada.');
+  }
+  loadFriendsPanel();
+}
+
+async function cancelRequest(requestId) {
+  const { error } = await supabaseClient.from('friendships').delete().eq('id', requestId);
+  if (error) { toast('❌ ' + translateFriendError(error)); return; }
+  toast('Solicitud cancelada.');
+  loadFriendsPanel();
+}
+
+async function removeFriend(requestId) {
+  const { error } = await supabaseClient.from('friendships').delete().eq('id', requestId);
+  if (error) { toast('❌ ' + translateFriendError(error)); return; }
+  toast('Amigo eliminado.');
+  loadFriendsPanel();
+}
+
+async function loadFriendsPanel() {
+  if (!currentUserId) return;
+
+  const { data: rows, error } = await supabaseClient
+    .from('friendships')
+    .select('*')
+    .or(`user_id.eq.${currentUserId},friend_id.eq.${currentUserId}`);
+
+  if (error || !rows) return;
+
+  const incoming = rows.filter(r => r.status === 'pending' && r.friend_id === currentUserId);
+  const sent = rows.filter(r => r.status === 'pending' && r.user_id === currentUserId);
+  const accepted = rows.filter(r => r.status === 'accepted');
+
+  const otherIds = [...new Set(
+    [...incoming, ...sent, ...accepted].map(r => r.user_id === currentUserId ? r.friend_id : r.user_id)
+  )];
+
+  let profilesById = {};
+  if (otherIds.length) {
+    const { data: profs } = await supabaseClient
+      .from('profiles')
+      .select('id, username, avatar, last_seen')
+      .in('id', otherIds);
+    (profs || []).forEach(p => { profilesById[p.id] = p; });
+  }
+
+  const incomingBox = document.getElementById('incomingRequests');
+  incomingBox.innerHTML = incoming.length ? incoming.map(r => {
+    const p = profilesById[r.user_id] || {};
+    return `<div class="friend-request-card">
+      <span>${p.avatar || '🧙'} ${p.username || '...'}</span>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-primary" onclick="respondRequest('${r.id}', true)">Aceptar</button>
+        <button class="btn btn-dark" onclick="respondRequest('${r.id}', false)">Rechazar</button>
+      </div>
+    </div>`;
+  }).join('') : '<p class="friend-empty">Sin solicitudes.</p>';
+
+  const sentBox = document.getElementById('sentRequests');
+  sentBox.innerHTML = sent.length ? sent.map(r => {
+    const p = profilesById[r.friend_id] || {};
+    return `<div class="friend-request-card">
+      <span>${p.avatar || '🧙'} ${p.username || '...'}</span>
+      <button class="btn btn-dark" onclick="cancelRequest('${r.id}')">Cancelar</button>
+    </div>`;
+  }).join('') : '<p class="friend-empty">Ninguna pendiente.</p>';
+
+  const friendsBox = document.getElementById('friendsList');
+  friendsBox.innerHTML = accepted.length ? accepted.map(r => {
+    const otherId = r.user_id === currentUserId ? r.friend_id : r.user_id;
+    const p = profilesById[otherId] || {};
+    const online = isOnline(p.last_seen);
+    return `<div class="friend">
+      <div style="font-size:22px;">${p.avatar || '🧙'}</div>
+      <div class="friend-info">
+        <div class="friend-name">${p.username || '...'}</div>
+        <div class="friend-status">${online ? 'En línea' : 'Desconectado'}</div>
+      </div>
+      <div class="status ${online ? 'online' : 'offline'}"></div>
+    </div>`;
+  }).join('') : '<p class="friend-empty">Todavía no tienes amigos.</p>';
 }
 
 /* Al cargar la página, comprobamos si ya hay una sesión abierta */
