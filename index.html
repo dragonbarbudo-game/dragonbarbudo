@@ -138,6 +138,21 @@ main { padding: 30px; overflow: hidden; }
 .friend-result-card, .friend-request-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; font-size: 13px; }
 .friend-result-card .btn, .friend-request-card .btn { padding: 6px 10px; font-size: 12px; }
 .friend-msg { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.friend-name-btn { cursor: pointer; }
+.friend-name-wrap { position: relative; flex: 1; }
+.friend-dropdown { display: none; position: absolute; top: 100%; left: 0; z-index: 20; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 6px; min-width: 140px; }
+.friend-dropdown button { width: 100%; text-align: left; background: none; border: none; color: var(--text); padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; }
+.friend-dropdown button:hover { background: var(--panel); }
+
+/* CHAT */
+.chat-box { width: 90%; max-width: 420px; height: 70vh; background: var(--panel); border-radius: 15px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.chat-header { padding: 15px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
+.chat-bubble { max-width: 75%; padding: 9px 13px; border-radius: 14px; font-size: 14px; line-height: 1.35; }
+.chat-bubble.mine { align-self: flex-end; background: var(--gold); color: #18130a; }
+.chat-bubble.theirs { align-self: flex-start; background: var(--panel-2); border: 1px solid var(--border); }
+.chat-input-row { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border); }
+.chat-input-row input { flex: 1; padding: 10px; background: #181a20; border: 1px solid var(--border); color: white; border-radius: 8px; font-family: inherit; }
 .friend { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-radius: 8px; }
 .friend:hover { background: var(--panel); }
 .friend-info { flex: 1; }
@@ -485,7 +500,6 @@ main { padding: 30px; overflow: hidden; }
     </aside>
 </div>
 
-<!-- MODAL CREAR SALA -->
 <div class="modal-bg" id="modalBg">
     <div class="modal">
         <h2>🎲 Crear una sala</h2>
@@ -499,6 +513,21 @@ main { padding: 30px; overflow: hidden; }
         <div class="modal-actions">
             <button class="btn btn-dark" onclick="closeModal()">Cancelar</button>
             <button class="btn btn-primary" onclick="createRoom()">Crear</button>
+        </div>
+    </div>
+</div>
+
+<!-- CHAT PRIVADO -->
+<div class="modal-bg" id="chatModalBg">
+    <div class="chat-box">
+        <div class="chat-header">
+            <strong id="chatFriendName">Chat</strong>
+            <button class="btn btn-dark" onclick="closeChat()">Cerrar</button>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-row">
+            <input type="text" id="chatInput" placeholder="Escribe un mensaje..." onkeydown="if(event.key==='Enter') sendMessage()">
+            <button class="btn btn-primary" onclick="sendMessage()">Enviar</button>
         </div>
     </div>
 </div>
@@ -1201,16 +1230,107 @@ async function loadFriendsPanel() {
     const otherId = r.user_id === currentUserId ? r.friend_id : r.user_id;
     const p = profilesById[otherId] || {};
     const online = isOnline(p.last_seen);
+    const menuId = 'friendMenu-' + otherId;
+    const safeName = (p.username || '...').replace(/'/g, "\\'");
     return `<div class="friend">
       <div style="font-size:22px;">${p.avatar || '🧙'}</div>
-      <div class="friend-info">
-        <div class="friend-name">${p.username || '...'}</div>
+      <div class="friend-name-wrap">
+        <div class="friend-name friend-name-btn" onclick="toggleFriendMenu('${menuId}')">${p.username || '...'}</div>
         <div class="friend-status">${online ? 'En línea' : 'Desconectado'}</div>
+        <div class="friend-dropdown" id="${menuId}">
+          <button onclick="openChat('${otherId}', '${safeName}'); toggleFriendMenu('${menuId}')">💬 Chatear</button>
+          <button onclick="removeFriend('${r.id}'); toggleFriendMenu('${menuId}')">🗑️ Eliminar amigo</button>
+        </div>
       </div>
       <div class="status ${online ? 'online' : 'offline'}"></div>
     </div>`;
   }).join('') : '<p class="friend-empty">Todavía no tienes amigos.</p>';
 }
+
+function toggleFriendMenu(menuId) {
+  const target = document.getElementById(menuId);
+  const isOpen = target.style.display === 'block';
+  document.querySelectorAll('.friend-dropdown').forEach(d => d.style.display = 'none');
+  target.style.display = isOpen ? 'none' : 'block';
+}
+
+/* =========================
+   CHAT PRIVADO (tiempo real)
+========================= */
+let currentChatFriendId = null;
+let chatChannel = null;
+
+function chatBubbleHtml(msg) {
+  const mine = msg.sender_id === currentUserId;
+  const safe = String(msg.content).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return `<div class="chat-bubble ${mine ? 'mine' : 'theirs'}">${safe}</div>`;
+}
+
+async function openChat(friendId, friendName) {
+  currentChatFriendId = friendId;
+  document.getElementById('chatFriendName').textContent = friendName;
+  document.getElementById('chatMessages').innerHTML = '';
+  document.getElementById('chatModalBg').style.display = 'flex';
+
+  const { data, error } = await supabaseClient
+    .from('messages')
+    .select('*')
+    .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${friendId}),and(sender_id.eq.${friendId},receiver_id.eq.${currentUserId})`)
+    .order('created_at', { ascending: true });
+
+  const box = document.getElementById('chatMessages');
+  if (!error && data) {
+    box.innerHTML = data.map(chatBubbleHtml).join('');
+    box.scrollTop = box.scrollHeight;
+  }
+
+  if (chatChannel) supabaseClient.removeChannel(chatChannel);
+  chatChannel = supabaseClient
+    .channel('chat-' + currentUserId + '-' + friendId)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+      const msg = payload.new;
+      const isThisConversation =
+        (msg.sender_id === currentUserId && msg.receiver_id === currentChatFriendId) ||
+        (msg.sender_id === currentChatFriendId && msg.receiver_id === currentUserId);
+      if (!isThisConversation) return;
+      if (msg.sender_id === currentUserId) return; // ya lo pintamos nosotros al enviarlo
+      const chatBox = document.getElementById('chatMessages');
+      chatBox.innerHTML += chatBubbleHtml(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    })
+    .subscribe();
+}
+
+function closeChat() {
+  document.getElementById('chatModalBg').style.display = 'none';
+  if (chatChannel) { supabaseClient.removeChannel(chatChannel); chatChannel = null; }
+  currentChatFriendId = null;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const content = input.value.trim();
+  if (!content || !currentChatFriendId) return;
+
+  const { data, error } = await supabaseClient
+    .from('messages')
+    .insert({ sender_id: currentUserId, receiver_id: currentChatFriendId, content })
+    .select()
+    .single();
+
+  if (error) {
+    toast('❌ No se pudo enviar el mensaje.');
+    return;
+  }
+  const box = document.getElementById('chatMessages');
+  box.innerHTML += chatBubbleHtml(data);
+  box.scrollTop = box.scrollHeight;
+  input.value = '';
+}
+
+document.getElementById('chatModalBg').addEventListener('click', function (event) {
+  if (event.target === this) closeChat();
+});
 
 /* Al cargar la página, comprobamos si ya hay una sesión abierta */
 (async function checkSession() {
