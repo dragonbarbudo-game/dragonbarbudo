@@ -309,6 +309,7 @@ main { padding: 30px; overflow: hidden; }
             <div class="auth-error" id="loginError"></div>
             <button type="submit" class="btn btn-primary">Entrar</button>
             <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('forgot')">¿Has olvidado tu contraseña?</div>
+            <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('resend')">¿No te llegó el correo de confirmación?</div>
         </form>
 
         <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)">
@@ -336,6 +337,13 @@ main { padding: 30px; overflow: hidden; }
             </div>
             <div class="auth-error" id="resetError"></div>
             <button type="submit" class="btn btn-primary">Guardar nueva contraseña</button>
+        </form>
+
+        <form class="auth-form" id="resendForm" onsubmit="handleResendConfirmation(event)">
+            <input type="email" id="resendEmail" placeholder="Tu correo electrónico" required>
+            <div class="auth-error" id="resendError"></div>
+            <button type="submit" class="btn btn-primary">Reenviar correo de confirmación</button>
+            <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('login')">Volver a iniciar sesión</div>
         </form>
 
         <div class="auth-note">Si tu proyecto pide confirmar el correo, revisa tu bandeja de entrada antes de iniciar sesión.</div>
@@ -1024,6 +1032,7 @@ function translateAuthError(error) {
   if (msg.includes('duplicate key value') && msg.includes('username')) return 'Ese nombre de usuario ya está en uso.';
   if (msg.includes('Password should be at least')) return 'La contraseña es demasiado corta.';
   if (msg.includes('Unable to validate email')) return 'Ese correo no parece válido.';
+  if (msg.includes('Email already confirmed') || msg.includes('already confirmed')) return 'Esa cuenta ya estaba confirmada. Prueba a iniciar sesión.';
   return 'Ha ocurrido un error: ' + msg;
 }
 
@@ -1032,6 +1041,26 @@ function togglePasswordVisibility(inputId, btn) {
   const isHidden = input.type === 'password';
   input.type = isHidden ? 'text' : 'password';
   btn.textContent = isHidden ? '🙈' : '👁️';
+}
+
+async function handleResendConfirmation(event) {
+  event.preventDefault();
+  const email = document.getElementById('resendEmail').value.trim();
+  const errorBox = document.getElementById('resendError');
+  errorBox.textContent = '';
+
+  const { error } = await supabaseClient.auth.resend({
+    type: 'signup',
+    email,
+    options: { emailRedirectTo: window.location.origin + window.location.pathname }
+  });
+
+  if (error) {
+    errorBox.textContent = translateAuthError(error);
+    return;
+  }
+  errorBox.style.color = 'var(--felt-light)';
+  errorBox.textContent = 'Correo de confirmación reenviado. Revisa tu bandeja de entrada (y spam).';
 }
 
 function switchAuthTab(tab) {
@@ -1043,7 +1072,8 @@ function switchAuthTab(tab) {
   document.getElementById('registerForm').classList.toggle('active', tab === 'register');
   document.getElementById('forgotForm').classList.toggle('active', tab === 'forgot');
   document.getElementById('resetForm').classList.toggle('active', tab === 'reset');
-  ['loginError', 'registerError', 'forgotError', 'resetError'].forEach(id => {
+  document.getElementById('resendForm').classList.toggle('active', tab === 'resend');
+  ['loginError', 'registerError', 'forgotError', 'resetError', 'resendError'].forEach(id => {
     const el = document.getElementById(id);
     el.textContent = '';
     el.style.color = 'var(--ember)';
