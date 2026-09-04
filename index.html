@@ -153,6 +153,11 @@ main { padding: 30px; overflow: hidden; }
 .chat-bubble.theirs { align-self: flex-start; background: var(--panel-2); border: 1px solid var(--border); }
 .chat-input-row { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border); }
 .chat-input-row input { flex: 1; padding: 10px; background: #181a20; border: 1px solid var(--border); color: white; border-radius: 8px; font-family: inherit; }
+
+/* INVITACIÓN A JUGAR */
+.invite-banner { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 300; background: var(--panel-2); border: 1px solid var(--gold); border-radius: 12px; padding: 14px 18px; align-items: center; gap: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.4); }
+.invite-banner.show { display: flex; }
+.invite-banner .btn { padding: 7px 12px; font-size: 13px; }
 .friend { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-radius: 8px; }
 .friend:hover { background: var(--panel); }
 .friend-info { flex: 1; }
@@ -533,6 +538,13 @@ main { padding: 30px; overflow: hidden; }
 </div>
 
 <div id="toastHost"></div>
+
+<!-- INVITACIÓN A JUGAR -->
+<div class="invite-banner" id="inviteBanner">
+    <span id="inviteBannerText">Invitación</span>
+    <button class="btn btn-primary" id="inviteAcceptBtn">Aceptar</button>
+    <button class="btn btn-dark" id="inviteDeclineBtn">Rechazar</button>
+</div>
 
 <script>
 /* =========================
@@ -1043,6 +1055,7 @@ async function handleLogin(event) {
 async function handleLogout() {
   if (heartbeatIntervalId) clearInterval(heartbeatIntervalId);
   if (friendsIntervalId) clearInterval(friendsIntervalId);
+  if (inviteChannel) { supabaseClient.removeChannel(inviteChannel); inviteChannel = null; }
   currentUserId = null;
   await supabaseClient.auth.signOut();
   showAuthScreen();
@@ -1097,6 +1110,7 @@ async function updateLastSeen() {
 function startFriendsSystem() {
   updateLastSeen();
   loadFriendsPanel();
+  subscribeGameInvites();
   if (heartbeatIntervalId) clearInterval(heartbeatIntervalId);
   if (friendsIntervalId) clearInterval(friendsIntervalId);
   heartbeatIntervalId = setInterval(updateLastSeen, 45000);
@@ -1239,6 +1253,7 @@ async function loadFriendsPanel() {
         <div class="friend-status">${online ? 'En línea' : 'Desconectado'}</div>
         <div class="friend-dropdown" id="${menuId}">
           <button onclick="openChat('${otherId}', '${safeName}'); toggleFriendMenu('${menuId}')">💬 Chatear</button>
+          <button onclick="sendGameInvite('${otherId}', '${safeName}'); toggleFriendMenu('${menuId}')">🎮 Invitar a jugar</button>
           <button onclick="removeFriend('${r.id}'); toggleFriendMenu('${menuId}')">🗑️ Eliminar amigo</button>
         </div>
       </div>
@@ -1331,6 +1346,87 @@ async function sendMessage() {
 document.getElementById('chatModalBg').addEventListener('click', function (event) {
   if (event.target === this) closeChat();
 });
+
+/* =========================
+   INVITAR A JUGAR (tiempo real)
+========================= */
+const GAME_NAMES = { dice: 'Salón de Dados' };
+let inviteChannel = null;
+
+async function getUsername(id) {
+  const { data } = await supabaseClient.from('profiles').select('username').eq('id', id).maybeSingle();
+  return data ? data.username : 'Alguien';
+}
+
+async function sendGameInvite(friendId, friendName) {
+  const { error } = await supabaseClient
+    .from('game_invites')
+    .insert({ sender_id: currentUserId, receiver_id: friendId, game: 'dice', status: 'pending' });
+  if (error) {
+    toast('❌ No se pudo enviar la invitación.');
+    return;
+  }
+  toast(`🎮 Invitación enviada a ${friendName}.`);
+}
+
+function showInviteBanner(text, onAccept, onDecline) {
+  const banner = document.getElementById('inviteBanner');
+  document.getElementById('inviteBannerText').textContent = text;
+  const acceptBtn = document.getElementById('inviteAcceptBtn');
+  const declineBtn = document.getElementById('inviteDeclineBtn');
+  const newAccept = acceptBtn.cloneNode(true);
+  const newDecline = declineBtn.cloneNode(true);
+  acceptBtn.replaceWith(newAccept);
+  declineBtn.replaceWith(newDecline);
+  newAccept.onclick = () => { hideInviteBanner(); onAccept(); };
+  newDecline.onclick = () => { hideInviteBanner(); if (onDecline) onDecline(); };
+  banner.classList.add('show');
+}
+function hideInviteBanner() {
+  document.getElementById('inviteBanner').classList.remove('show');
+}
+
+async function respondGameInvite(inviteId, accept) {
+  const { error } = await supabaseClient
+    .from('game_invites')
+    .update({ status: accept ? 'accepted' : 'declined' })
+    .eq('id', inviteId);
+  if (error) { toast('❌ No se pudo responder a la invitación.'); return; }
+  if (accept) showPage('diceGame');
+}
+
+function subscribeGameInvites() {
+  if (inviteChannel) supabaseClient.removeChannel(inviteChannel);
+  inviteChannel = supabaseClient
+    .channel('game-invites-' + currentUserId)
+    .on('postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'game_invites', filter: `receiver_id=eq.${currentUserId}` },
+      async (payload) => {
+        const invite = payload.new;
+        const name = await getUsername(invite.sender_id);
+        showInviteBanner(
+          `🎮 ${name} te invita a jugar en ${GAME_NAMES[invite.game] || invite.game}`,
+          () => respondGameInvite(invite.id, true),
+          () => respondGameInvite(invite.id, false)
+        );
+      }
+    )
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'game_invites', filter: `sender_id=eq.${currentUserId}` },
+      async (payload) => {
+        const invite = payload.new;
+        if (invite.status === 'accepted') {
+          const name = await getUsername(invite.receiver_id);
+          toast(`✅ ${name} ha aceptado tu invitación. ¡A jugar!`);
+          showPage('diceGame');
+        } else if (invite.status === 'declined') {
+          const name = await getUsername(invite.receiver_id);
+          toast(`${name} ha rechazado tu invitación.`);
+        }
+      }
+    )
+    .subscribe();
+}
 
 /* Al cargar la página, comprobamos si ya hay una sesión abierta */
 (async function checkSession() {
