@@ -308,6 +308,7 @@ main { padding: 30px; overflow: hidden; }
             </div>
             <div class="auth-error" id="loginError"></div>
             <button type="submit" class="btn btn-primary">Entrar</button>
+            <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('forgot')">¿Has olvidado tu contraseña?</div>
         </form>
 
         <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)">
@@ -319,6 +320,22 @@ main { padding: 30px; overflow: hidden; }
             </div>
             <div class="auth-error" id="registerError"></div>
             <button type="submit" class="btn btn-primary">Crear cuenta</button>
+        </form>
+
+        <form class="auth-form" id="forgotForm" onsubmit="handleForgotPassword(event)">
+            <input type="email" id="forgotEmail" placeholder="Tu correo electrónico" required>
+            <div class="auth-error" id="forgotError"></div>
+            <button type="submit" class="btn btn-primary">Enviar enlace de recuperación</button>
+            <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('login')">Volver a iniciar sesión</div>
+        </form>
+
+        <form class="auth-form" id="resetForm" onsubmit="handleResetPassword(event)">
+            <div class="password-wrap">
+                <input type="password" id="resetPassword" placeholder="Nueva contraseña (mínimo 6 caracteres)" required minlength="6">
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('resetPassword', this)">👁️</button>
+            </div>
+            <div class="auth-error" id="resetError"></div>
+            <button type="submit" class="btn btn-primary">Guardar nueva contraseña</button>
         </form>
 
         <div class="auth-note">Si tu proyecto pide confirmar el correo, revisa tu bandeja de entrada antes de iniciar sesión.</div>
@@ -1018,12 +1035,54 @@ function togglePasswordVisibility(inputId, btn) {
 }
 
 function switchAuthTab(tab) {
+  const isMainTab = (tab === 'login' || tab === 'register');
+  document.querySelector('.auth-tabs').style.display = isMainTab ? 'flex' : 'none';
   document.getElementById('tabLoginBtn').classList.toggle('active', tab === 'login');
   document.getElementById('tabRegisterBtn').classList.toggle('active', tab === 'register');
   document.getElementById('loginForm').classList.toggle('active', tab === 'login');
   document.getElementById('registerForm').classList.toggle('active', tab === 'register');
-  document.getElementById('loginError').textContent = '';
-  document.getElementById('registerError').textContent = '';
+  document.getElementById('forgotForm').classList.toggle('active', tab === 'forgot');
+  document.getElementById('resetForm').classList.toggle('active', tab === 'reset');
+  ['loginError', 'registerError', 'forgotError', 'resetError'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = '';
+    el.style.color = 'var(--ember)';
+  });
+}
+
+async function handleForgotPassword(event) {
+  event.preventDefault();
+  const email = document.getElementById('forgotEmail').value.trim();
+  const errorBox = document.getElementById('forgotError');
+  errorBox.textContent = '';
+
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname
+  });
+
+  if (error) {
+    errorBox.textContent = translateAuthError(error);
+    return;
+  }
+  errorBox.style.color = 'var(--felt-light)';
+  errorBox.textContent = 'Te hemos enviado un enlace a tu correo. Ábrelo para elegir una nueva contraseña.';
+}
+
+async function handleResetPassword(event) {
+  event.preventDefault();
+  const password = document.getElementById('resetPassword').value;
+  const errorBox = document.getElementById('resetError');
+  errorBox.textContent = '';
+
+  const { error } = await supabaseClient.auth.updateUser({ password });
+  if (error) {
+    errorBox.textContent = translateAuthError(error);
+    return;
+  }
+  toast('✅ Contraseña actualizada. Ya puedes iniciar sesión con ella.');
+  await supabaseClient.auth.signOut();
+  switchAuthTab('login');
+  showAuthScreen();
 }
 
 async function handleRegister(event) {
@@ -1458,6 +1517,10 @@ function subscribeGameInvites() {
 /* Si el usuario inicia o cierra sesión en otra pestaña, lo reflejamos aquí también */
 supabaseClient.auth.onAuthStateChange((event) => {
   if (event === 'SIGNED_OUT') showAuthScreen();
+  if (event === 'PASSWORD_RECOVERY') {
+    showAuthScreen();
+    switchAuthTab('reset');
+  }
 });
 </script>
 </body>
