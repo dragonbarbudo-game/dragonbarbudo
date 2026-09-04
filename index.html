@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>TableHost - Lobby</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --bg: #111217;
+    --bg2: #191b22;
+    --panel: #22252e;
+    --panel-hover: #2b2f3a;
+    --gold: #e7ae45;
+    --gold-light: #ffd16c;
+    --text: #f5f5f5;
+    --muted: #9ca3af;
+    --green: #42d392;
+    --red: #ff6262;
+    --blue: #5ea8ff;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+}
+
+/* NAVBAR */
+
+header {
+    height: 70px;
+    background: #17191f;
+    border-bottom: 1px solid #30343d;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px;
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--gold);
+}
+
+.logo span {
+    color: white;
+}
+
+.nav-user {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.coins {
+    background: var(--panel);
+    padding: 9px 14px;
+    border-radius: 10px;
+    color: var(--gold-light);
+    font-weight: bold;
+}
+
+/* APP */
+
+.app {
+    display: grid;
+    grid-template-columns: 240px 1fr 280px;
+    min-height: calc(100vh - 70px);
+}
+
+/* SIDEBAR */
+
+.sidebar {
+    background: var(--bg2);
+    border-right: 1px solid #30343d;
+    padding: 25px 15px;
+}
+
+.profile-mini {
+    text-align: center;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #30343d;
+}
+
+.avatar {
+    width: 90px;
+    height: 90px;
+    margin: auto;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold), #a86d16);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 45px;
+    border: 4px solid #333742;
+}
+
+.username {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.level {
+    color: var(--gold);
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.menu {
+    margin-top: 20px;
+}
+
+.menu button {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    padding: 13px;
+    text-align: left;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    margin-bottom: 5px;
+}
+
+.menu button:hover,
+.menu button.active {
+    background: var(--panel);
+    color: white;
+}
+
+/* MAIN */
+
+main {
+    padding: 30px;
+    overflow: hidden;
+}
+
+.page {
+    display: none;
+}
+
+.page.active {
+    display: block;
+}
+
+.welcome {
+    margin-bottom: 25px;
+}
+
+.welcome h1 {
+    font-size: 30px;
+}
+
+.welcome p {
+    color: var(--muted);
+    margin-top: 8px;
+}
+
+/* STATS */
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.stat {
+    background: var(--panel);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #30343d;
+}
+
+.stat-number {
+    font-size: 25px;
+    color: var(--gold);
+    font-weight: bold;
+}
+
+.stat-label {
+    color: var(--muted);
+    margin-top: 5px;
+    font-size: 14px;
+}
+
+/* SECTION */
+
+.section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 25px 0 15px;
+}
+
+.section-title h2 {
+    font-size: 20px;
+}
+
+.btn {
+    border: none;
+    padding: 11px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: .2s;
+}
+
+.btn-primary {
+    background: var(--gold);
+    color: #18130a;
+}
+
+.btn-primary:hover {
+    background: var(--gold-light);
+    transform: translateY(-2px);
+}
+
+.btn-dark {
+    background: #333743;
+    color: white;
+}
+
+.btn-dark:hover {
+    background: #424754;
+}
+
+/* ROOMS */
+
+.rooms {
+    display: grid;
+    gap: 15px;
+}
+
+.room {
+    background: var(--panel);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #30343d;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: .2s;
+}
+
+.room:hover {
+    background: var(--panel-hover);
+}
+
+.room-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.game-icon {
+    font-size: 35px;
+}
+
+.room-info h3 {
+    margin-bottom: 5px;
+}
+
+.room-info p {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+/* FRIENDS */
+
+.friends-panel {
+    background: var(--bg2);
+    border-left: 1px solid #30343d;
+    padding: 25px 15px;
+}
+
+.friend-title {
+    margin-bottom: 20px;
+}
+
+.friend {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 8px;
+    border-radius: 8px;
+}
+
+.friend:hover {
+    background: var(--panel);
+}
+
+.friend-avatar {
+    width: 40px;
+    height: 40px;
+    background: #3a3e4b;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+}
+
+.friend-info {
+    flex: 1;
+}
+
+.friend-name {
+    font-size: 14px;
+}
+
+.friend-status {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.status {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+}
+
+.online {
+    background: var(--green);
+}
+
+.offline {
+    background: #555;
+}
+
+.playing {
+    background: var(--blue);
+}
+
+/* PROFILE */
+
+.profile-page {
+    max-width: 800px;
+}
+
+.profile-card {
+    background: var(--panel);
+    border-radius: 15px;
+    padding: 30px;
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 30px;
+}
+
+.big-avatar {
+    width: 160px;
+    height: 160px;
+    background: linear-gradient(135deg, var(--gold), #8d5a15);
+    border-radius: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 80px;
+}
+
+.profile-info h2 {
+    margin-bottom: 8px;
+}
+
+.profile-info p {
+    color: var(--muted);
+    margin-bottom: 20px;
+}
+
+/* AVATAR CUSTOMIZATION */
+
+.customization {
+    margin-top: 25px;
+    background: var(--panel);
+    padding: 25px;
+    border-radius: 15px;
+}
+
+.avatar-preview {
+    text-align: center;
+    font-size: 100px;
+    padding: 25px;
+    background: #181a20;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.avatar-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.avatar-option {
+    font-size: 30px;
+    border: 2px solid transparent;
+    background: #303440;
+    padding: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.avatar-option:hover,
+.avatar-option.selected {
+    border-color: var(--gold);
+}
+
+/* ACHIEVEMENTS */
+
+.achievements {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 15px;
+}
+
+.achievement {
+    background: var(--panel);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #30343d;
+}
+
+.achievement-icon {
+    font-size: 35px;
+}
+
+.achievement h3 {
+    margin: 10px 0 5px;
+}
+
+.achievement p {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+/* SHOP */
+
+.shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 15px;
+}
+
+.item {
+    background: var(--panel);
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.item-icon {
+    font-size: 50px;
+}
+
+.item h3 {
+    margin: 10px 0;
+}
+
+.price {
+    color: var(--gold);
+    margin-bottom: 12px;
+    font-weight: bold;
+}
+
+/* MODAL */
+
+.modal-bg {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.7);
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.modal {
+    width: 90%;
+    max-width: 450px;
+    background: var(--panel);
+    padding: 25px;
+    border-radius: 15px;
+}
+
+.modal h2 {
+    margin-bottom: 20px;
+}
+
+.modal input,
+.modal select {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    background: #181a20;
+    border: 1px solid #3b404b;
+    color: white;
+    border-radius: 8px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* RESPONSIVE */
+
+@media(max-width: 1000px) {
+    .app {
+        grid-template-columns: 220px 1fr;
+    }
+
+    .friends-panel {
+        display: none;
+    }
+}
+
+@media(max-width: 700px) {
+
+    header {
+        padding: 0 15px;
+    }
+
+    .app {
+        display: block;
+    }
+
+    .sidebar {
+        border-right: none;
+        border-bottom: 1px solid #30343d;
+        padding: 10px;
+    }
+
+    .profile-mini {
+        display: none;
+    }
+
+    .menu {
+        margin: 0;
+        display: flex;
+        overflow-x: auto;
+    }
+
+    .menu button {
+        white-space: nowrap;
+    }
+
+    main {
+        padding: 20px 15px;
+    }
+
+    .stats {
+        grid-template-columns: 1fr;
+    }
+
+    .room {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+
+    .profile-card {
+        grid-template-columns: 1fr;
+    }
+
+    .big-avatar {
+        margin: auto;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">🎲 Table<span>Host</span></div>
+
+    <div class="nav-user">
+        <div class="coins">🪙 <span id="coinDisplay">1200</span></div>
+        <div>🔔</div>
+    </div>
+</header>
+
+<div class="app">
+
+    <!-- MENU -->
+
+    <aside class="sidebar">
+
+        <div class="profile-mini">
+            <div class="avatar" id="sidebarAvatar">🧙</div>
+            <div class="username">TableMaster</div>
+            <div class="level">⭐ Nivel 12</div>
+        </div>
+
+        <div class="menu">
+
+            <button class="active" onclick="showPage('lobby', this)">
+                🏠 Lobby
+            </button>
+
+            <button onclick="showPage('profile', this)">
+                👤 Mi perfil
+            </button>
+
+            <button onclick="showPage('avatarPage', this)">
+                🎭 Avatar
+            </button>
+
+            <button onclick="showPage('achievements', this)">
+                🏆 Logros
+            </button>
+
+            <button onclick="showPage('shop', this)">
+                🛒 Tienda
+            </button>
+
+        </div>
+
+    </aside>
+
+
+    <!-- CONTENIDO -->
+
+    <main>
+
+        <!-- LOBBY -->
+
+        <div class="page active" id="lobby">
+
+            <div class="welcome">
+                <h1>¡Bienvenido al Lobby! 🎲</h1>
+                <p>Encuentra una partida, invita a tus amigos o crea tu propia mesa.</p>
+            </div>
+
+            <div class="stats">
+
+                <div class="stat">
+                    <div class="stat-number">12</div>
+                    <div class="stat-label">⭐ Nivel</div>
+                </div>
+
+                <div class="stat">
+                    <div class="stat-number">23</div>
+                    <div class="stat-label">🏆 Logros desbloqueados</div>
+                </div>
+
+                <div class="stat">
+                    <div class="stat-number" id="gamesPlayed">47</div>
+                    <div class="stat-label">🎮 Partidas jugadas</div>
+                </div>
+
+            </div>
+
+
+            <div class="section-title">
+                <h2>🌍 Salas disponibles</h2>
+
+                <button class="btn btn-primary" onclick="openModal()">
+                    ➕ Crear sala
+                </button>
+            </div>
+
+
+            <div class="rooms" id="roomList">
+
+                <div class="room">
+                    <div class="room-left">
+
+                        <div class="game-icon">🎲</div>
+
+                        <div class="room-info">
+                            <h3>La Taberna de los Dados</h3>
+                            <p>Juego de aventura · 3 / 4 jugadores</p>
+                        </div>
+
+                    </div>
+
+                    <button class="btn btn-primary"
+                        onclick="joinRoom('La Taberna de los Dados')">
+                        Unirse
+                    </button>
+                </div>
+
+
+                <div class="room">
+
+                    <div class="room-left">
+
+                        <div class="game-icon">🃏</div>
+
+                        <div class="room-info">
+                            <h3>Cartas entre amigos</h3>
+                            <p>Juego de cartas · 2 / 6 jugadores</p>
+                        </div>
+
+                    </div>
+
+                    <button class="btn btn-primary"
+                        onclick="joinRoom('Cartas entre amigos')">
+                        Unirse
+                    </button>
+
+                </div>
+
+
+                <div class="room">
+
+                    <div class="room-left">
+
+                        <div class="game-icon">♟️</div>
+
+                        <div class="room-info">
+                            <h3>Reyes y Estrategas</h3>
+                            <p>Estrategia · 1 / 2 jugadores</p>
+                        </div>
+
+                    </div>
+
+                    <button class="btn btn-primary"
+                        onclick="joinRoom('Reyes y Estrategas')">
+                        Unirse
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- PROFILE -->
+
+        <div class="page profile-page" id="profile">
+
+            <div class="welcome">
+                <h1>👤 Mi perfil</h1>
+                <p>Tu identidad dentro de TableHost.</p>
+            </div>
+
+            <div class="profile-card">
+
+                <div class="big-avatar" id="profileAvatar">
+                    🧙
+                </div>
+
+                <div class="profile-info">
+
+                    <h2>TableMaster</h2>
+
+                    <p>
+                        Aventurero, estratega y coleccionista de logros.
+                    </p>
+
+                    <p>⭐ Nivel 12</p>
+                    <p>🏆 23 logros</p>
+                    <p>🎮 47 partidas jugadas</p>
+                    <p>🪙 <span id="profileCoins">1200</span> monedas</p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- AVATAR -->
+
+        <div class="page" id="avatarPage">
+
+            <div class="welcome">
+                <h1>🎭 Personaliza tu avatar</h1>
+                <p>Los objetos se consiguen jugando y desbloqueando logros.</p>
+            </div>
+
+            <div class="customization">
+
+                <div class="avatar-preview" id="avatarPreview">
+                    🧙
+                </div>
+
+                <h2>Elige tu personaje</h2>
+
+                <br>
+
+                <div class="avatar-options">
+
+                    <button class="avatar-option selected"
+                        onclick="changeAvatar('🧙', this)">
+                        🧙
+                    </button>
+
+                    <button class="avatar-option"
+                        onclick="changeAvatar('🧝', this)">
+                        🧝
+                    </button>
+
+                    <button class="avatar-option"
+                        onclick="changeAvatar('🧛', this)">
+                        🧛
+                    </button>
+
+                    <button class="avatar-option"
+                        onclick="changeAvatar('🧟', this)">
+                        🧟
+                    </button>
+
+                    <button class="avatar-option"
+                        onclick="changeAvatar('🤖', this)">
+                        🤖
+                    </button>
+
+                    <button class="avatar-option"
+                        onclick="changeAvatar('🦸', this)">
+                        🦸
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ACHIEVEMENTS -->
+
+        <div class="page" id="achievements">
+
+            <div class="welcome">
+                <h1>🏆 Tus logros</h1>
+                <p>Completa desafíos para conseguir monedas y objetos.</p>
+            </div>
+
+            <div class="achievements">
+
+                <div class="achievement">
+                    <div class="achievement-icon">🎲</div>
+                    <h3>Primera partida</h3>
+                    <p>Juega tu primera partida.</p>
+                    <br>
+                    <strong>+100 🪙</strong>
+                </div>
+
+                <div class="achievement">
+                    <div class="achievement-icon">👑</div>
+                    <h3>El Campeón</h3>
+                    <p>Gana 10 partidas.</p>
+                    <br>
+                    <strong>+500 🪙</strong>
+                </div>
+
+                <div class="achievement">
+                    <div class="achievement-icon">🐉</div>
+                    <h3>Matadragones</h3>
+                    <p>Completa una aventura legendaria.</p>
+                    <br>
+                    <strong>🐉 Objeto especial</strong>
+                </div>
+
+                <div class="achievement">
+                    <div class="achievement-icon">🤝</div>
+                    <h3>Compañero fiel</h3>
+                    <p>Juega con amigos 20 veces.</p>
+                    <br>
+                    <strong>+300 🪙</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- SHOP -->
+
+        <div class="page" id="shop">
+
+            <div class="welcome">
+                <h1>🛒 Tienda</h1>
+                <p>Utiliza las monedas conseguidas en tus partidas.</p>
+            </div>
+
+            <div class="shop-grid">
+
+                <div class="item">
+                    <div class="item-icon">🎩</div>
+                    <h3>Sombrero mágico</h3>
+                    <div class="price">500 🪙</div>
+                    <button class="btn btn-primary"
+                        onclick="buyItem('🎩 Sombrero mágico', 500)">
+                        Comprar
+                    </button>
+                </div>
+
+
+                <div class="item">
+                    <div class="item-icon">👑</div>
+                    <h3>Corona real</h3>
+                    <div class="price">1000 🪙</div>
+                    <button class="btn btn-primary"
+                        onclick="buyItem('👑 Corona real', 1000)">
+                        Comprar
+                    </button>
+                </div>
+
+
+                <div class="item">
+                    <div class="item-icon">🐉</div>
+                    <h3>Mascota dragón</h3>
+                    <div class="price">2000 🪙</div>
+                    <button class="btn btn-primary"
+                        onclick="buyItem('🐉 Mascota dragón', 2000)">
+                        Comprar
+                    </button>
+                </div>
+
+
+                <div class="item">
+                    <div class="item-icon">⚔️</div>
+                    <h3>Espada legendaria</h3>
+                    <div class="price">1500 🪙</div>
+                    <button class="btn btn-primary"
+                        onclick="buyItem('⚔️ Espada legendaria', 1500)">
+                        Comprar
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <!-- AMIGOS -->
+
+    <aside class="friends-panel">
+
+        <div class="friend-title">
+            <h3>👥 Amigos</h3>
+        </div>
+
+
+        <div class="friend">
+
+            <div class="friend-avatar">🧝</div>
+
+            <div class="friend-info">
+                <div class="friend-name">Carlos</div>
+                <div class="friend-status">Jugando</div>
+            </div>
+
+            <div class="status playing"></div>
+
+        </div>
+
+
+        <div class="friend">
+
+            <div class="friend-avatar">👸</div>
+
+            <div class="friend-info">
+                <div class="friend-name">Laura</div>
+                <div class="friend-status">En línea</div>
+            </div>
+
+            <div class="status online"></div>
+
+        </div>
+
+
+        <div class="friend">
+
+            <div class="friend-avatar">🧙</div>
+
+            <div class="friend-info">
+                <div class="friend-name">Miguel</div>
+                <div class="friend-status">Desconectado</div>
+            </div>
+
+            <div class="status offline"></div>
+
+        </div>
+
+
+        <div class="friend">
+
+            <div class="friend-avatar">🤖</div>
+
+            <div class="friend-info">
+                <div class="friend-name">Ana</div>
+                <div class="friend-status">En línea</div>
+            </div>
+
+            <div class="status online"></div>
+
+        </div>
+
+    </aside>
+
+</div>
+
+
+<!-- MODAL CREAR SALA -->
+
+<div class="modal-bg" id="modalBg">
+
+    <div class="modal">
+
+        <h2>🎲 Crear una sala</h2>
+
+        <input
+            type="text"
+            id="roomName"
+            placeholder="Nombre de la sala"
+        >
+
+        <select id="roomGame">
+            <option>🎲 Juego de aventura</option>
+            <option>🃏 Juego de cartas</option>
+            <option>♟️ Juego de estrategia</option>
+            <option>🗺️ Aventura personalizada</option>
+        </select>
+
+
+        <div class="modal-actions">
+
+            <button class="btn btn-dark" onclick="closeModal()">
+                Cancelar
+            </button>
+
+            <button class="btn btn-primary" onclick="createRoom()">
+                Crear
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* =========================
+   DATOS DEL JUGADOR
+========================= */
+
+let coins = Number(localStorage.getItem("tablehostCoins")) || 1200;
+
+let currentAvatar =
+    localStorage.getItem("tablehostAvatar") || "🧙";
+
+
+/* =========================
+   INICIALIZAR
+========================= */
+
+function updatePlayer() {
+
+    document.getElementById("coinDisplay").textContent = coins;
+
+    document.getElementById("profileCoins").textContent = coins;
+
+    document.getElementById("avatarPreview").textContent =
+        currentAvatar;
+
+    document.getElementById("sidebarAvatar").textContent =
+        currentAvatar;
+
+    document.getElementById("profileAvatar").textContent =
+        currentAvatar;
+
+    localStorage.setItem(
+        "tablehostCoins",
+        coins
+    );
+
+    localStorage.setItem(
+        "tablehostAvatar",
+        currentAvatar
+    );
+}
+
+updatePlayer();
+
+
+/* =========================
+   CAMBIAR PÁGINAS
+========================= */
+
+function showPage(pageId, button) {
+
+    document.querySelectorAll(".page")
+        .forEach(page => {
+            page.classList.remove("active");
+        });
+
+    document.getElementById(pageId)
+        .classList.add("active");
+
+
+    document.querySelectorAll(".menu button")
+        .forEach(btn => {
+            btn.classList.remove("active");
+        });
+
+    if (button) {
+        button.classList.add("active");
+    }
+}
+
+
+/* =========================
+   AVATAR
+========================= */
+
+function changeAvatar(avatar, button) {
+
+    currentAvatar = avatar;
+
+    document.querySelectorAll(".avatar-option")
+        .forEach(option => {
+            option.classList.remove("selected");
+        });
+
+    button.classList.add("selected");
+
+    updatePlayer();
+}
+
+
+/* =========================
+   TIENDA
+========================= */
+
+function buyItem(item, price) {
+
+    if (coins >= price) {
+
+        coins -= price;
+
+        updatePlayer();
+
+        alert(
+            "¡Has comprado " +
+            item +
+            "!\n\nRevisa futuras versiones para equiparlo."
+        );
+
+    } else {
+
+        alert(
+            "❌ No tienes suficientes monedas."
+        );
+
+    }
+}
+
+
+/* =========================
+   SALAS
+========================= */
+
+function openModal() {
+
+    document.getElementById("modalBg")
+        .style.display = "flex";
+}
+
+
+function closeModal() {
+
+    document.getElementById("modalBg")
+        .style.display = "none";
+}
+
+
+function createRoom() {
+
+    let name =
+        document.getElementById("roomName").value;
+
+    let game =
+        document.getElementById("roomGame").value;
+
+
+    if (name.trim() === "") {
+
+        alert("Pon un nombre a tu sala.");
+
+        return;
+    }
+
+
+    let icon = "🎲";
+
+    if (game.includes("cartas")) {
+        icon = "🃏";
+    }
+
+    if (game.includes("estrategia")) {
+        icon = "♟️";
+    }
+
+    if (game.includes("Aventura")) {
+        icon = "🗺️";
+    }
+
+
+    let room = document.createElement("div");
+
+    room.className = "room";
+
+
+    room.innerHTML = `
+
+        <div class="room-left">
+
+            <div class="game-icon">
+                ${icon}
+            </div>
+
+            <div class="room-info">
+
+                <h3>${name}</h3>
+
+                <p>
+                    ${game} · 1 / 4 jugadores
+                </p>
+
+            </div>
+
+        </div>
+
+        <button class="btn btn-primary">
+            Unirse
+        </button>
+    `;
+
+
+    room.querySelector("button")
+        .addEventListener("click", function() {
+            joinRoom(name);
+        });
+
+
+    document.getElementById("roomList")
+        .prepend(room);
+
+
+    document.getElementById("roomName").value = "";
+
+
+    closeModal();
+
+
+    alert(
+        "🎉 Sala creada correctamente.\n\n" +
+        "Ahora podremos implementar invitaciones a amigos."
+    );
+}
+
+
+/* =========================
+   UNIRSE A SALA
+========================= */
+
+function joinRoom(roomName) {
+
+    alert(
+        "🎮 Te has unido a:\n\n" +
+        roomName +
+        "\n\nLa siguiente fase será crear la mesa de juego."
+    );
+}
+
+
+/* CERRAR MODAL AL PULSAR FUERA */
+
+document
+    .getElementById("modalBg")
+    .addEventListener("click", function(event) {
+
+        if (event.target === this) {
+            closeModal();
+        }
+
+    });
+
+</script>
+
+</body>
+</html>
