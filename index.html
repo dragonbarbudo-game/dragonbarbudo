@@ -3,591 +3,225 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>TableHost - Lobby</title>
-
 <style>
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-    --bg: #111217;
-    --bg2: #191b22;
-    --panel: #22252e;
-    --panel-hover: #2b2f3a;
-    --gold: #e7ae45;
-    --gold-light: #ffd16c;
-    --text: #f5f5f5;
-    --muted: #9ca3af;
-    --green: #42d392;
-    --red: #ff6262;
-    --blue: #5ea8ff;
+    --bg: #12141a;
+    --bg2: #171a21;
+    --panel: #1d212b;
+    --panel-2: #262b38;
+    --border: #2c3140;
+    --gold: #d9a441;
+    --gold-light: #f0c975;
+    --felt: #2f6d4f;
+    --felt-light: #4a9a71;
+    --ember: #d1633f;
+    --parchment: #ece2c6;
+    --text: #f1ede4;
+    --muted: #98948a;
 }
 
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Manrope', Arial, sans-serif;
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
 }
 
-/* NAVBAR */
+h1, h2, h3, .logo, .stat-number, .username {
+    font-family: 'Cinzel', serif;
+}
 
+/* NAVBAR */
 header {
     height: 70px;
-    background: #17191f;
-    border-bottom: 1px solid #30343d;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 30px;
 }
-
-.logo {
-    font-size: 24px;
-    font-weight: bold;
-    color: var(--gold);
-}
-
-.logo span {
-    color: white;
-}
-
-.nav-user {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.coins {
-    background: var(--panel);
-    padding: 9px 14px;
-    border-radius: 10px;
-    color: var(--gold-light);
-    font-weight: bold;
-}
+.logo { font-size: 22px; font-weight: 700; color: var(--gold); letter-spacing: .5px; }
+.logo span { color: white; }
+.nav-user { display: flex; align-items: center; gap: 15px; }
+.coins { background: var(--panel); padding: 9px 14px; border-radius: 10px; color: var(--gold-light); font-weight: bold; border: 1px solid var(--border); }
 
 /* APP */
-
-.app {
-    display: grid;
-    grid-template-columns: 240px 1fr 280px;
-    min-height: calc(100vh - 70px);
-}
+.app { display: grid; grid-template-columns: 240px 1fr 280px; min-height: calc(100vh - 70px); }
 
 /* SIDEBAR */
-
-.sidebar {
-    background: var(--bg2);
-    border-right: 1px solid #30343d;
-    padding: 25px 15px;
-}
-
-.profile-mini {
-    text-align: center;
-    padding-bottom: 25px;
-    border-bottom: 1px solid #30343d;
-}
-
-.avatar {
-    width: 90px;
-    height: 90px;
-    margin: auto;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--gold), #a86d16);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 45px;
-    border: 4px solid #333742;
-}
-
-.username {
-    margin-top: 10px;
-    font-weight: bold;
-}
-
-.level {
-    color: var(--gold);
-    font-size: 14px;
-    margin-top: 5px;
-}
-
-.menu {
-    margin-top: 20px;
-}
-
+.sidebar { background: var(--bg2); border-right: 1px solid var(--border); padding: 25px 15px; }
+.profile-mini { text-align: center; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.username { margin-top: 10px; font-weight: 700; font-size: 15px; }
+.level { color: var(--gold); font-size: 13px; margin-top: 4px; }
+.menu { margin-top: 20px; }
 .menu button {
-    width: 100%;
-    border: none;
-    background: transparent;
-    color: var(--muted);
-    padding: 13px;
-    text-align: left;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 15px;
-    margin-bottom: 5px;
+    width: 100%; border: none; background: transparent; color: var(--muted);
+    padding: 13px; text-align: left; border-radius: 8px; cursor: pointer;
+    font-size: 15px; margin-bottom: 5px; font-family: inherit;
 }
+.menu button:hover, .menu button.active { background: var(--panel); color: white; }
 
-.menu button:hover,
-.menu button.active {
-    background: var(--panel);
-    color: white;
-}
+/* AVATAR STAGE (capas) */
+.avatar-stage { position: relative; margin: auto; }
+.avatar-stage.size-md { width: 90px; height: 90px; }
+.avatar-stage.size-lg { width: 160px; height: 160px; }
+.avatar-stage.size-xl { width: 230px; height: 230px; }
+.avatar-stage.size-sm { width: 42px; height: 42px; }
+.avatar-stage .layer { position: absolute; }
+.avatar-stage .layer-aura { inset: -18%; border-radius: 50%; z-index: 0; }
+.avatar-stage .layer-base { inset: 4%; z-index: 1; }
+.avatar-stage .layer-base svg, .avatar-stage .layer-hat svg,
+.avatar-stage .layer-weapon svg, .avatar-stage .layer-pet svg { width: 100%; height: 100%; display: block; }
+.avatar-stage .layer-hat { top: -10%; left: 50%; width: 46%; transform: translateX(-50%); z-index: 3; }
+.avatar-stage .layer-weapon { bottom: 4%; left: -6%; width: 34%; z-index: 2; }
+.avatar-stage .layer-pet { bottom: -8%; right: -10%; width: 34%; z-index: 2; }
+.avatar-stage.size-sm .layer-hat, .avatar-stage.size-sm .layer-weapon, .avatar-stage.size-sm .layer-pet { display: none; }
+.aura-dorado { background: radial-gradient(circle, rgba(240,201,117,.55), transparent 70%); }
+.aura-arcana { background: radial-gradient(circle, rgba(127,217,232,.5), transparent 70%); }
+.frame-ring { border-radius: 50%; background: linear-gradient(135deg, #333742, #22252e); border: 3px solid var(--border); }
 
 /* MAIN */
-
-main {
-    padding: 30px;
-    overflow: hidden;
-}
-
-.page {
-    display: none;
-}
-
-.page.active {
-    display: block;
-}
-
-.welcome {
-    margin-bottom: 25px;
-}
-
-.welcome h1 {
-    font-size: 30px;
-}
-
-.welcome p {
-    color: var(--muted);
-    margin-top: 8px;
-}
+main { padding: 30px; overflow: hidden; }
+.page { display: none; }
+.page.active { display: block; }
+.welcome { margin-bottom: 25px; }
+.welcome h1 { font-size: 27px; }
+.welcome p { color: var(--muted); margin-top: 8px; }
 
 /* STATS */
-
-.stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
-    margin-bottom: 30px;
-}
-
-.stat {
-    background: var(--panel);
-    padding: 20px;
-    border-radius: 12px;
-    border: 1px solid #30343d;
-}
-
-.stat-number {
-    font-size: 25px;
-    color: var(--gold);
-    font-weight: bold;
-}
-
-.stat-label {
-    color: var(--muted);
-    margin-top: 5px;
-    font-size: 14px;
-}
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
+.stat { background: var(--panel); padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
+.stat-number { font-size: 24px; color: var(--gold); font-weight: 700; }
+.stat-label { color: var(--muted); margin-top: 5px; font-size: 13px; }
 
 /* SECTION */
-
-.section-title {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 25px 0 15px;
-}
-
-.section-title h2 {
-    font-size: 20px;
-}
-
-.btn {
-    border: none;
-    padding: 11px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: .2s;
-}
-
-.btn-primary {
-    background: var(--gold);
-    color: #18130a;
-}
-
-.btn-primary:hover {
-    background: var(--gold-light);
-    transform: translateY(-2px);
-}
-
-.btn-dark {
-    background: #333743;
-    color: white;
-}
-
-.btn-dark:hover {
-    background: #424754;
-}
+.section-title { display: flex; justify-content: space-between; align-items: center; margin: 25px 0 15px; }
+.section-title h2 { font-size: 19px; }
+.btn { border: none; padding: 11px 16px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: .15s; font-family: 'Manrope', sans-serif; }
+.btn-primary { background: var(--gold); color: #18130a; }
+.btn-primary:hover { background: var(--gold-light); transform: translateY(-1px); }
+.btn-dark { background: #333743; color: white; }
+.btn-dark:hover { background: #424754; }
+.btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 
 /* ROOMS */
-
-.rooms {
-    display: grid;
-    gap: 15px;
-}
-
-.room {
-    background: var(--panel);
-    padding: 20px;
-    border-radius: 12px;
-    border: 1px solid #30343d;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    transition: .2s;
-}
-
-.room:hover {
-    background: var(--panel-hover);
-}
-
-.room-left {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.game-icon {
-    font-size: 35px;
-}
-
-.room-info h3 {
-    margin-bottom: 5px;
-}
-
-.room-info p {
-    color: var(--muted);
-    font-size: 14px;
-}
+.rooms { display: grid; gap: 15px; }
+.room { background: var(--panel); padding: 18px 20px; border-radius: 12px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.room:hover { background: var(--panel-2); }
+.room-left { display: flex; align-items: center; gap: 15px; }
+.game-icon { font-size: 32px; }
+.room-info h3 { margin-bottom: 4px; font-size: 16px; }
+.room-info p { color: var(--muted); font-size: 13px; }
 
 /* FRIENDS */
-
-.friends-panel {
-    background: var(--bg2);
-    border-left: 1px solid #30343d;
-    padding: 25px 15px;
-}
-
-.friend-title {
-    margin-bottom: 20px;
-}
-
-.friend {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 8px;
-    border-radius: 8px;
-}
-
-.friend:hover {
-    background: var(--panel);
-}
-
-.friend-avatar {
-    width: 40px;
-    height: 40px;
-    background: #3a3e4b;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 20px;
-}
-
-.friend-info {
-    flex: 1;
-}
-
-.friend-name {
-    font-size: 14px;
-}
-
-.friend-status {
-    color: var(--muted);
-    font-size: 12px;
-}
-
-.status {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-}
-
-.online {
-    background: var(--green);
-}
-
-.offline {
-    background: #555;
-}
-
-.playing {
-    background: var(--blue);
-}
+.friends-panel { background: var(--bg2); border-left: 1px solid var(--border); padding: 25px 15px; }
+.friend-title { margin-bottom: 20px; font-size: 16px; }
+.friend { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-radius: 8px; }
+.friend:hover { background: var(--panel); }
+.friend-info { flex: 1; }
+.friend-name { font-size: 14px; font-weight: 600; }
+.friend-status { color: var(--muted); font-size: 12px; }
+.status { width: 9px; height: 9px; border-radius: 50%; }
+.online { background: var(--felt-light); }
+.offline { background: #555; }
+.playing { background: #5ea8ff; }
 
 /* PROFILE */
-
-.profile-page {
-    max-width: 800px;
-}
-
-.profile-card {
-    background: var(--panel);
-    border-radius: 15px;
-    padding: 30px;
-    display: grid;
-    grid-template-columns: 180px 1fr;
-    gap: 30px;
-}
-
-.big-avatar {
-    width: 160px;
-    height: 160px;
-    background: linear-gradient(135deg, var(--gold), #8d5a15);
-    border-radius: 25px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 80px;
-}
-
-.profile-info h2 {
-    margin-bottom: 8px;
-}
-
-.profile-info p {
-    color: var(--muted);
-    margin-bottom: 20px;
-}
+.profile-page { max-width: 800px; }
+.profile-card { background: var(--panel); border-radius: 15px; padding: 30px; display: grid; grid-template-columns: 180px 1fr; gap: 30px; border: 1px solid var(--border); }
+.profile-info h2 { margin-bottom: 8px; }
+.profile-info p { color: var(--muted); margin-bottom: 10px; font-size: 14px; }
+.equip-list { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+.equip-tag { background: var(--panel-2); border: 1px solid var(--border); padding: 5px 10px; border-radius: 20px; font-size: 12px; color: var(--gold-light); }
 
 /* AVATAR CUSTOMIZATION */
-
-.customization {
-    margin-top: 25px;
-    background: var(--panel);
-    padding: 25px;
-    border-radius: 15px;
-}
-
-.avatar-preview {
-    text-align: center;
-    font-size: 100px;
-    padding: 25px;
-    background: #181a20;
-    border-radius: 12px;
-    margin-bottom: 20px;
-}
-
-.avatar-options {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.avatar-option {
-    font-size: 30px;
-    border: 2px solid transparent;
-    background: #303440;
-    padding: 10px;
-    border-radius: 10px;
-    cursor: pointer;
-}
-
-.avatar-option:hover,
-.avatar-option.selected {
-    border-color: var(--gold);
-}
+.avatar-editor { margin-top: 20px; display: grid; grid-template-columns: 260px 1fr; gap: 25px; }
+.avatar-preview-panel { background: var(--panel); border-radius: 15px; padding: 25px; text-align: center; border: 1px solid var(--border); height: fit-content; }
+.avatar-preview-panel h3 { margin-top: 15px; font-size: 16px; }
+.slot-block { background: var(--panel); padding: 20px; border-radius: 15px; margin-bottom: 15px; border: 1px solid var(--border); }
+.slot-block h3 { font-size: 15px; color: var(--gold-light); margin-bottom: 12px; }
+.item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+.item-card { background: #181a20; border: 2px solid var(--border); border-radius: 10px; padding: 10px 6px; text-align: center; cursor: pointer; }
+.item-card .item-stage { width: 46px; height: 46px; margin: 0 auto 6px; }
+.item-card span { font-size: 11px; color: var(--muted); display: block; }
+.item-card.equipped { border-color: var(--gold); background: #22201a; }
+.item-card.locked { cursor: default; opacity: .55; }
+.item-card .lock-hint { font-size: 10px; color: var(--ember); margin-top: 3px; }
+.item-card.locked.buyable { cursor: pointer; opacity: .8; }
+.item-card.locked.buyable:hover { opacity: 1; border-color: var(--gold); }
 
 /* ACHIEVEMENTS */
-
-.achievements {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-    gap: 15px;
-}
-
-.achievement {
-    background: var(--panel);
-    padding: 20px;
-    border-radius: 12px;
-    border: 1px solid #30343d;
-}
-
-.achievement-icon {
-    font-size: 35px;
-}
-
-.achievement h3 {
-    margin: 10px 0 5px;
-}
-
-.achievement p {
-    color: var(--muted);
-    font-size: 14px;
-}
+.achievements { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 15px; }
+.achievement { background: var(--panel); padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
+.achievement.locked { opacity: .55; }
+.achievement-icon { font-size: 32px; }
+.achievement h3 { margin: 10px 0 5px; font-size: 15px; }
+.achievement p { color: var(--muted); font-size: 13px; }
+.achievement .reward { color: var(--gold); font-weight: 700; margin-top: 8px; display: block; font-size: 13px; }
+.achievement .progress { color: var(--muted); font-size: 12px; margin-top: 6px; }
 
 /* SHOP */
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 15px; }
+.item { background: var(--panel); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid var(--border); }
+.item .item-stage { width: 60px; height: 60px; margin: 0 auto; }
+.item h3 { margin: 10px 0; font-size: 15px; }
+.price { color: var(--gold); margin-bottom: 12px; font-weight: 700; font-size: 14px; }
 
-.shop-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-    gap: 15px;
-}
-
-.item {
-    background: var(--panel);
-    padding: 20px;
-    border-radius: 12px;
-    text-align: center;
-}
-
-.item-icon {
-    font-size: 50px;
-}
-
-.item h3 {
-    margin: 10px 0;
-}
-
-.price {
-    color: var(--gold);
-    margin-bottom: 12px;
-    font-weight: bold;
-}
+/* DICE GAME */
+.dice-arena { display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; background: var(--panel); border: 1px solid var(--border); border-radius: 15px; padding: 30px; margin-bottom: 20px; }
+.arena-side { text-align: center; }
+.arena-side h3 { margin-top: 12px; font-size: 15px; }
+.vs { font-family: 'Cinzel', serif; color: var(--gold); font-size: 20px; }
+.dice-row { display: flex; gap: 10px; justify-content: center; margin-top: 14px; }
+.die { width: 46px; height: 46px; background: var(--parchment); color: #18130a; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; }
+.dice-result { text-align: center; font-size: 16px; min-height: 24px; margin-bottom: 15px; }
+.dice-actions { text-align: center; }
 
 /* MODAL */
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); align-items: center; justify-content: center; z-index: 100; }
+.modal { width: 90%; max-width: 450px; background: var(--panel); padding: 25px; border-radius: 15px; border: 1px solid var(--border); }
+.modal h2 { margin-bottom: 20px; }
+.modal input, .modal select { width: 100%; padding: 12px; margin-bottom: 15px; background: #181a20; border: 1px solid var(--border); color: white; border-radius: 8px; font-family: inherit; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
 
-.modal-bg {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.7);
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-}
-
-.modal {
-    width: 90%;
-    max-width: 450px;
-    background: var(--panel);
-    padding: 25px;
-    border-radius: 15px;
-}
-
-.modal h2 {
-    margin-bottom: 20px;
-}
-
-.modal input,
-.modal select {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
-    background: #181a20;
-    border: 1px solid #3b404b;
-    color: white;
-    border-radius: 8px;
-}
-
-.modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-}
+/* TOAST */
+#toastHost { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 200; }
+.toast { background: var(--panel-2); border: 1px solid var(--gold); color: var(--text); padding: 12px 18px; border-radius: 10px; font-size: 14px; max-width: 300px; animation: toast-in .2s ease-out; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
 /* RESPONSIVE */
-
 @media(max-width: 1000px) {
-    .app {
-        grid-template-columns: 220px 1fr;
-    }
-
-    .friends-panel {
-        display: none;
-    }
+    .app { grid-template-columns: 220px 1fr; }
+    .friends-panel { display: none; }
+    .avatar-editor { grid-template-columns: 1fr; }
 }
-
 @media(max-width: 700px) {
-
-    header {
-        padding: 0 15px;
-    }
-
-    .app {
-        display: block;
-    }
-
-    .sidebar {
-        border-right: none;
-        border-bottom: 1px solid #30343d;
-        padding: 10px;
-    }
-
-    .profile-mini {
-        display: none;
-    }
-
-    .menu {
-        margin: 0;
-        display: flex;
-        overflow-x: auto;
-    }
-
-    .menu button {
-        white-space: nowrap;
-    }
-
-    main {
-        padding: 20px 15px;
-    }
-
-    .stats {
-        grid-template-columns: 1fr;
-    }
-
-    .room {
-        flex-direction: column;
-        gap: 15px;
-        align-items: flex-start;
-    }
-
-    .profile-card {
-        grid-template-columns: 1fr;
-    }
-
-    .big-avatar {
-        margin: auto;
-    }
+    header { padding: 0 15px; }
+    .app { display: block; }
+    .sidebar { border-right: none; border-bottom: 1px solid var(--border); padding: 10px; }
+    .profile-mini { display: none; }
+    .menu { margin: 0; display: flex; overflow-x: auto; }
+    .menu button { white-space: nowrap; }
+    main { padding: 20px 15px; }
+    .stats { grid-template-columns: 1fr; }
+    .room { flex-direction: column; gap: 15px; align-items: flex-start; }
+    .profile-card { grid-template-columns: 1fr; }
+    .dice-arena { grid-template-columns: 1fr; }
 }
 </style>
 </head>
-
 <body>
 
 <header>
     <div class="logo">🎲 Table<span>Host</span></div>
-
     <div class="nav-user">
-        <div class="coins">🪙 <span id="coinDisplay">1200</span></div>
+        <div class="coins">🪙 <span id="coinDisplay">0</span></div>
         <div>🔔</div>
     </div>
 </header>
@@ -595,710 +229,622 @@ main {
 <div class="app">
 
     <!-- MENU -->
-
     <aside class="sidebar">
-
         <div class="profile-mini">
-            <div class="avatar" id="sidebarAvatar">🧙</div>
+            <div class="avatar-stage size-md frame-ring" id="sidebarAvatar"></div>
             <div class="username">TableMaster</div>
-            <div class="level">⭐ Nivel 12</div>
+            <div class="level" id="sidebarLevel">⭐ Nivel 1</div>
         </div>
 
         <div class="menu">
-
-            <button class="active" onclick="showPage('lobby', this)">
-                🏠 Lobby
-            </button>
-
-            <button onclick="showPage('profile', this)">
-                👤 Mi perfil
-            </button>
-
-            <button onclick="showPage('avatarPage', this)">
-                🎭 Avatar
-            </button>
-
-            <button onclick="showPage('achievements', this)">
-                🏆 Logros
-            </button>
-
-            <button onclick="showPage('shop', this)">
-                🛒 Tienda
-            </button>
-
+            <button class="active" data-page="lobby" onclick="showPage('lobby')">🏠 Lobby</button>
+            <button data-page="diceGame" onclick="showPage('diceGame')">🎲 Salón de Dados</button>
+            <button data-page="profile" onclick="showPage('profile')">👤 Mi perfil</button>
+            <button data-page="avatarPage" onclick="showPage('avatarPage')">🎭 Avatar</button>
+            <button data-page="achievements" onclick="showPage('achievements')">🏆 Logros</button>
+            <button data-page="shop" onclick="showPage('shop')">🛒 Tienda</button>
         </div>
-
     </aside>
 
-
     <!-- CONTENIDO -->
-
     <main>
 
         <!-- LOBBY -->
-
         <div class="page active" id="lobby">
-
             <div class="welcome">
                 <h1>¡Bienvenido al Lobby! 🎲</h1>
                 <p>Encuentra una partida, invita a tus amigos o crea tu propia mesa.</p>
             </div>
 
             <div class="stats">
-
-                <div class="stat">
-                    <div class="stat-number">12</div>
-                    <div class="stat-label">⭐ Nivel</div>
-                </div>
-
-                <div class="stat">
-                    <div class="stat-number">23</div>
-                    <div class="stat-label">🏆 Logros desbloqueados</div>
-                </div>
-
-                <div class="stat">
-                    <div class="stat-number" id="gamesPlayed">47</div>
-                    <div class="stat-label">🎮 Partidas jugadas</div>
-                </div>
-
+                <div class="stat"><div class="stat-number" id="statLevel">1</div><div class="stat-label">⭐ Nivel</div></div>
+                <div class="stat"><div class="stat-number" id="statAchievements">0</div><div class="stat-label">🏆 Logros desbloqueados</div></div>
+                <div class="stat"><div class="stat-number" id="statGames">0</div><div class="stat-label">🎮 Partidas jugadas</div></div>
             </div>
-
 
             <div class="section-title">
                 <h2>🌍 Salas disponibles</h2>
-
-                <button class="btn btn-primary" onclick="openModal()">
-                    ➕ Crear sala
-                </button>
+                <button class="btn btn-primary" onclick="openModal()">➕ Crear sala</button>
             </div>
-
 
             <div class="rooms" id="roomList">
-
                 <div class="room">
                     <div class="room-left">
-
                         <div class="game-icon">🎲</div>
-
-                        <div class="room-info">
-                            <h3>La Taberna de los Dados</h3>
-                            <p>Juego de aventura · 3 / 4 jugadores</p>
-                        </div>
-
+                        <div class="room-info"><h3>La Taberna de los Dados</h3><p>Juego de aventura · 3 / 4 jugadores</p></div>
                     </div>
-
-                    <button class="btn btn-primary"
-                        onclick="joinRoom('La Taberna de los Dados')">
-                        Unirse
-                    </button>
+                    <button class="btn btn-primary" onclick="joinRoom('La Taberna de los Dados')">Unirse</button>
                 </div>
-
-
                 <div class="room">
-
                     <div class="room-left">
-
                         <div class="game-icon">🃏</div>
-
-                        <div class="room-info">
-                            <h3>Cartas entre amigos</h3>
-                            <p>Juego de cartas · 2 / 6 jugadores</p>
-                        </div>
-
+                        <div class="room-info"><h3>Cartas entre amigos</h3><p>Juego de cartas · 2 / 6 jugadores</p></div>
                     </div>
-
-                    <button class="btn btn-primary"
-                        onclick="joinRoom('Cartas entre amigos')">
-                        Unirse
-                    </button>
-
+                    <button class="btn btn-primary" onclick="joinRoom('Cartas entre amigos')">Unirse</button>
                 </div>
-
-
                 <div class="room">
-
                     <div class="room-left">
-
                         <div class="game-icon">♟️</div>
-
-                        <div class="room-info">
-                            <h3>Reyes y Estrategas</h3>
-                            <p>Estrategia · 1 / 2 jugadores</p>
-                        </div>
-
+                        <div class="room-info"><h3>Reyes y Estrategas</h3><p>Estrategia · 1 / 2 jugadores</p></div>
                     </div>
-
-                    <button class="btn btn-primary"
-                        onclick="joinRoom('Reyes y Estrategas')">
-                        Unirse
-                    </button>
-
+                    <button class="btn btn-primary" onclick="joinRoom('Reyes y Estrategas')">Unirse</button>
                 </div>
-
             </div>
-
         </div>
 
+        <!-- DICE GAME -->
+        <div class="page" id="diceGame">
+            <div class="welcome">
+                <h1>🎲 Salón de Dados</h1>
+                <p>Tu avatar juega de verdad aquí: cada tirada cuenta para tus logros y monedas.</p>
+            </div>
+
+            <div class="dice-arena">
+                <div class="arena-side">
+                    <div class="avatar-stage size-lg frame-ring" id="diceAvatarPlayer"></div>
+                    <h3>Tú</h3>
+                    <div class="dice-row" id="diceRowPlayer"><div class="die">-</div><div class="die">-</div></div>
+                </div>
+                <div class="vs">VS</div>
+                <div class="arena-side">
+                    <div class="avatar-stage size-lg frame-ring" id="diceAvatarRival"></div>
+                    <h3 id="rivalName">Carlos</h3>
+                    <div class="dice-row" id="diceRowRival"><div class="die">-</div><div class="die">-</div></div>
+                </div>
+            </div>
+
+            <div class="dice-result" id="diceResult">Lanza los dados para empezar la partida.</div>
+            <div class="dice-actions">
+                <button class="btn btn-primary" onclick="rollDice()">🎲 Tirar dados</button>
+            </div>
+        </div>
 
         <!-- PROFILE -->
-
         <div class="page profile-page" id="profile">
-
             <div class="welcome">
                 <h1>👤 Mi perfil</h1>
                 <p>Tu identidad dentro de TableHost.</p>
             </div>
 
             <div class="profile-card">
-
-                <div class="big-avatar" id="profileAvatar">
-                    🧙
-                </div>
-
+                <div class="avatar-stage size-lg frame-ring" id="profileAvatar"></div>
                 <div class="profile-info">
-
                     <h2>TableMaster</h2>
-
-                    <p>
-                        Aventurero, estratega y coleccionista de logros.
-                    </p>
-
-                    <p>⭐ Nivel 12</p>
-                    <p>🏆 23 logros</p>
-                    <p>🎮 47 partidas jugadas</p>
-                    <p>🪙 <span id="profileCoins">1200</span> monedas</p>
-
+                    <p>Aventurero, estratega y coleccionista de logros.</p>
+                    <p id="profileLevel">⭐ Nivel 1</p>
+                    <p><span id="profileAchievements">0</span> logros</p>
+                    <p><span id="profileGames">0</span> partidas jugadas</p>
+                    <p>🪙 <span id="profileCoins">0</span> monedas</p>
+                    <div class="equip-list" id="profileEquipList"></div>
                 </div>
-
             </div>
-
         </div>
-
 
         <!-- AVATAR -->
-
         <div class="page" id="avatarPage">
-
             <div class="welcome">
                 <h1>🎭 Personaliza tu avatar</h1>
-                <p>Los objetos se consiguen jugando y desbloqueando logros.</p>
+                <p>Cada objeto se desbloquea jugando, con logros o en la tienda.</p>
             </div>
 
-            <div class="customization">
-
-                <div class="avatar-preview" id="avatarPreview">
-                    🧙
+            <div class="avatar-editor">
+                <div class="avatar-preview-panel">
+                    <div class="avatar-stage size-xl frame-ring" id="avatarPreview"></div>
+                    <h3>Vista previa</h3>
                 </div>
 
-                <h2>Elige tu personaje</h2>
-
-                <br>
-
-                <div class="avatar-options">
-
-                    <button class="avatar-option selected"
-                        onclick="changeAvatar('🧙', this)">
-                        🧙
-                    </button>
-
-                    <button class="avatar-option"
-                        onclick="changeAvatar('🧝', this)">
-                        🧝
-                    </button>
-
-                    <button class="avatar-option"
-                        onclick="changeAvatar('🧛', this)">
-                        🧛
-                    </button>
-
-                    <button class="avatar-option"
-                        onclick="changeAvatar('🧟', this)">
-                        🧟
-                    </button>
-
-                    <button class="avatar-option"
-                        onclick="changeAvatar('🤖', this)">
-                        🤖
-                    </button>
-
-                    <button class="avatar-option"
-                        onclick="changeAvatar('🦸', this)">
-                        🦸
-                    </button>
-
-                </div>
-
+                <div id="slotBlocks"></div>
             </div>
-
         </div>
-
 
         <!-- ACHIEVEMENTS -->
-
         <div class="page" id="achievements">
-
             <div class="welcome">
                 <h1>🏆 Tus logros</h1>
-                <p>Completa desafíos para conseguir monedas y objetos.</p>
+                <p>Completa desafíos jugando para desbloquear monedas y objetos de avatar.</p>
             </div>
-
-            <div class="achievements">
-
-                <div class="achievement">
-                    <div class="achievement-icon">🎲</div>
-                    <h3>Primera partida</h3>
-                    <p>Juega tu primera partida.</p>
-                    <br>
-                    <strong>+100 🪙</strong>
-                </div>
-
-                <div class="achievement">
-                    <div class="achievement-icon">👑</div>
-                    <h3>El Campeón</h3>
-                    <p>Gana 10 partidas.</p>
-                    <br>
-                    <strong>+500 🪙</strong>
-                </div>
-
-                <div class="achievement">
-                    <div class="achievement-icon">🐉</div>
-                    <h3>Matadragones</h3>
-                    <p>Completa una aventura legendaria.</p>
-                    <br>
-                    <strong>🐉 Objeto especial</strong>
-                </div>
-
-                <div class="achievement">
-                    <div class="achievement-icon">🤝</div>
-                    <h3>Compañero fiel</h3>
-                    <p>Juega con amigos 20 veces.</p>
-                    <br>
-                    <strong>+300 🪙</strong>
-                </div>
-
-            </div>
-
+            <div class="achievements" id="achievementList"></div>
         </div>
 
-
         <!-- SHOP -->
-
         <div class="page" id="shop">
-
             <div class="welcome">
                 <h1>🛒 Tienda</h1>
-                <p>Utiliza las monedas conseguidas en tus partidas.</p>
+                <p>Utiliza las monedas conseguidas en tus partidas para desbloquear objetos.</p>
             </div>
-
-            <div class="shop-grid">
-
-                <div class="item">
-                    <div class="item-icon">🎩</div>
-                    <h3>Sombrero mágico</h3>
-                    <div class="price">500 🪙</div>
-                    <button class="btn btn-primary"
-                        onclick="buyItem('🎩 Sombrero mágico', 500)">
-                        Comprar
-                    </button>
-                </div>
-
-
-                <div class="item">
-                    <div class="item-icon">👑</div>
-                    <h3>Corona real</h3>
-                    <div class="price">1000 🪙</div>
-                    <button class="btn btn-primary"
-                        onclick="buyItem('👑 Corona real', 1000)">
-                        Comprar
-                    </button>
-                </div>
-
-
-                <div class="item">
-                    <div class="item-icon">🐉</div>
-                    <h3>Mascota dragón</h3>
-                    <div class="price">2000 🪙</div>
-                    <button class="btn btn-primary"
-                        onclick="buyItem('🐉 Mascota dragón', 2000)">
-                        Comprar
-                    </button>
-                </div>
-
-
-                <div class="item">
-                    <div class="item-icon">⚔️</div>
-                    <h3>Espada legendaria</h3>
-                    <div class="price">1500 🪙</div>
-                    <button class="btn btn-primary"
-                        onclick="buyItem('⚔️ Espada legendaria', 1500)">
-                        Comprar
-                    </button>
-                </div>
-
-            </div>
-
+            <div class="shop-grid" id="shopGrid"></div>
         </div>
 
     </main>
 
-
     <!-- AMIGOS -->
-
     <aside class="friends-panel">
-
-        <div class="friend-title">
-            <h3>👥 Amigos</h3>
-        </div>
-
-
+        <div class="friend-title"><h3>👥 Amigos</h3></div>
         <div class="friend">
-
-            <div class="friend-avatar">🧝</div>
-
-            <div class="friend-info">
-                <div class="friend-name">Carlos</div>
-                <div class="friend-status">Jugando</div>
-            </div>
-
+            <div class="avatar-stage size-sm frame-ring" id="friendCarlos"></div>
+            <div class="friend-info"><div class="friend-name">Carlos</div><div class="friend-status">Jugando</div></div>
             <div class="status playing"></div>
-
         </div>
-
-
         <div class="friend">
-
-            <div class="friend-avatar">👸</div>
-
-            <div class="friend-info">
-                <div class="friend-name">Laura</div>
-                <div class="friend-status">En línea</div>
-            </div>
-
+            <div class="avatar-stage size-sm frame-ring" id="friendLaura"></div>
+            <div class="friend-info"><div class="friend-name">Laura</div><div class="friend-status">En línea</div></div>
             <div class="status online"></div>
-
         </div>
-
-
         <div class="friend">
-
-            <div class="friend-avatar">🧙</div>
-
-            <div class="friend-info">
-                <div class="friend-name">Miguel</div>
-                <div class="friend-status">Desconectado</div>
-            </div>
-
+            <div class="avatar-stage size-sm frame-ring" id="friendMiguel"></div>
+            <div class="friend-info"><div class="friend-name">Miguel</div><div class="friend-status">Desconectado</div></div>
             <div class="status offline"></div>
-
         </div>
-
-
         <div class="friend">
-
-            <div class="friend-avatar">🤖</div>
-
-            <div class="friend-info">
-                <div class="friend-name">Ana</div>
-                <div class="friend-status">En línea</div>
-            </div>
-
+            <div class="avatar-stage size-sm frame-ring" id="friendAna"></div>
+            <div class="friend-info"><div class="friend-name">Ana</div><div class="friend-status">En línea</div></div>
             <div class="status online"></div>
-
         </div>
-
     </aside>
-
 </div>
 
-
 <!-- MODAL CREAR SALA -->
-
 <div class="modal-bg" id="modalBg">
-
     <div class="modal">
-
         <h2>🎲 Crear una sala</h2>
-
-        <input
-            type="text"
-            id="roomName"
-            placeholder="Nombre de la sala"
-        >
-
+        <input type="text" id="roomName" placeholder="Nombre de la sala">
         <select id="roomGame">
             <option>🎲 Juego de aventura</option>
             <option>🃏 Juego de cartas</option>
             <option>♟️ Juego de estrategia</option>
             <option>🗺️ Aventura personalizada</option>
         </select>
-
-
         <div class="modal-actions">
-
-            <button class="btn btn-dark" onclick="closeModal()">
-                Cancelar
-            </button>
-
-            <button class="btn btn-primary" onclick="createRoom()">
-                Crear
-            </button>
-
+            <button class="btn btn-dark" onclick="closeModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="createRoom()">Crear</button>
         </div>
-
     </div>
-
 </div>
 
+<div id="toastHost"></div>
 
 <script>
+/* =========================
+   ILUSTRACIONES SVG (imágenes vectoriales propias, sin emoji)
+========================= */
+const SVG = {
+  base: {
+    mago: `<svg viewBox="0 0 120 120"><path d="M30 118 Q30 70 60 62 Q90 70 90 118 Z" fill="#5b4b8a"/><path d="M42 118 Q45 90 60 86 Q75 90 78 118 Z" fill="#7a63b8"/><circle cx="60" cy="46" r="24" fill="#e8b98a"/><circle cx="51" cy="45" r="3" fill="#2a2a2a"/><circle cx="69" cy="45" r="3" fill="#2a2a2a"/><path d="M50 58 Q60 64 70 58" stroke="#2a2a2a" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M36 40 Q60 14 84 40 Q84 30 60 22 Q36 30 36 40 Z" fill="#3d3167"/></svg>`,
+    guerrera: `<svg viewBox="0 0 120 120"><path d="M28 118 Q30 74 60 70 Q90 74 92 118 Z" fill="#7d818c"/><rect x="44" y="80" width="32" height="30" rx="6" fill="#aeb3bd"/><rect x="44" y="80" width="32" height="8" fill="#c74f3f"/><circle cx="60" cy="44" r="23" fill="#e3a877"/><path d="M37 40 Q37 18 60 18 Q83 18 83 40 Q83 28 60 30 Q37 28 37 40" fill="#5a3420"/><circle cx="52" cy="44" r="3" fill="#2a2a2a"/><circle cx="68" cy="44" r="3" fill="#2a2a2a"/><path d="M50 56 Q60 60 70 56" stroke="#2a2a2a" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
+    elfo: `<svg viewBox="0 0 120 120"><path d="M30 118 Q32 76 60 72 Q88 76 90 118 Z" fill="#3c7a52"/><path d="M44 118 Q47 96 60 92 Q73 96 76 118 Z" fill="#5aa06f"/><circle cx="60" cy="46" r="22" fill="#e9c39a"/><path d="M38 42 L28 34 L40 38 Z" fill="#e9c39a"/><path d="M82 42 L92 34 L80 38 Z" fill="#e9c39a"/><path d="M39 34 Q60 16 81 34 Q81 26 60 24 Q39 26 39 34" fill="#274d34"/><circle cx="52" cy="46" r="3" fill="#2a2a2a"/><circle cx="68" cy="46" r="3" fill="#2a2a2a"/><path d="M50 58 Q60 62 70 58" stroke="#2a2a2a" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
+    robot: `<svg viewBox="0 0 120 120"><path d="M32 118 Q34 78 60 76 Q86 78 88 118 Z" fill="#5c6472"/><rect x="46" y="86" width="28" height="20" rx="4" fill="#8b93a3"/><rect x="38" y="26" width="44" height="38" rx="10" fill="#9aa2b1"/><rect x="46" y="40" width="10" height="10" rx="2" fill="#3fd0e0"/><rect x="64" y="40" width="10" height="10" rx="2" fill="#3fd0e0"/><rect x="56" y="54" width="8" height="4" rx="2" fill="#2a2e36"/><line x1="60" y1="26" x2="60" y2="14" stroke="#8b93a3" stroke-width="3"/><circle cx="60" cy="11" r="4" fill="#d1633f"/></svg>`,
+    nigromante: `<svg viewBox="0 0 120 120"><path d="M30 118 Q32 72 60 66 Q88 72 90 118 Z" fill="#2e2438"/><path d="M44 118 Q47 92 60 88 Q73 92 76 118 Z" fill="#4a3a5c"/><circle cx="60" cy="46" r="23" fill="#b9c9a8"/><circle cx="52" cy="45" r="3" fill="#1c1c1c"/><circle cx="68" cy="45" r="3" fill="#1c1c1c"/><path d="M50 58 Q60 55 70 58" stroke="#1c1c1c" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M60 84 l-6 10 h12 z" fill="#e8e4d8"/></svg>`,
+    jinete: `<svg viewBox="0 0 120 120"><path d="M28 118 Q30 72 60 66 Q90 72 92 118 Z" fill="#9c3b2e"/><path d="M42 74 q6 8 0 16 M56 70 q6 10 0 18 M70 72 q6 9 0 17" stroke="#c65a44" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="60" cy="45" r="23" fill="#e3a877"/><circle cx="52" cy="44" r="3" fill="#2a2a2a"/><circle cx="68" cy="44" r="3" fill="#2a2a2a"/><path d="M50 56 Q60 61 70 56" stroke="#2a2a2a" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M32 40 Q60 8 88 40 Q88 24 60 20 Q32 24 32 40" fill="#5c1f16"/><path d="M60 8 l6 12 l-12 0 z" fill="#d9a441"/></svg>`
+  },
+  hat: {
+    fieltro: `<svg viewBox="0 0 60 60"><path d="M10 46 Q30 10 50 46 Z" fill="#7a5b3a"/><ellipse cx="30" cy="46" rx="24" ry="6" fill="#5c4128"/></svg>`,
+    corona: `<svg viewBox="0 0 60 60"><path d="M8 40 L14 18 L24 30 L30 14 L36 30 L46 18 L52 40 Z" fill="#e7c25c"/><rect x="8" y="40" width="44" height="8" rx="2" fill="#d9a441"/></svg>`,
+    estelar: `<svg viewBox="0 0 60 60"><path d="M14 46 Q30 6 46 46 Z" fill="#2d4d8a"/><ellipse cx="30" cy="46" rx="22" ry="6" fill="#1f3a6b"/><path d="M30 12 l2 5 l5 1 l-4 3 l1 5 l-4-3 l-4 3 l1-5 l-4-3 l5-1 z" fill="#f0c975"/></svg>`
+  },
+  weapon: {
+    daga: `<svg viewBox="0 0 60 60"><rect x="27" y="8" width="6" height="28" rx="2" fill="#c7cbd1"/><rect x="20" y="34" width="20" height="6" rx="2" fill="#7a5b3a"/><rect x="26" y="40" width="8" height="14" rx="2" fill="#4a3a2a"/></svg>`,
+    espada: `<svg viewBox="0 0 60 60"><rect x="27" y="4" width="6" height="34" rx="2" fill="#eae7f5"/><rect x="27" y="4" width="6" height="34" rx="2" fill="#7fd9e8" opacity="0.5"/><rect x="16" y="38" width="28" height="6" rx="2" fill="#d9a441"/><rect x="26" y="44" width="8" height="12" rx="2" fill="#5c4128"/></svg>`
+  },
+  pet: {
+    buho: `<svg viewBox="0 0 60 60"><ellipse cx="30" cy="34" rx="18" ry="20" fill="#8a6b4a"/><circle cx="23" cy="28" r="7" fill="#f2ede4"/><circle cx="37" cy="28" r="7" fill="#f2ede4"/><circle cx="23" cy="28" r="3" fill="#2a2a2a"/><circle cx="37" cy="28" r="3" fill="#2a2a2a"/><path d="M27 36 l3 5 l3-5 z" fill="#d9a441"/></svg>`,
+    lobo: `<svg viewBox="0 0 60 60"><path d="M10 44 Q14 20 30 22 Q46 20 50 44 Q40 38 30 40 Q20 38 10 44 Z" fill="#5c5c66"/><circle cx="22" cy="32" r="3" fill="#2a2a2a"/><circle cx="38" cy="32" r="3" fill="#2a2a2a"/><path d="M12 22 l6 10 M48 22 l-6 10" stroke="#5c5c66" stroke-width="5" stroke-linecap="round"/></svg>`
+  }
+};
 
 /* =========================
-   DATOS DEL JUGADOR
+   CATÁLOGO DE OBJETOS
 ========================= */
+const ITEMS = {
+  base: [
+    { id:'mago', name:'Mago errante', source:'default', svg:SVG.base.mago },
+    { id:'guerrera', name:'Guerrera del norte', source:'default', svg:SVG.base.guerrera },
+    { id:'elfo', name:'Explorador élfico', source:'default', svg:SVG.base.elfo },
+    { id:'robot', name:'Autómata de latón', source:'default', svg:SVG.base.robot },
+    { id:'nigromante', name:'Nigromante pálido', source:'shop', price:800, svg:SVG.base.nigromante },
+    { id:'jinete', name:'Jinete de dragón', source:'achievement', achievement:'bolsillo', svg:SVG.base.jinete }
+  ],
+  hat: [
+    { id:'none', name:'Sin sombrero', source:'default', svg:'' },
+    { id:'fieltro', name:'Sombrero de fieltro', source:'achievement', achievement:'veterano', svg:SVG.hat.fieltro },
+    { id:'corona', name:'Corona real', source:'achievement', achievement:'campeon', svg:SVG.hat.corona },
+    { id:'estelar', name:'Capirote estelar', source:'shop', price:600, svg:SVG.hat.estelar }
+  ],
+  weapon: [
+    { id:'none', name:'Sin arma', source:'default', svg:'' },
+    { id:'daga', name:'Daga afilada', source:'achievement', achievement:'racha', svg:SVG.weapon.daga },
+    { id:'espada', name:'Espada legendaria', source:'shop', price:900, svg:SVG.weapon.espada }
+  ],
+  pet: [
+    { id:'none', name:'Sin mascota', source:'default', svg:'' },
+    { id:'buho', name:'Búho aprendiz', source:'achievement', achievement:'primera', svg:SVG.pet.buho },
+    { id:'lobo', name:'Lobo fiel', source:'shop', price:550, svg:SVG.pet.lobo }
+  ],
+  aura: [
+    { id:'none', name:'Sin aura', source:'default', cssClass:'' },
+    { id:'dorado', name:'Resplandor dorado', source:'achievement', achievement:'coleccionista', cssClass:'aura-dorado' },
+    { id:'arcana', name:'Aura arcana', source:'shop', price:650, cssClass:'aura-arcana' }
+  ]
+};
+const SLOT_LABELS = { base:'Personaje', hat:'Sombrero', weapon:'Arma', pet:'Mascota', aura:'Aura' };
 
-let coins = Number(localStorage.getItem("tablehostCoins")) || 1200;
-
-let currentAvatar =
-    localStorage.getItem("tablehostAvatar") || "🧙";
-
+const ACHIEVEMENTS = [
+  { id:'primera', name:'Primera tirada', desc:'Juega tu primera partida en el Salón de Dados.', coins:50, check:s=>s.gamesPlayed>=1, progress:s=>`${Math.min(s.gamesPlayed,1)}/1 partidas` },
+  { id:'racha', name:'Racha ganadora', desc:'Gana 3 tiradas seguidas.', coins:0, check:s=>s.bestStreak>=3, progress:s=>`${Math.min(s.bestStreak,3)}/3 victorias seguidas` },
+  { id:'veterano', name:'Veterano de la mesa', desc:'Juega 10 partidas.', coins:0, check:s=>s.gamesPlayed>=10, progress:s=>`${Math.min(s.gamesPlayed,10)}/10 partidas` },
+  { id:'campeon', name:'Campeón de la mesa', desc:'Gana 10 partidas.', coins:200, check:s=>s.wins>=10, progress:s=>`${Math.min(s.wins,10)}/10 victorias` },
+  { id:'coleccionista', name:'Coleccionista', desc:'Desbloquea 4 objetos de avatar.', coins:0, check:s=>countUnlockedExtras(s)>=4, progress:s=>`${Math.min(countUnlockedExtras(s),4)}/4 objetos` },
+  { id:'bolsillo', name:'Bolsillo lleno', desc:'Consigue 1000 monedas en total.', coins:0, check:s=>s.totalCoinsEarned>=1000, progress:s=>`${Math.min(s.totalCoinsEarned,1000)}/1000 monedas` }
+];
 
 /* =========================
-   INICIALIZAR
+   ESTADO
 ========================= */
+function defaultState() {
+  return {
+    coins: 300,
+    totalCoinsEarned: 300,
+    gamesPlayed: 0,
+    wins: 0,
+    currentStreak: 0,
+    bestStreak: 0,
+    unlocked: { base:[], hat:[], weapon:[], pet:[], aura:[] },
+    equipped: { base:'mago', hat:'none', weapon:'none', pet:'none', aura:'none' },
+    achievementsUnlocked: []
+  };
+}
+let state = loadState();
 
-function updatePlayer() {
+function loadState() {
+  try {
+    const raw = localStorage.getItem('tablehostState');
+    if (!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+    return Object.assign(defaultState(), parsed);
+  } catch (e) {
+    return defaultState();
+  }
+}
+function save() { localStorage.setItem('tablehostState', JSON.stringify(state)); }
 
-    document.getElementById("coinDisplay").textContent = coins;
-
-    document.getElementById("profileCoins").textContent = coins;
-
-    document.getElementById("avatarPreview").textContent =
-        currentAvatar;
-
-    document.getElementById("sidebarAvatar").textContent =
-        currentAvatar;
-
-    document.getElementById("profileAvatar").textContent =
-        currentAvatar;
-
-    localStorage.setItem(
-        "tablehostCoins",
-        coins
-    );
-
-    localStorage.setItem(
-        "tablehostAvatar",
-        currentAvatar
-    );
+function isUnlocked(slot, item) {
+  return item.source === 'default' || (state.unlocked[slot] || []).includes(item.id);
+}
+function countUnlockedExtras(s) {
+  return Object.values(s.unlocked).reduce((sum, arr) => sum + arr.length, 0);
+}
+function ensureUnlocked(slot, id) {
+  if (!state.unlocked[slot].includes(id)) state.unlocked[slot].push(id);
 }
 
-updatePlayer();
-
-
 /* =========================
-   CAMBIAR PÁGINAS
+   RENDER DE AVATARES
 ========================= */
-
-function showPage(pageId, button) {
-
-    document.querySelectorAll(".page")
-        .forEach(page => {
-            page.classList.remove("active");
-        });
-
-    document.getElementById(pageId)
-        .classList.add("active");
-
-
-    document.querySelectorAll(".menu button")
-        .forEach(btn => {
-            btn.classList.remove("active");
-        });
-
-    if (button) {
-        button.classList.add("active");
-    }
+function renderStage(el, equipped) {
+  if (!el) return;
+  const auraItem = ITEMS.aura.find(i => i.id === equipped.aura);
+  const baseItem = ITEMS.base.find(i => i.id === equipped.base);
+  const hatItem = ITEMS.hat.find(i => i.id === equipped.hat);
+  const weaponItem = ITEMS.weapon.find(i => i.id === equipped.weapon);
+  const petItem = ITEMS.pet.find(i => i.id === equipped.pet);
+  el.innerHTML = `
+    <div class="layer layer-aura ${auraItem ? auraItem.cssClass : ''}"></div>
+    <div class="layer layer-base">${baseItem ? baseItem.svg : ''}</div>
+    <div class="layer layer-hat">${hatItem ? hatItem.svg : ''}</div>
+    <div class="layer layer-weapon">${weaponItem ? weaponItem.svg : ''}</div>
+    <div class="layer layer-pet">${petItem ? petItem.svg : ''}</div>
+  `;
 }
 
+const FRIEND_LOOKS = {
+  Carlos: { base:'guerrera', hat:'corona', weapon:'espada', pet:'none', aura:'none' },
+  Laura: { base:'elfo', hat:'estelar', weapon:'daga', pet:'none', aura:'arcana' },
+  Miguel: { base:'mago', hat:'none', weapon:'none', pet:'none', aura:'none' },
+  Ana: { base:'robot', hat:'none', weapon:'none', pet:'buho', aura:'none' }
+};
 
-/* =========================
-   AVATAR
-========================= */
-
-function changeAvatar(avatar, button) {
-
-    currentAvatar = avatar;
-
-    document.querySelectorAll(".avatar-option")
-        .forEach(option => {
-            option.classList.remove("selected");
-        });
-
-    button.classList.add("selected");
-
-    updatePlayer();
+function renderAvatarsEverywhere() {
+  renderStage(document.getElementById('sidebarAvatar'), state.equipped);
+  renderStage(document.getElementById('profileAvatar'), state.equipped);
+  renderStage(document.getElementById('avatarPreview'), state.equipped);
+  renderStage(document.getElementById('diceAvatarPlayer'), state.equipped);
+  renderStage(document.getElementById('diceAvatarRival'), FRIEND_LOOKS.Carlos);
+  renderStage(document.getElementById('friendCarlos'), FRIEND_LOOKS.Carlos);
+  renderStage(document.getElementById('friendLaura'), FRIEND_LOOKS.Laura);
+  renderStage(document.getElementById('friendMiguel'), FRIEND_LOOKS.Miguel);
+  renderStage(document.getElementById('friendAna'), FRIEND_LOOKS.Ana);
 }
 
+/* =========================
+   STATS Y NIVEL
+========================= */
+function getLevel() {
+  return 1 + Math.floor(state.totalCoinsEarned / 300) + Math.floor(state.gamesPlayed / 5);
+}
+function renderStats() {
+  const level = getLevel();
+  document.getElementById('coinDisplay').textContent = state.coins;
+  document.getElementById('profileCoins').textContent = state.coins;
+  document.getElementById('sidebarLevel').textContent = `⭐ Nivel ${level}`;
+  document.getElementById('profileLevel').textContent = `⭐ Nivel ${level}`;
+  document.getElementById('statLevel').textContent = level;
+  document.getElementById('statAchievements').textContent = state.achievementsUnlocked.length;
+  document.getElementById('statGames').textContent = state.gamesPlayed;
+  document.getElementById('profileAchievements').textContent = state.achievementsUnlocked.length;
+  document.getElementById('profileGames').textContent = state.gamesPlayed;
+
+  const equipList = document.getElementById('profileEquipList');
+  equipList.innerHTML = Object.keys(state.equipped).map(slot => {
+    const item = ITEMS[slot].find(i => i.id === state.equipped[slot]);
+    if (!item || item.id === 'none') return '';
+    return `<div class="equip-tag">${SLOT_LABELS[slot]}: ${item.name}</div>`;
+  }).join('');
+}
+
+/* =========================
+   PÁGINA AVATAR
+========================= */
+function renderAvatarPage() {
+  const container = document.getElementById('slotBlocks');
+  container.innerHTML = Object.keys(ITEMS).map(slot => {
+    const cards = ITEMS[slot].map(item => {
+      const unlocked = isUnlocked(slot, item);
+      const equipped = state.equipped[slot] === item.id;
+      const stagePreview = item.svg !== undefined
+        ? `<div class="item-stage">${item.svg}</div>`
+        : `<div class="item-stage ${item.cssClass}" style="border-radius:50%;background:#181a20;"></div>`;
+      let hint = '';
+      let classes = 'item-card';
+      if (equipped) classes += ' equipped';
+      if (!unlocked) {
+        classes += ' locked';
+        if (item.source === 'achievement') {
+          const ach = ACHIEVEMENTS.find(a => a.id === item.achievement);
+          hint = `<div class="lock-hint">🔒 ${ach ? ach.name : 'Logro'}</div>`;
+        } else if (item.source === 'shop') {
+          classes += ' buyable';
+          hint = `<div class="lock-hint">🪙 ${item.price}</div>`;
+        }
+      }
+      const clickAttr = unlocked
+        ? `onclick="equipItem('${slot}','${item.id}')"`
+        : (item.source === 'shop' ? `onclick="buyItem('${slot}','${item.id}')"` : '');
+      return `<div class="${classes}" ${clickAttr}>${stagePreview}<span>${item.name}</span>${hint}</div>`;
+    }).join('');
+    return `<div class="slot-block"><h3>${SLOT_LABELS[slot]}</h3><div class="item-grid">${cards}</div></div>`;
+  }).join('');
+}
+
+function equipItem(slot, id) {
+  state.equipped[slot] = id;
+  save();
+  renderAvatarsEverywhere();
+  renderAvatarPage();
+  renderStats();
+}
 
 /* =========================
    TIENDA
 ========================= */
-
-function buyItem(item, price) {
-
-    if (coins >= price) {
-
-        coins -= price;
-
-        updatePlayer();
-
-        alert(
-            "¡Has comprado " +
-            item +
-            "!\n\nRevisa futuras versiones para equiparlo."
-        );
-
-    } else {
-
-        alert(
-            "❌ No tienes suficientes monedas."
-        );
-
-    }
+function renderShop() {
+  const grid = document.getElementById('shopGrid');
+  const shopItems = [];
+  Object.keys(ITEMS).forEach(slot => {
+    ITEMS[slot].forEach(item => {
+      if (item.source === 'shop') shopItems.push({ slot, item });
+    });
+  });
+  grid.innerHTML = shopItems.map(({ slot, item }) => {
+    const owned = isUnlocked(slot, item);
+    const stagePreview = item.svg !== undefined
+      ? `<div class="item-stage">${item.svg}</div>`
+      : `<div class="item-stage ${item.cssClass}" style="border-radius:50%;background:#181a20;"></div>`;
+    return `
+      <div class="item">
+        ${stagePreview}
+        <h3>${item.name}</h3>
+        <div class="price">${owned ? 'Ya lo tienes' : item.price + ' 🪙'}</div>
+        <button class="btn btn-primary" ${owned ? 'disabled' : ''} onclick="buyItem('${slot}','${item.id}')">
+          ${owned ? 'Comprado' : 'Comprar'}
+        </button>
+      </div>`;
+  }).join('');
 }
 
+function buyItem(slot, id) {
+  const item = ITEMS[slot].find(i => i.id === id);
+  if (!item || item.source !== 'shop') return;
+  if (isUnlocked(slot, item)) return;
+  if (state.coins < item.price) {
+    toast('❌ No tienes suficientes monedas.');
+    return;
+  }
+  state.coins -= item.price;
+  ensureUnlocked(slot, id);
+  save();
+  toast(`✅ Has desbloqueado ${item.name}.`);
+  checkAchievements();
+  renderShop();
+  renderAvatarPage();
+  renderStats();
+}
+
+/* =========================
+   LOGROS
+========================= */
+function checkAchievements() {
+  let unlockedSomething = false;
+  ACHIEVEMENTS.forEach(ach => {
+    if (state.achievementsUnlocked.includes(ach.id)) return;
+    if (ach.check(state)) {
+      state.achievementsUnlocked.push(ach.id);
+      if (ach.coins) {
+        state.coins += ach.coins;
+        state.totalCoinsEarned += ach.coins;
+      }
+      Object.keys(ITEMS).forEach(slot => {
+        ITEMS[slot].forEach(it => {
+          if (it.source === 'achievement' && it.achievement === ach.id) ensureUnlocked(slot, it.id);
+        });
+      });
+      toast(`🏆 Logro desbloqueado: ${ach.name}`);
+      unlockedSomething = true;
+    }
+  });
+  if (unlockedSomething) save();
+  renderAchievements();
+}
+
+function renderAchievements() {
+  const list = document.getElementById('achievementList');
+  list.innerHTML = ACHIEVEMENTS.map(ach => {
+    const unlocked = state.achievementsUnlocked.includes(ach.id);
+    return `
+      <div class="achievement ${unlocked ? '' : 'locked'}">
+        <div class="achievement-icon">${unlocked ? '🏆' : '🔒'}</div>
+        <h3>${ach.name}</h3>
+        <p>${ach.desc}</p>
+        <span class="reward">${ach.coins ? '+' + ach.coins + ' 🪙' : 'Objeto de avatar'}</span>
+        <div class="progress">${unlocked ? 'Completado' : ach.progress(state)}</div>
+      </div>`;
+  }).join('');
+}
+
+/* =========================
+   NAVEGACIÓN
+========================= */
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  document.querySelectorAll('.menu button').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector(`.menu button[data-page="${pageId}"]`);
+  if (btn) btn.classList.add('active');
+}
+
+/* =========================
+   SALÓN DE DADOS
+========================= */
+function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+function rollDice() {
+  const p1 = randInt(1, 6), p2 = randInt(1, 6);
+  const r1 = randInt(1, 6), r2 = randInt(1, 6);
+  const playerTotal = p1 + p2, rivalTotal = r1 + r2;
+
+  document.querySelectorAll('#diceRowPlayer .die')[0].textContent = p1;
+  document.querySelectorAll('#diceRowPlayer .die')[1].textContent = p2;
+  document.querySelectorAll('#diceRowRival .die')[0].textContent = r1;
+  document.querySelectorAll('#diceRowRival .die')[1].textContent = r2;
+
+  state.gamesPlayed++;
+  let resultText;
+  if (playerTotal > rivalTotal) {
+    state.wins++;
+    state.currentStreak++;
+    state.bestStreak = Math.max(state.bestStreak, state.currentStreak);
+    const reward = 30 + state.currentStreak * 5;
+    state.coins += reward;
+    state.totalCoinsEarned += reward;
+    resultText = `¡Ganaste! ${playerTotal} vs ${rivalTotal} · +${reward} 🪙`;
+  } else if (playerTotal < rivalTotal) {
+    state.currentStreak = 0;
+    resultText = `Perdiste esta tirada. ${playerTotal} vs ${rivalTotal}`;
+  } else {
+    resultText = `Empate. ${playerTotal} vs ${rivalTotal}`;
+  }
+
+  document.getElementById('diceResult').textContent = resultText;
+  save();
+  checkAchievements();
+  renderStats();
+  renderAvatarPage();
+  renderShop();
+}
 
 /* =========================
    SALAS
 ========================= */
-
-function openModal() {
-
-    document.getElementById("modalBg")
-        .style.display = "flex";
-}
-
-
-function closeModal() {
-
-    document.getElementById("modalBg")
-        .style.display = "none";
-}
-
+function openModal() { document.getElementById('modalBg').style.display = 'flex'; }
+function closeModal() { document.getElementById('modalBg').style.display = 'none'; }
 
 function createRoom() {
+  const name = document.getElementById('roomName').value;
+  const game = document.getElementById('roomGame').value;
+  if (name.trim() === '') { toast('Pon un nombre a tu sala.'); return; }
 
-    let name =
-        document.getElementById("roomName").value;
+  let icon = '🎲';
+  if (game.includes('cartas')) icon = '🃏';
+  if (game.includes('estrategia')) icon = '♟️';
+  if (game.includes('Aventura')) icon = '🗺️';
 
-    let game =
-        document.getElementById("roomGame").value;
-
-
-    if (name.trim() === "") {
-
-        alert("Pon un nombre a tu sala.");
-
-        return;
-    }
-
-
-    let icon = "🎲";
-
-    if (game.includes("cartas")) {
-        icon = "🃏";
-    }
-
-    if (game.includes("estrategia")) {
-        icon = "♟️";
-    }
-
-    if (game.includes("Aventura")) {
-        icon = "🗺️";
-    }
-
-
-    let room = document.createElement("div");
-
-    room.className = "room";
-
-
-    room.innerHTML = `
-
-        <div class="room-left">
-
-            <div class="game-icon">
-                ${icon}
-            </div>
-
-            <div class="room-info">
-
-                <h3>${name}</h3>
-
-                <p>
-                    ${game} · 1 / 4 jugadores
-                </p>
-
-            </div>
-
-        </div>
-
-        <button class="btn btn-primary">
-            Unirse
-        </button>
-    `;
-
-
-    room.querySelector("button")
-        .addEventListener("click", function() {
-            joinRoom(name);
-        });
-
-
-    document.getElementById("roomList")
-        .prepend(room);
-
-
-    document.getElementById("roomName").value = "";
-
-
-    closeModal();
-
-
-    alert(
-        "🎉 Sala creada correctamente.\n\n" +
-        "Ahora podremos implementar invitaciones a amigos."
-    );
+  const room = document.createElement('div');
+  room.className = 'room';
+  room.innerHTML = `
+    <div class="room-left">
+      <div class="game-icon">${icon}</div>
+      <div class="room-info"><h3>${name}</h3><p>${game} · 1 / 4 jugadores</p></div>
+    </div>
+    <button class="btn btn-primary">Unirse</button>
+  `;
+  room.querySelector('button').addEventListener('click', function () { joinRoom(name); });
+  document.getElementById('roomList').prepend(room);
+  document.getElementById('roomName').value = '';
+  closeModal();
+  toast(`🎉 Sala "${name}" creada.`);
 }
-
-
-/* =========================
-   UNIRSE A SALA
-========================= */
 
 function joinRoom(roomName) {
-
-    alert(
-        "🎮 Te has unido a:\n\n" +
-        roomName +
-        "\n\nLa siguiente fase será crear la mesa de juego."
-    );
+  toast(`🎮 Te unes a "${roomName}". ¡A jugar!`);
+  showPage('diceGame');
 }
 
+document.getElementById('modalBg').addEventListener('click', function (event) {
+  if (event.target === this) closeModal();
+});
 
-/* CERRAR MODAL AL PULSAR FUERA */
+/* =========================
+   TOASTS
+========================= */
+function toast(message) {
+  const host = document.getElementById('toastHost');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = message;
+  host.appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
 
-document
-    .getElementById("modalBg")
-    .addEventListener("click", function(event) {
-
-        if (event.target === this) {
-            closeModal();
-        }
-
-    });
-
+/* =========================
+   INICIO
+========================= */
+function init() {
+  renderAvatarsEverywhere();
+  renderStats();
+  renderAvatarPage();
+  renderShop();
+  renderAchievements();
+  save();
+}
+init();
 </script>
-
 </body>
 </html>
