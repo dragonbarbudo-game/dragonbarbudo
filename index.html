@@ -221,11 +221,72 @@ main { padding: 30px; overflow: hidden; }
     .profile-card { grid-template-columns: 1fr; }
     .dice-arena { grid-template-columns: 1fr; }
 }
+
+/* AUTENTICACIÓN */
+.auth-screen {
+    display: flex;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.auth-box {
+    width: 100%;
+    max-width: 380px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 30px;
+}
+.auth-box .logo { text-align: center; display: block; margin-bottom: 20px; font-size: 26px; }
+.auth-tabs { display: flex; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+.auth-tabs button {
+    flex: 1; padding: 10px; border: none; background: #181a20; color: var(--muted);
+    cursor: pointer; font-family: inherit; font-weight: 600; font-size: 14px;
+}
+.auth-tabs button.active { background: var(--gold); color: #18130a; }
+.auth-form { display: none; flex-direction: column; gap: 12px; }
+.auth-form.active { display: flex; }
+.auth-form input {
+    padding: 12px; background: #181a20; border: 1px solid var(--border);
+    color: white; border-radius: 8px; font-family: inherit; font-size: 14px;
+}
+.auth-error { color: var(--ember); font-size: 13px; min-height: 18px; }
+.auth-note { color: var(--muted); font-size: 12px; margin-top: 12px; text-align: center; }
 </style>
 </head>
 <body>
 
-<header>
+<!-- PANTALLA DE ACCESO -->
+<div class="auth-screen" id="authScreen">
+    <div class="auth-box">
+        <div class="logo">🎲 Table<span style="color:white">Host</span></div>
+
+        <div class="auth-tabs">
+            <button id="tabLoginBtn" class="active" onclick="switchAuthTab('login')">Iniciar sesión</button>
+            <button id="tabRegisterBtn" onclick="switchAuthTab('register')">Crear cuenta</button>
+        </div>
+
+        <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
+            <input type="email" id="loginEmail" placeholder="Correo electrónico" required>
+            <input type="password" id="loginPassword" placeholder="Contraseña" required>
+            <div class="auth-error" id="loginError"></div>
+            <button type="submit" class="btn btn-primary">Entrar</button>
+        </form>
+
+        <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)">
+            <input type="text" id="registerUsername" placeholder="Nombre de usuario (3-30 caracteres)" required minlength="3" maxlength="30">
+            <input type="email" id="registerEmail" placeholder="Correo electrónico" required>
+            <input type="password" id="registerPassword" placeholder="Contraseña (mínimo 6 caracteres)" required minlength="6">
+            <div class="auth-error" id="registerError"></div>
+            <button type="submit" class="btn btn-primary">Crear cuenta</button>
+        </form>
+
+        <div class="auth-note">Si tu proyecto pide confirmar el correo, revisa tu bandeja de entrada antes de iniciar sesión.</div>
+    </div>
+</div>
+
+<header style="display:none">
     <div class="logo">🎲 Table<span>Host</span></div>
     <div class="nav-user">
         <div class="coins">🪙 <span id="coinDisplay">0</span></div>
@@ -233,17 +294,17 @@ main { padding: 30px; overflow: hidden; }
             <div class="cheat-switch"></div>
             <span>Modo diseño</span>
         </div>
-        <div>🔔</div>
+        <div class="cheat-toggle" onclick="handleLogout()"><span>Cerrar sesión</span></div>
     </div>
 </header>
 
-<div class="app">
+<div class="app" style="display:none">
 
     <!-- MENU -->
     <aside class="sidebar">
         <div class="profile-mini">
             <div class="avatar-stage size-md frame-ring" id="sidebarAvatar"></div>
-            <div class="username">TableMaster</div>
+            <div class="username" id="sidebarUsername">Jugador</div>
             <div class="level" id="sidebarLevel">⭐ Nivel 1</div>
         </div>
 
@@ -340,7 +401,7 @@ main { padding: 30px; overflow: hidden; }
             <div class="profile-card">
                 <div class="avatar-stage size-lg frame-ring" id="profileAvatar"></div>
                 <div class="profile-info">
-                    <h2>TableMaster</h2>
+                    <h2 id="profileUsername">Jugador</h2>
                     <p>Aventurero, estratega y coleccionista de logros.</p>
                     <p id="profileLevel">⭐ Nivel 1</p>
                     <p><span id="profileAchievements">0</span> logros</p>
@@ -864,9 +925,9 @@ function toast(message) {
 }
 
 /* =========================
-   INICIO
+   INICIO (juego local)
 ========================= */
-function init() {
+function initGameUI() {
   renderCheatToggle();
   renderAvatarsEverywhere();
   renderStats();
@@ -875,7 +936,125 @@ function init() {
   renderAchievements();
   save();
 }
-init();
+</script>
+
+<!-- Cliente de Supabase (conexión con la base de datos) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* =========================
+   CONEXIÓN CON SUPABASE
+========================= */
+const SUPABASE_URL = 'https://yptdxphximblpzlrgjpg.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdGR4cGh4aW1ibHB6bHJnanBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1MTI2ODIsImV4cCI6MjEwNDA4ODY4Mn0.aA2jm-SC6xRI1_klg-17M-Po81RZP6dnpDfRBDQq_gc';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* Traduce los errores técnicos de Supabase a mensajes en español sencillo */
+function translateAuthError(error) {
+  if (!error) return '';
+  const msg = error.message || '';
+  if (msg.includes('already registered') || msg.includes('already exists')) return 'Ya existe una cuenta con ese correo.';
+  if (msg.includes('Invalid login credentials')) return 'Correo o contraseña incorrectos.';
+  if (msg.includes('duplicate key value') && msg.includes('username')) return 'Ese nombre de usuario ya está en uso.';
+  if (msg.includes('Password should be at least')) return 'La contraseña es demasiado corta.';
+  if (msg.includes('Unable to validate email')) return 'Ese correo no parece válido.';
+  return 'Ha ocurrido un error: ' + msg;
+}
+
+function switchAuthTab(tab) {
+  document.getElementById('tabLoginBtn').classList.toggle('active', tab === 'login');
+  document.getElementById('tabRegisterBtn').classList.toggle('active', tab === 'register');
+  document.getElementById('loginForm').classList.toggle('active', tab === 'login');
+  document.getElementById('registerForm').classList.toggle('active', tab === 'register');
+  document.getElementById('loginError').textContent = '';
+  document.getElementById('registerError').textContent = '';
+}
+
+async function handleRegister(event) {
+  event.preventDefault();
+  const username = document.getElementById('registerUsername').value.trim();
+  const email = document.getElementById('registerEmail').value.trim();
+  const password = document.getElementById('registerPassword').value;
+  const errorBox = document.getElementById('registerError');
+  errorBox.textContent = '';
+
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+    options: { data: { username } }
+  });
+
+  if (error) {
+    errorBox.textContent = translateAuthError(error);
+    return;
+  }
+
+  // Si el proyecto no exige confirmar el correo, ya hay sesión activa.
+  if (data.session) {
+    await enterApp(data.user);
+  } else {
+    errorBox.style.color = 'var(--felt-light)';
+    errorBox.textContent = 'Cuenta creada. Revisa tu correo para confirmarla y luego inicia sesión.';
+  }
+}
+
+async function handleLogin(event) {
+  event.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errorBox = document.getElementById('loginError');
+  errorBox.textContent = '';
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) {
+    errorBox.textContent = translateAuthError(error);
+    return;
+  }
+  await enterApp(data.user);
+}
+
+async function handleLogout() {
+  await supabaseClient.auth.signOut();
+  showAuthScreen();
+}
+
+function showAuthScreen() {
+  document.getElementById('authScreen').style.display = 'flex';
+  document.querySelector('header').style.display = 'none';
+  document.querySelector('.app').style.display = 'none';
+}
+
+async function enterApp(user) {
+  document.getElementById('authScreen').style.display = 'none';
+  document.querySelector('header').style.display = 'flex';
+  document.querySelector('.app').style.display = 'grid';
+
+  const { data: profile, error } = await supabaseClient
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  const displayName = (profile && (profile.display_name || profile.username)) || user.email;
+  document.getElementById('sidebarUsername').textContent = displayName;
+  document.getElementById('profileUsername').textContent = displayName;
+
+  initGameUI();
+}
+
+/* Al cargar la página, comprobamos si ya hay una sesión abierta */
+(async function checkSession() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    await enterApp(session.user);
+  } else {
+    showAuthScreen();
+  }
+})();
+
+/* Si el usuario inicia o cierra sesión en otra pestaña, lo reflejamos aquí también */
+supabaseClient.auth.onAuthStateChange((event) => {
+  if (event === 'SIGNED_OUT') showAuthScreen();
+});
 </script>
 </body>
 </html>
