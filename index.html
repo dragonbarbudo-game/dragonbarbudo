@@ -337,6 +337,8 @@ main { padding: 30px; overflow: hidden; }
 .password-wrap input { width: 100%; padding-right: 42px; }
 .password-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 17px; color: var(--muted); padding: 4px; }
 .password-toggle:hover { color: var(--text); }
+.remember-me { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); cursor: pointer; }
+.remember-me input { width: auto; accent-color: var(--gold); cursor: pointer; }
 </style>
 </head>
 <body>
@@ -359,6 +361,9 @@ main { padding: 30px; overflow: hidden; }
                 <input type="password" id="loginPassword" placeholder="Contraseña" required>
                 <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPassword', this)">👁️</button>
             </div>
+            <label class="remember-me">
+                <input type="checkbox" id="rememberMe"> Recordar usuario
+            </label>
             <div class="auth-error" id="loginError"></div>
             <button type="submit" class="btn btn-primary">Entrar</button>
             <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('forgot')">¿Has olvidado tu contraseña?</div>
@@ -1330,8 +1335,24 @@ async function handleLogin(event) {
     errorBox.textContent = translateAuthError(error);
     return;
   }
+
+  if (document.getElementById('rememberMe').checked) {
+    localStorage.setItem('tablehost_remember_user', identifier);
+  } else {
+    localStorage.removeItem('tablehost_remember_user');
+  }
+
   await enterApp(data.user);
 }
+
+/* Rellena el campo de usuario/correo si se guardó en un inicio de sesión anterior */
+(function prefillRememberedUser() {
+  const remembered = localStorage.getItem('tablehost_remember_user');
+  if (remembered) {
+    document.getElementById('loginEmail').value = remembered;
+    document.getElementById('rememberMe').checked = true;
+  }
+})();
 
 async function handleLogout() {
   if (heartbeatIntervalId) clearInterval(heartbeatIntervalId);
