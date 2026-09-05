@@ -198,6 +198,16 @@ main { padding: 30px; overflow: hidden; }
 /* CAMPANA DE NOTIFICACIONES */
 .bell-wrap { position: relative; }
 .bell-btn { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 17px; cursor: pointer; position: relative; }
+.bell-btn.ringing { animation: bellRing .6s ease; transform-origin: top center; }
+@keyframes bellRing {
+    0% { transform: rotate(0deg); }
+    15% { transform: rotate(18deg); }
+    30% { transform: rotate(-16deg); }
+    45% { transform: rotate(12deg); }
+    60% { transform: rotate(-8deg); }
+    75% { transform: rotate(4deg); }
+    100% { transform: rotate(0deg); }
+}
 .bell-badge { position: absolute; top: -6px; right: -6px; background: var(--ember); color: white; font-size: 10px; font-weight: 700; border-radius: 10px; min-width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
 .bell-dropdown { display: none; position: absolute; top: 110%; right: 0; width: 300px; max-height: 360px; overflow-y: auto; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; z-index: 250; }
 .bell-dropdown.show { display: block; }
@@ -424,7 +434,7 @@ main { padding: 30px; overflow: hidden; }
         <div class="avatar-stage size-sm frame-ring header-avatar-btn" id="headerAvatar" onclick="showPage('profile')" title="Ver mi perfil"></div>
         <button class="header-icon-btn" id="cheatToggle" onclick="toggleCheatMode()" title="Modo diseño">🍺</button>
         <div class="bell-wrap">
-            <button class="bell-btn" onclick="toggleNotifications()">🔔<span class="bell-badge" id="bellBadge" style="display:none;">0</span></button>
+            <button class="bell-btn" id="bellBtn" onclick="toggleNotifications()">🔔<span class="bell-badge" id="bellBadge" style="display:none;">0</span></button>
             <div class="bell-dropdown" id="bellDropdown">
                 <div class="bell-dropdown-header">Notificaciones</div>
                 <div id="bellList"><p class="friend-empty">No tienes notificaciones.</p></div>
@@ -1130,6 +1140,14 @@ function pushNotification(text) {
   saveNotifications();
   renderBellBadge();
   if (document.getElementById('bellDropdown').classList.contains('show')) renderBellList();
+  ringBell();
+}
+
+function ringBell() {
+  const bell = document.getElementById('bellBtn');
+  bell.classList.remove('ringing');
+  void bell.offsetWidth; // fuerza a reiniciar la animación aunque lleguen notificaciones seguidas
+  bell.classList.add('ringing');
 }
 
 function renderBellBadge() {
