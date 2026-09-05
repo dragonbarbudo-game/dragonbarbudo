@@ -23,6 +23,26 @@
     --parchment: #ece2c6;
     --text: #f1ede4;
     --muted: #98948a;
+    --input-bg: #181a20;
+    --input-text: #f1ede4;
+}
+
+body.light-mode {
+    --bg: #f3f1ea;
+    --bg2: #ffffff;
+    --panel: #ffffff;
+    --panel-2: #f0ede3;
+    --border: #ddd7c8;
+    --gold: #b6812a;
+    --gold-light: #8a6220;
+    --felt: #2f6d4f;
+    --felt-light: #24593f;
+    --ember: #b84f34;
+    --parchment: #f6f1e2;
+    --text: #211d15;
+    --muted: #6f6a5c;
+    --input-bg: #f4f1e8;
+    --input-text: #211d15;
 }
 
 body {
@@ -30,6 +50,7 @@ body {
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
+    transition: background-color .2s ease, color .2s ease;
 }
 
 h1, h2, h3, .logo, .stat-number, .username {
@@ -47,7 +68,7 @@ header {
     padding: 0 30px;
 }
 .logo { font-size: 22px; font-weight: 700; color: var(--gold); letter-spacing: .5px; }
-.logo span { color: white; }
+.logo span { color: var(--text); }
 .nav-user { display: flex; align-items: center; gap: 15px; }
 .coins { background: var(--panel); padding: 9px 14px; border-radius: 10px; color: var(--gold-light); font-weight: bold; border: 1px solid var(--border); }
 .cheat-toggle { display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--border); padding: 6px 12px 6px 14px; border-radius: 20px; font-size: 13px; color: var(--muted); cursor: pointer; user-select: none; }
@@ -72,7 +93,7 @@ header {
     padding: 13px; text-align: left; border-radius: 8px; cursor: pointer;
     font-size: 15px; margin-bottom: 5px; font-family: inherit;
 }
-.menu button:hover, .menu button.active { background: var(--panel); color: white; }
+.menu button:hover, .menu button.active { background: var(--panel); color: var(--text); }
 
 /* AVATAR STAGE (capas) */
 .avatar-stage { position: relative; margin: auto; }
@@ -130,7 +151,7 @@ main { padding: 30px; overflow: hidden; }
 .friends-panel { background: var(--bg2); border-left: 1px solid var(--border); padding: 25px 15px; }
 .friend-title { margin-bottom: 20px; font-size: 16px; }
 .friend-search { display: flex; gap: 6px; margin-bottom: 10px; }
-.friend-search input { flex: 1; padding: 9px; background: #181a20; border: 1px solid var(--border); color: white; border-radius: 8px; font-family: inherit; font-size: 13px; }
+.friend-search input { flex: 1; padding: 9px; background: var(--input-bg); border: 1px solid var(--border); color: var(--input-text); border-radius: 8px; font-family: inherit; font-size: 13px; }
 .friend-search .btn { padding: 9px 12px; font-size: 13px; }
 .friend-section { margin-top: 18px; }
 .friend-section h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 8px; }
@@ -152,7 +173,7 @@ main { padding: 30px; overflow: hidden; }
 .chat-bubble.mine { align-self: flex-end; background: var(--gold); color: #18130a; }
 .chat-bubble.theirs { align-self: flex-start; background: var(--panel-2); border: 1px solid var(--border); }
 .chat-input-row { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border); }
-.chat-input-row input { flex: 1; padding: 10px; background: #181a20; border: 1px solid var(--border); color: white; border-radius: 8px; font-family: inherit; }
+.chat-input-row input { flex: 1; padding: 10px; background: var(--input-bg); border: 1px solid var(--border); color: var(--input-text); border-radius: 8px; font-family: inherit; }
 
 /* CAMPANA DE NOTIFICACIONES */
 .bell-wrap { position: relative; }
@@ -165,6 +186,11 @@ main { padding: 30px; overflow: hidden; }
 .bell-item:last-child { border-bottom: none; }
 .bell-item .bell-time { color: var(--muted); font-size: 11px; margin-top: 3px; }
 .bell-item.unread { background: rgba(217,164,65,.08); }
+
+/* MODO CLARO / OSCURO */
+.theme-toggle { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 17px; cursor: pointer; }
+.theme-toggle:hover { border-color: var(--gold); }
+.theme-toggle-fixed { position: fixed; top: 16px; right: 16px; z-index: 400; }
 
 /* INVITACIÓN A JUGAR */
 .invite-banner { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 300; background: var(--panel-2); border: 1px solid var(--gold); border-radius: 12px; padding: 14px 18px; align-items: center; gap: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.4); }
@@ -195,7 +221,7 @@ main { padding: 30px; overflow: hidden; }
 .slot-block { background: var(--panel); padding: 20px; border-radius: 15px; margin-bottom: 15px; border: 1px solid var(--border); }
 .slot-block h3 { font-size: 15px; color: var(--gold-light); margin-bottom: 12px; }
 .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
-.item-card { background: #181a20; border: 2px solid var(--border); border-radius: 10px; padding: 10px 6px; text-align: center; cursor: pointer; }
+.item-card { background: var(--input-bg); border: 2px solid var(--border); border-radius: 10px; padding: 10px 6px; text-align: center; cursor: pointer; }
 .item-card .item-stage { width: 46px; height: 46px; margin: 0 auto 6px; }
 .item-card span { font-size: 11px; color: var(--muted); display: block; }
 .item-card.equipped { border-color: var(--gold); background: #22201a; }
@@ -235,7 +261,7 @@ main { padding: 30px; overflow: hidden; }
 .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); align-items: center; justify-content: center; z-index: 100; }
 .modal { width: 90%; max-width: 450px; background: var(--panel); padding: 25px; border-radius: 15px; border: 1px solid var(--border); }
 .modal h2 { margin-bottom: 20px; }
-.modal input, .modal select { width: 100%; padding: 12px; margin-bottom: 15px; background: #181a20; border: 1px solid var(--border); color: white; border-radius: 8px; font-family: inherit; }
+.modal input, .modal select { width: 100%; padding: 12px; margin-bottom: 15px; background: var(--input-bg); border: 1px solid var(--border); color: var(--input-text); border-radius: 8px; font-family: inherit; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
 
 /* TOAST */
@@ -282,15 +308,15 @@ main { padding: 30px; overflow: hidden; }
 .auth-box .logo { text-align: center; display: block; margin-bottom: 20px; font-size: 26px; }
 .auth-tabs { display: flex; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
 .auth-tabs button {
-    flex: 1; padding: 10px; border: none; background: #181a20; color: var(--muted);
+    flex: 1; padding: 10px; border: none; background: var(--input-bg); color: var(--muted);
     cursor: pointer; font-family: inherit; font-weight: 600; font-size: 14px;
 }
 .auth-tabs button.active { background: var(--gold); color: #18130a; }
 .auth-form { display: none; flex-direction: column; gap: 12px; }
 .auth-form.active { display: flex; }
 .auth-form input {
-    padding: 12px; background: #181a20; border: 1px solid var(--border);
-    color: white; border-radius: 8px; font-family: inherit; font-size: 14px;
+    padding: 12px; background: var(--input-bg); border: 1px solid var(--border);
+    color: var(--input-text); border-radius: 8px; font-family: inherit; font-size: 14px;
 }
 .auth-error { color: var(--ember); font-size: 13px; min-height: 18px; }
 .auth-note { color: var(--muted); font-size: 12px; margin-top: 12px; text-align: center; }
@@ -301,6 +327,8 @@ main { padding: 30px; overflow: hidden; }
 </style>
 </head>
 <body>
+
+<button class="theme-toggle theme-toggle-fixed" id="themeToggleBtn" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
 
 <!-- PANTALLA DE ACCESO -->
 <div class="auth-screen" id="authScreen">
@@ -601,6 +629,21 @@ main { padding: 30px; overflow: hidden; }
 
 <script>
 /* =========================
+   MODO CLARO / OSCURO
+========================= */
+function applyTheme(theme) {
+  document.body.classList.toggle('light-mode', theme === 'light');
+  document.getElementById('themeToggleBtn').textContent = theme === 'light' ? '☀️' : '🌙';
+}
+function toggleTheme() {
+  const isLight = document.body.classList.contains('light-mode');
+  const next = isLight ? 'dark' : 'light';
+  localStorage.setItem('tablehost_theme', next);
+  applyTheme(next);
+}
+applyTheme(localStorage.getItem('tablehost_theme') || 'light');
+
+/* =========================
    ILUSTRACIONES SVG (imágenes vectoriales propias, sin emoji)
 ========================= */
 const SVG = {
@@ -795,7 +838,7 @@ function renderAvatarPage() {
       const equipped = state.equipped[slot] === item.id;
       const stagePreview = item.svg !== undefined
         ? `<div class="item-stage">${item.svg}</div>`
-        : `<div class="item-stage ${item.cssClass}" style="border-radius:50%;background:#181a20;"></div>`;
+        : `<div class="item-stage ${item.cssClass}" style="border-radius:50%;background:var(--input-bg);"></div>`;
       let hint = '';
       let classes = 'item-card';
       if (equipped) classes += ' equipped';
@@ -841,7 +884,7 @@ function renderShop() {
     const owned = isUnlocked(slot, item);
     const stagePreview = item.svg !== undefined
       ? `<div class="item-stage">${item.svg}</div>`
-      : `<div class="item-stage ${item.cssClass}" style="border-radius:50%;background:#181a20;"></div>`;
+      : `<div class="item-stage ${item.cssClass}" style="border-radius:50%;background:var(--input-bg);"></div>`;
     const priceLabel = owned ? 'Ya lo tienes' : (state.cheatMode ? 'Gratis (modo diseño)' : item.price + ' 🪙');
     return `
       <div class="item">
