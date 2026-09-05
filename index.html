@@ -689,11 +689,11 @@ function defaultState() {
     cheatMode: false
   };
 }
-let state = loadState();
+let state = defaultState();
 
-function loadState() {
+function loadState(userId) {
   try {
-    const raw = localStorage.getItem('tablehostState');
+    const raw = localStorage.getItem('tablehostState_' + userId);
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw);
     return Object.assign(defaultState(), parsed);
@@ -701,7 +701,10 @@ function loadState() {
     return defaultState();
   }
 }
-function save() { localStorage.setItem('tablehostState', JSON.stringify(state)); }
+function save() {
+  if (!currentUserId) return;
+  localStorage.setItem('tablehostState_' + currentUserId, JSON.stringify(state));
+}
 
 function isUnlocked(slot, item) {
   if (state.cheatMode) return true;
@@ -1269,6 +1272,7 @@ async function handleLogin(event) {
 async function handleLogout() {
   if (heartbeatIntervalId) clearInterval(heartbeatIntervalId);
   if (friendsIntervalId) clearInterval(friendsIntervalId);
+  if (accountCheckIntervalId) clearInterval(accountCheckIntervalId);
   if (inviteChannel) { supabaseClient.removeChannel(inviteChannel); inviteChannel = null; }
   if (inboxChannel) { supabaseClient.removeChannel(inboxChannel); inboxChannel = null; }
   currentUserId = null;
@@ -1297,8 +1301,9 @@ async function enterApp(user) {
   document.getElementById('sidebarUsername').textContent = displayName;
   document.getElementById('profileUsername').textContent = displayName;
 
-  initGameUI();
   currentUserId = user.id;
+  state = loadState(currentUserId);
+  initGameUI();
   startFriendsSystem();
 }
 
@@ -1330,8 +1335,20 @@ function startFriendsSystem() {
   subscribeIncomingMessages();
   if (heartbeatIntervalId) clearInterval(heartbeatIntervalId);
   if (friendsIntervalId) clearInterval(friendsIntervalId);
+  if (accountCheckIntervalId) clearInterval(accountCheckIntervalId);
   heartbeatIntervalId = setInterval(updateLastSeen, 45000);
   friendsIntervalId = setInterval(loadFriendsPanel, 30000);
+  accountCheckIntervalId = setInterval(checkAccountStillExists, 20000);
+}
+
+let accountCheckIntervalId = null;
+
+async function checkAccountStillExists() {
+  const { data, error } = await supabaseClient.auth.getUser();
+  if (error || !data || !data.user) {
+    toast('⚠️ Tu cuenta ya no existe. Se ha cerrado tu sesión.');
+    await handleLogout();
+  }
 }
 
 let inboxChannel = null;
