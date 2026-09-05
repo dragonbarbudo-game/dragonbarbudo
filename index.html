@@ -28,21 +28,21 @@
 }
 
 body.light-mode {
-    --bg: #f3f1ea;
+    --bg: #ffffff;
     --bg2: #ffffff;
     --panel: #ffffff;
-    --panel-2: #f0ede3;
-    --border: #ddd7c8;
+    --panel-2: #f2f2f2;
+    --border: #e2e2e2;
     --gold: #b6812a;
     --gold-light: #8a6220;
     --felt: #2f6d4f;
     --felt-light: #24593f;
     --ember: #b84f34;
     --parchment: #f6f1e2;
-    --text: #211d15;
-    --muted: #6f6a5c;
-    --input-bg: #f4f1e8;
-    --input-text: #211d15;
+    --text: #17140f;
+    --muted: #6b6b6b;
+    --input-bg: #f5f5f5;
+    --input-text: #17140f;
 }
 
 body {
@@ -78,6 +78,14 @@ header {
 .header-icon-btn.on { border-color: var(--ember); background: rgba(209,99,63,.12); }
 .header-avatar-btn { cursor: pointer; }
 .header-avatar-btn:hover { filter: brightness(1.1); }
+
+/* PUERTA DE SALIDA */
+.door-btn { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 7px 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.door-btn:hover { border-color: var(--gold); }
+.door-frame { width: 20px; height: 24px; position: relative; background: #4a341f; border-radius: 2px; padding: 1px; perspective: 70px; }
+.door-panel { position: absolute; top: 1px; left: 1px; width: 18px; height: 22px; background: linear-gradient(180deg,#8a6a42,#6b4e2c); border: 1px solid #d9a441; border-radius: 1px; transform-origin: left center; transition: transform .5s ease; }
+.door-panel::after { content:''; position: absolute; top: 50%; right: 2px; width: 2px; height: 2px; border-radius: 50%; background: #f0c975; transform: translateY(-50%); }
+.door-btn.opening .door-panel { transform: rotateY(-110deg); }
 .cheat-switch { width: 34px; height: 18px; background: #333743; border-radius: 20px; position: relative; transition: .15s; flex-shrink: 0; }
 .cheat-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: var(--muted); border-radius: 50%; transition: .15s; }
 .cheat-toggle.on .cheat-switch { background: var(--ember); }
@@ -408,15 +416,10 @@ main { padding: 30px; overflow: hidden; }
             </div>
         </div>
         <button class="theme-toggle" id="themeToggleBtnHeader" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
-        <button class="header-icon-btn door-btn" id="logoutBtn" onclick="handleDoorClick()" title="Cerrar sesión">
-            <svg viewBox="0 0 40 40" width="22" height="22">
-                <rect x="4" y="4" width="32" height="34" rx="2" fill="#5c4128" stroke="#d9a441" stroke-width="1.5"/>
-                <g id="doorPanel" style="transform-origin: 6px 21px; transition: transform .42s ease;">
-                    <rect x="6" y="6" width="28" height="30" rx="1" fill="#7a5b3a" stroke="#d9a441" stroke-width="1"/>
-                    <line x1="6" y1="21" x2="34" y2="21" stroke="#5c4128" stroke-width="1"/>
-                    <circle cx="29" cy="21" r="1.6" fill="#f0c975"/>
-                </g>
-            </svg>
+        <button class="door-btn" id="doorBtn" onclick="handleDoorClick()" title="Cerrar sesión">
+            <div class="door-frame">
+                <div class="door-panel" id="doorPanel"></div>
+            </div>
         </button>
     </div>
 </header>
@@ -1342,12 +1345,51 @@ async function handleLogout() {
 }
 
 function handleDoorClick() {
-  const panel = document.getElementById('doorPanel');
-  panel.style.transform = 'scaleX(0.08)';
+  playDoorCreakSound();
+  document.getElementById('doorBtn').classList.add('opening');
   setTimeout(async () => {
     await handleLogout();
-    setTimeout(() => { panel.style.transform = ''; }, 200);
-  }, 420);
+    setTimeout(() => { document.getElementById('doorBtn').classList.remove('opening'); }, 200);
+  }, 520);
+}
+
+function playDoorCreakSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(480, now);
+    osc.frequency.exponentialRampToValueAtTime(140, now + 0.5);
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.value = 9;
+    filter.frequency.setValueAtTime(1300, now);
+    filter.frequency.exponentialRampToValueAtTime(350, now + 0.5);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.28, now + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.52);
+
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 22;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 0.12;
+    lfo.connect(lfoGain);
+    lfoGain.connect(gain.gain);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    lfo.start(now);
+    osc.stop(now + 0.55);
+    lfo.stop(now + 0.55);
+  } catch (e) { /* si el navegador bloquea audio, no pasa nada */ }
 }
 
 function showAuthScreen() {
