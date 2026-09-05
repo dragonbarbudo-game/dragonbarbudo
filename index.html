@@ -66,10 +66,14 @@ header {
     align-items: center;
     justify-content: space-between;
     padding: 0 30px;
+    gap: 10px;
+    position: relative;
+    z-index: 600;
 }
-.logo { font-size: 22px; font-weight: 700; color: var(--gold); letter-spacing: .5px; }
+.header-left { display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1 1 auto; }
+.logo { font-size: 22px; font-weight: 700; color: var(--gold); letter-spacing: .5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .logo span { color: var(--text); }
-.nav-user { display: flex; align-items: center; gap: 15px; }
+.nav-user { display: flex; align-items: center; gap: 15px; flex-shrink: 0; }
 .coins { background: var(--panel); padding: 9px 14px; border-radius: 10px; color: var(--gold-light); font-weight: bold; border: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
 .coin-icon-3d { display: inline-block; width: 22px; height: 22px; perspective: 220px; }
 .coin-icon-3d img { width: 100%; height: 100%; display: block; object-fit: contain; }
@@ -80,11 +84,27 @@ header {
 }
 .cheat-toggle { display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--border); padding: 6px 12px 6px 14px; border-radius: 20px; font-size: 13px; color: var(--muted); cursor: pointer; user-select: none; }
 .cheat-toggle.on { border-color: var(--ember); color: var(--gold-light); }
-.header-icon-btn { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.header-icon-btn { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .header-icon-btn:hover { border-color: var(--gold); }
 .header-icon-btn.on { border-color: var(--ember); background: rgba(209,99,63,.12); }
-.header-avatar-btn { cursor: pointer; }
+.header-avatar-btn { cursor: pointer; flex-shrink: 0; }
 .header-avatar-btn:hover { filter: brightness(1.1); }
+
+/* MENÚ HAMBURGUESA (tablet / móvil) */
+.menu-toggle-btn { display: none; }
+.sidebar-close-btn, .friends-close-btn { display: none; background: none; border: none; font-size: 20px; color: var(--muted); cursor: pointer; line-height: 1; padding: 4px; }
+.sidebar-close-btn:hover, .friends-close-btn:hover { color: var(--text); }
+.menu-friends-btn { display: none; }
+.sidebar-extra-mobile { display: none; }
+.sidebar-extra-btn {
+    width: 100%; display: flex; align-items: center; gap: 10px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 11px 12px; color: var(--text); font-family: inherit; font-size: 14px; cursor: pointer; margin-bottom: 8px;
+}
+.sidebar-extra-btn.on { border-color: var(--ember); color: var(--gold-light); }
+.drawer-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 450; }
+.drawer-backdrop.show { display: block; }
+body.drawer-open { overflow: hidden; }
 
 /* PUERTA DE SALIDA */
 .door-btn { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 7px 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -103,8 +123,10 @@ header {
 .app { display: grid; grid-template-columns: 240px 1fr 280px; min-height: calc(100vh - 70px); }
 
 /* SIDEBAR */
-.sidebar { background: var(--bg2); border-right: 1px solid var(--border); padding: 25px 15px; }
-.profile-mini { text-align: center; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.sidebar { background: var(--bg2); border-right: 1px solid var(--border); padding: 25px 15px; position: relative; }
+/* En escritorio el sidebar no repite el avatar (ya está en el header); solo se
+   muestra dentro del cajón de menú en tablet/móvil, ver @media(max-width:1000px). */
+.profile-mini { display: none; text-align: center; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
 .username { margin-top: 10px; font-weight: 700; font-size: 15px; }
 .level { color: var(--gold); font-size: 13px; margin-top: 4px; }
 .menu { margin-top: 20px; }
@@ -301,32 +323,98 @@ main { padding: 30px; overflow: hidden; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
 /* RESPONSIVE */
+/* Por debajo de 1000px, el sidebar y el panel de amigos dejan de ser columnas
+   fijas y se convierten en cajones (drawers) que se abren con los botones
+   de hamburguesa / amigos del header, sin desplazar el contenido principal. */
 @media(max-width: 1000px) {
-    .app { grid-template-columns: 220px 1fr; }
-    .friends-panel { display: none; }
+    .app { grid-template-columns: 1fr; min-height: calc(100vh - 70px); min-height: calc(100dvh - 70px); }
+
+    .menu-toggle-btn { display: flex; }
+    .menu-friends-btn { display: block; }
+    .sidebar-close-btn, .friends-close-btn { display: block; }
+    .sidebar-extra-mobile { display: block; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
+    /* el tema y el modo diseño se controlan desde el cajón del menú; se
+       ocultan del header para no competir con él por espacio */
+    #themeToggleBtnHeader, #cheatToggle { display: none; }
+
+    .sidebar {
+        position: fixed;
+        top: 70px;
+        left: 0;
+        bottom: 0;
+        width: 260px;
+        max-width: 82vw;
+        z-index: 500;
+        transform: translateX(-100%);
+        transition: transform .25s ease;
+        overflow-y: auto;
+        box-shadow: 6px 0 24px rgba(0,0,0,.4);
+        border-right: 1px solid var(--border);
+    }
+    .sidebar.open { transform: translateX(0); }
+    .profile-mini { display: block; }
+
+    .friends-panel {
+        position: fixed;
+        top: 70px;
+        right: 0;
+        bottom: 0;
+        width: 300px;
+        max-width: 88vw;
+        z-index: 500;
+        transform: translateX(100%);
+        transition: transform .25s ease;
+        overflow-y: auto;
+        box-shadow: -6px 0 24px rgba(0,0,0,.4);
+        border-left: 1px solid var(--border);
+    }
+    .friends-panel.open { transform: translateX(0); }
+
     .avatar-editor { grid-template-columns: 1fr; }
 }
 @media(max-width: 700px) {
-    header { padding: 0 15px; }
-    .app { display: block; }
-    .sidebar { border-right: none; border-bottom: 1px solid var(--border); padding: 10px; }
-    .profile-mini { display: none; }
-    .menu { margin: 0; display: flex; overflow-x: auto; }
-    .menu button { white-space: nowrap; }
+    header { padding: 0 15px; gap: 6px; }
+    .header-left { gap: 8px; }
+    .logo { font-size: 17px; }
+    .nav-user { gap: 8px; }
+    .coins { padding: 7px 10px; gap: 6px; font-size: 13px; }
+    .coin-icon-3d { width: 18px; height: 18px; }
+    .avatar-stage.size-sm { width: 34px; height: 34px; }
+    .header-icon-btn, .theme-toggle, .bell-btn, .door-btn { padding: 7px 9px; font-size: 15px; }
+
     main { padding: 20px 15px; }
     .stats { grid-template-columns: 1fr; }
-    .room { flex-direction: column; gap: 15px; align-items: flex-start; }
-    .profile-card { grid-template-columns: 1fr; }
+    .room { flex-direction: column; align-items: stretch; gap: 12px; }
+    .room .btn { width: 100%; }
+    .profile-card { grid-template-columns: 1fr; text-align: center; }
+    .profile-info { text-align: center; }
+    .equip-list { justify-content: center; }
     .dice-arena { grid-template-columns: 1fr; }
+    .modal-actions { flex-wrap: wrap; }
+
+    /* Avatar del cajón de menú: canvas completo más pequeño */
+    .sidebar .profile-mini { padding-bottom: 14px; }
+    .sidebar .avatar-stage.size-md { width: 60px; height: 60px; }
+    .sidebar .username { margin-top: 8px; font-size: 14px; }
+    .sidebar .level { font-size: 12px; }
+}
+@media(max-width: 420px) {
+    header { padding: 0 10px; }
+    .logo { font-size: 15px; }
+    .nav-user { gap: 6px; }
+    .coins span:not(.coin-icon-3d) { font-size: 12px; }
+    .welcome h1 { font-size: 22px; }
 }
 
 /* AUTENTICACIÓN */
 .auth-screen {
     display: flex;
     min-height: 100vh;
+    min-height: 100dvh;
     align-items: center;
     justify-content: center;
     padding: 20px;
+    overflow-y: auto;
 }
 .auth-box {
     width: 100%;
@@ -343,8 +431,23 @@ main { padding: 30px; overflow: hidden; }
     cursor: pointer; font-family: inherit; font-weight: 600; font-size: 14px;
 }
 .auth-tabs button.active { background: var(--gold); color: #18130a; }
-.auth-form { display: none; flex-direction: column; gap: 12px; }
-.auth-form.active { display: flex; }
+/* Los formularios se apilan en la misma celda de grid: el contenedor toma la
+   altura del más alto y cambiar de pestaña no mueve el resto de la página. */
+.auth-forms-stack { display: grid; }
+.auth-form {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+.auth-form.active { visibility: visible; opacity: 1; pointer-events: auto; }
+@media (max-width: 420px) {
+    .auth-box { padding: 24px 18px; }
+}
 .auth-form input {
     padding: 12px; background: var(--input-bg); border: 1px solid var(--border);
     color: var(--input-text); border-radius: 8px; font-family: inherit; font-size: 14px;
@@ -373,6 +476,7 @@ main { padding: 30px; overflow: hidden; }
             <button id="tabRegisterBtn" onclick="switchAuthTab('register')">Crear cuenta</button>
         </div>
 
+        <div class="auth-forms-stack">
         <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
             <input type="text" id="loginEmail" placeholder="Correo o nombre de usuario" required>
             <div class="password-wrap">
@@ -421,15 +525,19 @@ main { padding: 30px; overflow: hidden; }
             <button type="submit" class="btn btn-primary">Reenviar correo de confirmación</button>
             <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('login')">Volver a iniciar sesión</div>
         </form>
+        </div>
 
     </div>
 </div>
 
 <header style="display:none">
-    <div class="logo">🎲 Dragon<span>barbudo</span></div>
+    <div class="header-left">
+        <button class="header-icon-btn menu-toggle-btn" id="menuToggleBtn" onclick="toggleSidebar()" title="Menú" aria-label="Abrir menú">☰</button>
+        <div class="logo">🎲 Dragon<span>barbudo</span></div>
+    </div>
     <div class="nav-user">
         <div class="coins">
-            <span class="coin-icon-3d"><img src="moneda-dragonbarbudo.png" alt="Moneda"></span>
+            <span class="coin-icon-3d"><img src="Imágenes/moneda-dragonbarbudo.png" alt="Moneda"></span>
             <span id="coinDisplay">0</span>
         </div>
         <div class="avatar-stage size-sm frame-ring header-avatar-btn" id="headerAvatar" onclick="showPage('profile')" title="Ver mi perfil"></div>
@@ -450,12 +558,16 @@ main { padding: 30px; overflow: hidden; }
     </div>
 </header>
 
+<div class="drawer-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+<div class="drawer-backdrop" id="friendsBackdrop" onclick="closeFriendsPanel()"></div>
+
 <div class="app" style="display:none">
 
     <!-- MENU -->
     <aside class="sidebar">
+        <button class="sidebar-close-btn" onclick="closeSidebar()" aria-label="Cerrar menú">✕</button>
         <div class="profile-mini">
-            <div class="avatar-stage size-md frame-ring" id="sidebarAvatar"></div>
+            <div class="avatar-stage size-md frame-ring header-avatar-btn" id="sidebarAvatar" onclick="showPage('profile')" title="Ver mi perfil"></div>
             <div class="username" id="sidebarUsername">Jugador</div>
             <div class="level" id="sidebarLevel">⭐ Nivel 1</div>
         </div>
@@ -467,6 +579,12 @@ main { padding: 30px; overflow: hidden; }
             <button data-page="avatarPage" onclick="showPage('avatarPage')">🎭 Avatar</button>
             <button data-page="achievements" onclick="showPage('achievements')">🏆 Logros</button>
             <button data-page="shop" onclick="showPage('shop')">🛒 Tienda</button>
+            <button class="menu-friends-btn" onclick="toggleFriendsPanel()">👥 Amigos</button>
+        </div>
+
+        <div class="sidebar-extra-mobile">
+            <button class="sidebar-extra-btn" id="themeToggleBtnSidebar" onclick="toggleTheme()">🌙 Cambiar tema</button>
+            <button class="sidebar-extra-btn" id="cheatToggleSidebar" onclick="toggleCheatMode()">🍺 Modo diseño</button>
         </div>
     </aside>
 
@@ -603,7 +721,10 @@ main { padding: 30px; overflow: hidden; }
 
     <!-- AMIGOS -->
     <aside class="friends-panel">
-        <div class="friend-title"><h3>👥 Amigos</h3></div>
+        <div class="friend-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <h3>👥 Amigos</h3>
+            <button class="friends-close-btn" onclick="closeFriendsPanel()" aria-label="Cerrar amigos">✕</button>
+        </div>
 
         <div class="friend-search">
             <input type="text" id="friendSearchInput" placeholder="Buscar usuario exacto...">
@@ -678,8 +799,10 @@ function applyTheme(theme) {
   const icon = theme === 'light' ? '☀️' : '🌙';
   const floating = document.getElementById('themeToggleBtn');
   const header = document.getElementById('themeToggleBtnHeader');
+  const sidebarBtn = document.getElementById('themeToggleBtnSidebar');
   if (floating) floating.textContent = icon;
   if (header) header.textContent = icon;
+  if (sidebarBtn) sidebarBtn.textContent = icon + ' Cambiar tema';
 }
 function toggleTheme() {
   const isLight = document.body.classList.contains('light-mode');
@@ -812,6 +935,8 @@ function toggleCheatMode() {
 function renderCheatToggle() {
   const el = document.getElementById('cheatToggle');
   el.classList.toggle('on', state.cheatMode);
+  const sidebarEl = document.getElementById('cheatToggleSidebar');
+  if (sidebarEl) sidebarEl.classList.toggle('on', state.cheatMode);
 }
 function countUnlockedExtras(s) {
   return Object.values(s.unlocked).reduce((sum, arr) => sum + arr.length, 0);
@@ -1015,6 +1140,52 @@ function showPage(pageId) {
   document.querySelectorAll('.menu button').forEach(b => b.classList.remove('active'));
   const btn = document.querySelector(`.menu button[data-page="${pageId}"]`);
   if (btn) btn.classList.add('active');
+  closeSidebar();
+}
+
+/* =========================
+   MENÚ HAMBURGUESA (sidebar y amigos en tablet/móvil)
+========================= */
+function syncDrawerBodyLock() {
+  const sidebarOpen = document.querySelector('.sidebar').classList.contains('open');
+  const friendsOpen = document.querySelector('.friends-panel').classList.contains('open');
+  document.body.classList.toggle('drawer-open', sidebarOpen || friendsOpen);
+}
+function openSidebar() {
+  document.querySelector('.sidebar').classList.add('open');
+  document.getElementById('sidebarBackdrop').classList.add('show');
+  syncDrawerBodyLock();
+}
+function closeSidebar() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebarBackdrop').classList.remove('show');
+  syncDrawerBodyLock();
+}
+function toggleSidebar() {
+  if (document.querySelector('.sidebar').classList.contains('open')) {
+    closeSidebar();
+  } else {
+    closeFriendsPanel();
+    openSidebar();
+  }
+}
+function openFriendsPanel() {
+  document.querySelector('.friends-panel').classList.add('open');
+  document.getElementById('friendsBackdrop').classList.add('show');
+  syncDrawerBodyLock();
+}
+function closeFriendsPanel() {
+  document.querySelector('.friends-panel').classList.remove('open');
+  document.getElementById('friendsBackdrop').classList.remove('show');
+  syncDrawerBodyLock();
+}
+function toggleFriendsPanel() {
+  if (document.querySelector('.friends-panel').classList.contains('open')) {
+    closeFriendsPanel();
+  } else {
+    closeSidebar();
+    openFriendsPanel();
+  }
 }
 
 /* =========================
@@ -1447,6 +1618,8 @@ function showAuthScreen() {
   document.querySelector('header').style.display = 'none';
   document.querySelector('.app').style.display = 'none';
   document.getElementById('themeToggleBtn').style.display = 'flex';
+  closeSidebar();
+  closeFriendsPanel();
 }
 
 async function enterApp(user) {
@@ -1454,6 +1627,7 @@ async function enterApp(user) {
   document.getElementById('themeToggleBtn').style.display = 'none';
   document.querySelector('header').style.display = 'flex';
   document.querySelector('.app').style.display = 'grid';
+  showPage('lobby'); // siempre entra por el Lobby, sea cuenta nueva o usuario recordado
 
   const { data: profile, error } = await supabaseClient
     .from('profiles')
