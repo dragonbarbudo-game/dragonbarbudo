@@ -537,7 +537,7 @@ main { padding: 30px; overflow: hidden; }
     </div>
     <div class="nav-user">
         <div class="coins">
-            <span class="coin-icon-3d"><img src="Imágenes/moneda-dragonbarbudo.png" alt="Moneda"></span>
+            <span class="coin-icon-3d"><img src="moneda-dragonbarbudo.png" alt="Moneda" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'🪙',style:'font-size:18px'}))"></span>
             <span id="coinDisplay">0</span>
         </div>
         <div class="avatar-stage size-sm frame-ring header-avatar-btn" id="headerAvatar" onclick="showPage('profile')" title="Ver mi perfil"></div>
@@ -1677,15 +1677,41 @@ function startFriendsSystem() {
   heartbeatIntervalId = setInterval(updateLastSeen, 45000);
   friendsIntervalId = setInterval(loadFriendsPanel, 30000);
   accountCheckIntervalId = setInterval(checkAccountStillExists, 20000);
+  checkAccountStillExists(); // comprobación inmediata, sin esperar al primer intervalo
 }
 
 let accountCheckIntervalId = null;
 
+/* Cierra la sesión y borra del navegador todos los datos guardados de esa
+   cuenta (partidas, monedas, notificaciones), para que no quede nada
+   "fantasma" de una cuenta que ya no existe. */
+async function forceLogoutAccountGone() {
+  toast('⚠️ Tu cuenta ya no existe. Se ha cerrado tu sesión.');
+  const goneUserId = currentUserId;
+  await handleLogout();
+  if (goneUserId) {
+    localStorage.removeItem('tablehostState_' + goneUserId);
+    localStorage.removeItem('notif_' + goneUserId);
+  }
+}
+
 async function checkAccountStillExists() {
+  if (!currentUserId) return;
   const { data, error } = await supabaseClient.auth.getUser();
   if (error || !data || !data.user) {
-    toast('⚠️ Tu cuenta ya no existe. Se ha cerrado tu sesión.');
-    await handleLogout();
+    await forceLogoutAccountGone();
+    return;
+  }
+  // La cuenta de acceso puede seguir existiendo aunque se haya borrado su
+  // perfil (p. ej. al eliminar la fila directamente en la tabla "profiles"),
+  // así que comprobamos también que el perfil siga ahí.
+  const { data: profile, error: profileError } = await supabaseClient
+    .from('profiles')
+    .select('id')
+    .eq('id', currentUserId)
+    .maybeSingle();
+  if (profileError || !profile) {
+    await forceLogoutAccountGone();
   }
 }
 
