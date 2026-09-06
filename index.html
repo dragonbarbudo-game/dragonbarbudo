@@ -165,6 +165,23 @@ body.drawer-open { overflow: hidden; }
 .aura-arcana { background: radial-gradient(circle, rgba(127,217,232,.5), transparent 70%); }
 .frame-ring { border-radius: 50%; background: linear-gradient(135deg, #333742, #22252e); border: 3px solid var(--border); }
 
+/* PIE DE PÁGINA */
+.site-footer { background: var(--bg2); border-top: 1px solid var(--border); padding: 26px 30px; }
+.site-footer-nav { display: flex; flex-wrap: wrap; gap: 24px; margin-bottom: 18px; }
+.site-footer-nav a { color: var(--text); font-weight: 700; font-size: 14px; text-decoration: none; }
+.site-footer-nav a:hover { color: var(--gold); }
+.site-footer-divider { border-top: 1px solid var(--border); margin-bottom: 18px; }
+.site-footer-legal { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+.site-footer-legal a { color: var(--muted); text-decoration: underline; }
+.site-footer-legal a:hover { color: var(--gold); }
+.site-footer-links { display: flex; flex-wrap: wrap; gap: 20px; }
+.site-footer-links a { color: var(--muted); font-size: 13px; text-decoration: none; }
+.site-footer-links a:hover { color: var(--gold); }
+@media (max-width: 600px) {
+    .site-footer { padding: 22px 18px; }
+    .site-footer-nav, .site-footer-links { gap: 14px 18px; }
+}
+
 /* MAIN */
 main { padding: 30px; overflow: hidden; }
 .page { display: none; }
@@ -992,6 +1009,25 @@ body.light-mode .auth-tabs button.active { color: #fff; }
         </div>
     </aside>
 </div>
+
+<!-- PIE DE PÁGINA (estructura de momento, faltan enlaces/contenido reales) -->
+<footer class="site-footer">
+    <nav class="site-footer-nav">
+        <a href="#">Información</a>
+        <a href="#">Asistencia</a>
+        <a href="#">Contacto</a>
+    </nav>
+    <div class="site-footer-divider"></div>
+    <p class="site-footer-legal">Todas las <a href="#">marcas comerciales</a> a las que se hace referencia son propiedad de sus respectivos dueños.</p>
+    <nav class="site-footer-links">
+        <a href="#">Privacidad</a>
+        <a href="#">Legal</a>
+        <a href="#">Términos</a>
+        <a href="#">Política de cookies</a>
+        <a href="#">Ajustes de cookies</a>
+        <a href="#">FAQ</a>
+    </nav>
+</footer>
 
 <div class="modal-bg" id="modalBg">
     <div class="modal">
