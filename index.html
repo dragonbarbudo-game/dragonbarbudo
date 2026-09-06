@@ -2477,10 +2477,11 @@ function handleEntryCoinClick() {
 
 /* Sonido de moneda cayendo: un golpe grave inicial (moneda de canto
    contra el suelo) + varios rebotes cada vez más flojos y seguidos +
-   un breve zumbido final al pararse de girar. Cada "clonc" mezcla dos
-   tonos desafinados (como una campana) en vez de un solo pitido agudo,
-   y todo pasa por un filtro paso-bajo para que suene a metal cálido
-   (oro), no a pitido electrónico. */
+   un puñado de monedas cayendo y tintineando juntas: muchos "clincs"
+   metálicos superpuestos, de tono variado (como monedas distintas),
+   densos al principio y espaciándose después. Cada "clinc" mezcla tres
+   tonos desafinados (como una campana pequeña) pasados por un filtro
+   paso-bajo, para un timbre cálido de metal y no un pitido electrónico. */
 function playCoinDropSound() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -2488,7 +2489,7 @@ function playCoinDropSound() {
 
     const warmth = ctx.createBiquadFilter();
     warmth.type = 'lowpass';
-    warmth.frequency.value = 2200;
+    warmth.frequency.value = 3800;
     warmth.connect(ctx.destination);
 
     function clink(t, vol, freqBase, decay) {
@@ -2496,11 +2497,11 @@ function playCoinDropSound() {
         const osc = ctx.createOscillator();
         osc.type = idx === 0 ? 'triangle' : 'sine';
         osc.frequency.setValueAtTime(freqBase * mult, t);
-        osc.frequency.exponentialRampToValueAtTime(freqBase * mult * 0.7, t + decay);
+        osc.frequency.exponentialRampToValueAtTime(freqBase * mult * 0.75, t + decay);
         const gain = ctx.createGain();
-        const partialVol = vol * (idx === 0 ? 1 : idx === 1 ? 0.45 : 0.18);
+        const partialVol = vol * (idx === 0 ? 1 : idx === 1 ? 0.5 : 0.22);
         gain.gain.setValueAtTime(0.0001, t);
-        gain.gain.exponentialRampToValueAtTime(partialVol, t + 0.008);
+        gain.gain.exponentialRampToValueAtTime(partialVol, t + 0.006);
         gain.gain.exponentialRampToValueAtTime(0.0001, t + decay);
         osc.connect(gain);
         gain.connect(warmth);
@@ -2509,27 +2510,19 @@ function playCoinDropSound() {
       });
     }
 
-    // Golpe inicial, grave y con cuerpo
-    clink(now + 0.02, 0.5, 210, 0.22);
+    // Golpe inicial grave, como la primera moneda tocando el suelo
+    clink(now + 0.02, 0.4, 200, 0.2);
 
-    // Rebotes: pocos, espaciados al principio, cada vez más juntos y suaves
-    const bounces = 6;
-    let t = now + 0.28;
-    for (let i = 0; i < bounces; i++) {
-      const progress = i / bounces;
-      const gap = 0.15 * Math.pow(1 - progress, 1.7) + 0.03;
-      t += gap;
-      clink(t, 0.28 * (1 - progress * 0.65), 260 - progress * 40, 0.16);
-    }
-
-    // Zumbido final breve, apagado, al terminar de girar (no protagonista)
-    const spinHits = 8;
-    let t2 = t + 0.08;
-    for (let i = 0; i < spinHits; i++) {
-      const progress = i / spinHits;
-      const gap = 0.05 * (1 - progress) + 0.018;
-      t2 += gap;
-      clink(t2, 0.06 * (1 - progress), 380, 0.05);
+    // Puñado de tintineos superpuestos: densos al principio (varias
+    // monedas cayendo casi a la vez) y cada vez más espaciados/suaves.
+    const totalClinks = 22;
+    for (let i = 0; i < totalClinks; i++) {
+      const progress = i / totalClinks;
+      const t = now + 0.12 + Math.pow(progress, 1.6) * 1.1 + Math.random() * 0.035;
+      const freq = 700 + Math.random() * 1500;
+      const vol = 0.15 * (1 - progress * 0.55) * (0.7 + Math.random() * 0.3);
+      const decay = 0.09 + Math.random() * 0.08;
+      clink(t, vol, freq, decay);
     }
   } catch (e) { /* si el navegador bloquea audio, no pasa nada */ }
 }
