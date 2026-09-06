@@ -724,6 +724,13 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 .lang-option:hover { background: var(--input-bg); opacity: .8; filter: saturate(.8); }
 .lang-option.active { opacity: 1; filter: saturate(1); background: var(--input-bg); color: var(--gold); }
 .lang-option small { font-weight: 400; color: var(--muted); }
+/* Variante para la cabecera de la app: en flujo normal junto al resto
+   de iconos (no flotante), con el menú abriéndose hacia abajo en vez
+   de hacia arriba. */
+.lang-switcher-header { position: relative; bottom: auto; right: auto; left: auto; z-index: auto; }
+.lang-header-btn { gap: 6px; font-weight: 700; font-size: 13px; }
+#headerLangCode { letter-spacing: .5px; }
+.lang-switcher-header .lang-menu { bottom: auto; top: calc(100% + 8px); right: 0; }
 @media (max-width: 480px) {
     .lang-switcher { bottom: 10px; right: 10px; }
     .lang-switcher-btn span:not(.lang-flag) { display: none; }
@@ -956,6 +963,13 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                 <div class="bell-dropdown-header" data-i18n="header_notifications">Notificaciones</div>
                 <div id="bellList"><p class="friend-empty" data-i18n="header_no_notifications">No tienes notificaciones.</p></div>
             </div>
+        </div>
+        <div class="lang-switcher lang-switcher-header" id="headerLangSwitcher">
+            <button type="button" class="header-icon-btn lang-header-btn" id="headerLangBtn" onclick="toggleHeaderLangMenu()">
+                <span class="lang-flag" id="headerLangFlag"></span>
+                <span id="headerLangCode">ES</span>
+            </button>
+            <div class="lang-menu" id="headerLangMenu"></div>
         </div>
         <button class="theme-toggle" id="themeToggleBtnHeader" onclick="toggleTheme()" title="Cambiar tema" data-i18n-title="title_change_theme">🌙</button>
         <button class="door-btn" id="doorBtn" onclick="handleDoorClick()" title="Cerrar sesión" data-i18n-title="title_logout">
@@ -1255,6 +1269,8 @@ const LANG_FLAGS = {
   nl: '<svg viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="16" fill="#21468B"/><rect width="24" height="10.67" fill="#fff"/><rect width="24" height="5.33" fill="#AE1C28"/></svg>',
   ru: '<svg viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="16" fill="#D52B1E"/><rect width="24" height="10.67" fill="#0039A6"/><rect width="24" height="5.33" fill="#fff"/></svg>',
   ar: '<svg viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="16" fill="#fff"/><rect width="24" height="5.33" fill="#000"/><rect y="10.67" width="24" height="5.33" fill="#007A3D"/><polygon points="0,0 9,8 0,16" fill="#CE1126"/></svg>',
+  zh: '<svg viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="16" fill="#DE2910"/><polygon points="4,1.8 4.56,3.23 6.09,3.32 4.90,4.29 5.29,5.78 4,4.95 2.71,5.78 3.10,4.29 1.91,3.32 3.44,3.23" fill="#FFDE00"/></svg>',
+  ja: '<svg viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="16" fill="#fff"/><circle cx="12" cy="8" r="4.6" fill="#BC002D"/></svg>',
 };
 /* Todos los idiomas ya están traducidos y listos (banderas + textos);
    "enabled: false" solo los oculta del menú hasta que se pida
@@ -1268,120 +1284,122 @@ const LANGUAGES = [
   { code: 'nl', label: 'Nederlands', hint: 'Nederland', enabled: false },
   { code: 'ru', label: 'Русский', hint: 'Россия', enabled: false },
   { code: 'ar', label: 'العربية', hint: 'عربي', enabled: false },
+  { code: 'zh', label: '中文', hint: '简体中文', enabled: false },
+  { code: 'ja', label: '日本語', hint: '日本', enabled: false },
 ];
 const I18N = {
-  oauth_google: { en:'Continue with Google', fr:'Continuer avec Google', de:'Mit Google fortfahren', nl:'Doorgaan met Google', ru:'Продолжить через Google', ar:'المتابعة باستخدام Google' },
-  oauth_discord: { en:'Continue with Discord', fr:'Continuer avec Discord', de:'Mit Discord fortfahren', nl:'Doorgaan met Discord', ru:'Продолжить через Discord', ar:'المتابعة باستخدام Discord' },
-  oauth_divider: { en:'or with your email', fr:'ou avec votre e-mail', de:'oder mit deiner E-Mail', nl:'of met je e-mail', ru:'или с помощью почты', ar:'أو باستخدام بريدك الإلكتروني' },
-  tab_login: { en:'Log in', fr:'Connexion', de:'Anmelden', nl:'Inloggen', ru:'Вход', ar:'تسجيل الدخول' },
-  tab_register: { en:'Create account', fr:'Créer un compte', de:'Konto erstellen', nl:'Account aanmaken', ru:'Создать аккаунт', ar:'إنشاء حساب' },
-  login_email_ph: { en:'Email or username', fr:"E-mail ou nom d'utilisateur", de:'E-Mail oder Benutzername', nl:'E-mail of gebruikersnaam', ru:'Почта или имя пользователя', ar:'البريد الإلكتروني أو اسم المستخدم' },
-  password: { en:'Password', fr:'Mot de passe', de:'Passwort', nl:'Wachtwoord', ru:'Пароль', ar:'كلمة المرور' },
-  remember_me: { en:'Remember me', fr:'Se souvenir de moi', de:'Angemeldet bleiben', nl:'Onthoud mij', ru:'Запомнить меня', ar:'تذكرني' },
-  btn_enter: { en:'Log in', fr:'Entrer', de:'Anmelden', nl:'Inloggen', ru:'Войти', ar:'دخول' },
-  forgot_password: { en:'Forgot your password?', fr:'Mot de passe oublié ?', de:'Passwort vergessen?', nl:'Wachtwoord vergeten?', ru:'Забыли пароль?', ar:'هل نسيت كلمة المرور؟' },
-  resend_confirmation: { en:"Didn't get the confirmation email?", fr:"Vous n'avez pas reçu l'e-mail de confirmation ?", de:'Keine Bestätigungs-E-Mail erhalten?', nl:'Geen bevestigingsmail ontvangen?', ru:'Не пришло письмо с подтверждением?', ar:'لم يصلك بريد التأكيد؟' },
-  register_username_ph: { en:'Username (3-30 characters)', fr:"Nom d'utilisateur (3-30 caractères)", de:'Benutzername (3-30 Zeichen)', nl:'Gebruikersnaam (3-30 tekens)', ru:'Имя пользователя (3-30 символов)', ar:'اسم المستخدم (3-30 حرفًا)' },
-  email_address: { en:'Email address', fr:'Adresse e-mail', de:'E-Mail-Adresse', nl:'E-mailadres', ru:'Электронная почта', ar:'البريد الإلكتروني' },
-  register_password_ph: { en:'Password (minimum 6 characters)', fr:'Mot de passe (6 caractères minimum)', de:'Passwort (mindestens 6 Zeichen)', nl:'Wachtwoord (minimaal 6 tekens)', ru:'Пароль (минимум 6 символов)', ar:'كلمة المرور (6 أحرف على الأقل)' },
-  your_email: { en:'Your email address', fr:'Votre adresse e-mail', de:'Deine E-Mail-Adresse', nl:'Je e-mailadres', ru:'Ваша электронная почта', ar:'بريدك الإلكتروني' },
-  btn_send_recovery: { en:'Send recovery link', fr:'Envoyer le lien de récupération', de:'Wiederherstellungslink senden', nl:'Herstellink versturen', ru:'Отправить ссылку для восстановления', ar:'إرسال رابط الاسترداد' },
-  back_to_login: { en:'Back to login', fr:'Retour à la connexion', de:'Zurück zur Anmeldung', nl:'Terug naar inloggen', ru:'Назад ко входу', ar:'العودة لتسجيل الدخول' },
-  reset_password_ph: { en:'New password (minimum 6 characters)', fr:'Nouveau mot de passe (6 caractères minimum)', de:'Neues Passwort (mindestens 6 Zeichen)', nl:'Nieuw wachtwoord (minimaal 6 tekens)', ru:'Новый пароль (минимум 6 символов)', ar:'كلمة مرور جديدة (6 أحرف على الأقل)' },
-  btn_save_password: { en:'Save new password', fr:'Enregistrer le nouveau mot de passe', de:'Neues Passwort speichern', nl:'Nieuw wachtwoord opslaan', ru:'Сохранить новый пароль', ar:'حفظ كلمة المرور الجديدة' },
-  btn_resend_confirmation: { en:'Resend confirmation email', fr:"Renvoyer l'e-mail de confirmation", de:'Bestätigungs-E-Mail erneut senden', nl:'Bevestigingsmail opnieuw versturen', ru:'Отправить письмо с подтверждением повторно', ar:'إعادة إرسال بريد التأكيد' },
+  oauth_google: { en:'Continue with Google', fr:'Continuer avec Google', de:'Mit Google fortfahren', nl:'Doorgaan met Google', ru:'Продолжить через Google', ar:'المتابعة باستخدام Google', zh:'使用 Google 继续', ja:'Google で続ける' },
+  oauth_discord: { en:'Continue with Discord', fr:'Continuer avec Discord', de:'Mit Discord fortfahren', nl:'Doorgaan met Discord', ru:'Продолжить через Discord', ar:'المتابعة باستخدام Discord', zh:'使用 Discord 继续', ja:'Discord で続ける' },
+  oauth_divider: { en:'or with your email', fr:'ou avec votre e-mail', de:'oder mit deiner E-Mail', nl:'of met je e-mail', ru:'или с помощью почты', ar:'أو باستخدام بريدك الإلكتروني', zh:'或使用邮箱', ja:'またはメールアドレスで' },
+  tab_login: { en:'Log in', fr:'Connexion', de:'Anmelden', nl:'Inloggen', ru:'Вход', ar:'تسجيل الدخول', zh:'登录', ja:'ログイン' },
+  tab_register: { en:'Create account', fr:'Créer un compte', de:'Konto erstellen', nl:'Account aanmaken', ru:'Создать аккаунт', ar:'إنشاء حساب', zh:'创建账户', ja:'アカウントを作成' },
+  login_email_ph: { en:'Email or username', fr:"E-mail ou nom d'utilisateur", de:'E-Mail oder Benutzername', nl:'E-mail of gebruikersnaam', ru:'Почта или имя пользователя', ar:'البريد الإلكتروني أو اسم المستخدم', zh:'邮箱或用户名', ja:'メールアドレスまたはユーザー名' },
+  password: { en:'Password', fr:'Mot de passe', de:'Passwort', nl:'Wachtwoord', ru:'Пароль', ar:'كلمة المرور', zh:'密码', ja:'パスワード' },
+  remember_me: { en:'Remember me', fr:'Se souvenir de moi', de:'Angemeldet bleiben', nl:'Onthoud mij', ru:'Запомнить меня', ar:'تذكرني', zh:'记住我', ja:'ログイン状態を保持' },
+  btn_enter: { en:'Log in', fr:'Entrer', de:'Anmelden', nl:'Inloggen', ru:'Войти', ar:'دخول', zh:'登录', ja:'ログイン' },
+  forgot_password: { en:'Forgot your password?', fr:'Mot de passe oublié ?', de:'Passwort vergessen?', nl:'Wachtwoord vergeten?', ru:'Забыли пароль?', ar:'هل نسيت كلمة المرور؟', zh:'忘记密码了吗？', ja:'パスワードをお忘れですか？' },
+  resend_confirmation: { en:"Didn't get the confirmation email?", fr:"Vous n'avez pas reçu l'e-mail de confirmation ?", de:'Keine Bestätigungs-E-Mail erhalten?', nl:'Geen bevestigingsmail ontvangen?', ru:'Не пришло письмо с подтверждением?', ar:'لم يصلك بريد التأكيد؟', zh:'没有收到确认邮件？', ja:'確認メールが届きませんか？' },
+  register_username_ph: { en:'Username (3-30 characters)', fr:"Nom d'utilisateur (3-30 caractères)", de:'Benutzername (3-30 Zeichen)', nl:'Gebruikersnaam (3-30 tekens)', ru:'Имя пользователя (3-30 символов)', ar:'اسم المستخدم (3-30 حرفًا)', zh:'用户名（3-30个字符）', ja:'ユーザー名（3～30文字）' },
+  email_address: { en:'Email address', fr:'Adresse e-mail', de:'E-Mail-Adresse', nl:'E-mailadres', ru:'Электронная почта', ar:'البريد الإلكتروني', zh:'电子邮箱', ja:'メールアドレス' },
+  register_password_ph: { en:'Password (minimum 6 characters)', fr:'Mot de passe (6 caractères minimum)', de:'Passwort (mindestens 6 Zeichen)', nl:'Wachtwoord (minimaal 6 tekens)', ru:'Пароль (минимум 6 символов)', ar:'كلمة المرور (6 أحرف على الأقل)', zh:'密码（至少6个字符）', ja:'パスワード（6文字以上）' },
+  your_email: { en:'Your email address', fr:'Votre adresse e-mail', de:'Deine E-Mail-Adresse', nl:'Je e-mailadres', ru:'Ваша электронная почта', ar:'بريدك الإلكتروني', zh:'您的电子邮箱', ja:'あなたのメールアドレス' },
+  btn_send_recovery: { en:'Send recovery link', fr:'Envoyer le lien de récupération', de:'Wiederherstellungslink senden', nl:'Herstellink versturen', ru:'Отправить ссылку для восстановления', ar:'إرسال رابط الاسترداد', zh:'发送恢复链接', ja:'復旧リンクを送信' },
+  back_to_login: { en:'Back to login', fr:'Retour à la connexion', de:'Zurück zur Anmeldung', nl:'Terug naar inloggen', ru:'Назад ко входу', ar:'العودة لتسجيل الدخول', zh:'返回登录', ja:'ログインに戻る' },
+  reset_password_ph: { en:'New password (minimum 6 characters)', fr:'Nouveau mot de passe (6 caractères minimum)', de:'Neues Passwort (mindestens 6 Zeichen)', nl:'Nieuw wachtwoord (minimaal 6 tekens)', ru:'Новый пароль (минимум 6 символов)', ar:'كلمة مرور جديدة (6 أحرف على الأقل)', zh:'新密码（至少6个字符）', ja:'新しいパスワード（6文字以上）' },
+  btn_save_password: { en:'Save new password', fr:'Enregistrer le nouveau mot de passe', de:'Neues Passwort speichern', nl:'Nieuw wachtwoord opslaan', ru:'Сохранить новый пароль', ar:'حفظ كلمة المرور الجديدة', zh:'保存新密码', ja:'新しいパスワードを保存' },
+  btn_resend_confirmation: { en:'Resend confirmation email', fr:"Renvoyer l'e-mail de confirmation", de:'Bestätigungs-E-Mail erneut senden', nl:'Bevestigingsmail opnieuw versturen', ru:'Отправить письмо с подтверждением повторно', ar:'إعادة إرسال بريد التأكيد', zh:'重新发送确认邮件', ja:'確認メールを再送信' },
 
   // Cabecera / menú lateral
-  title_menu: { en:'Menu', fr:'Menu', de:'Menü', nl:'Menu', ru:'Меню', ar:'القائمة' },
-  title_view_profile: { en:'View my profile', fr:'Voir mon profil', de:'Mein Profil ansehen', nl:'Mijn profiel bekijken', ru:'Посмотреть профиль', ar:'عرض ملفي الشخصي' },
-  title_design_mode: { en:'Design mode', fr:'Mode design', de:'Design-Modus', nl:'Ontwerpmodus', ru:'Режим дизайна', ar:'وضع التصميم' },
-  title_change_theme: { en:'Switch theme', fr:'Changer de thème', de:'Thema wechseln', nl:'Thema wisselen', ru:'Сменить тему', ar:'تبديل المظهر' },
-  title_logout: { en:'Log out', fr:'Se déconnecter', de:'Abmelden', nl:'Uitloggen', ru:'Выйти', ar:'تسجيل الخروج' },
-  header_notifications: { en:'Notifications', fr:'Notifications', de:'Benachrichtigungen', nl:'Meldingen', ru:'Уведомления', ar:'الإشعارات' },
-  header_no_notifications: { en:"You have no notifications.", fr:"Vous n'avez aucune notification.", de:'Du hast keine Benachrichtigungen.', nl:'Je hebt geen meldingen.', ru:'У вас нет уведомлений.', ar:'ليس لديك إشعارات.' },
-  menu_lobby: { en:'🏠 Lobby', fr:'🏠 Hall', de:'🏠 Lobby', nl:'🏠 Lobby', ru:'🏠 Лобби', ar:'🏠 الردهة' },
-  menu_profile: { en:'👤 My profile', fr:'👤 Mon profil', de:'👤 Mein Profil', nl:'👤 Mijn profiel', ru:'👤 Мой профиль', ar:'👤 ملفي الشخصي' },
-  menu_avatar: { en:'🎭 Avatar', fr:'🎭 Avatar', de:'🎭 Avatar', nl:'🎭 Avatar', ru:'🎭 Аватар', ar:'🎭 الصورة الرمزية' },
-  menu_achievements: { en:'🏆 Achievements', fr:'🏆 Succès', de:'🏆 Erfolge', nl:'🏆 Prestaties', ru:'🏆 Достижения', ar:'🏆 الإنجازات' },
-  menu_shop: { en:'🛒 Shop', fr:'🛒 Boutique', de:'🛒 Shop', nl:'🛒 Winkel', ru:'🛒 Магазин', ar:'🛒 المتجر' },
-  menu_friends: { en:'👥 Friends', fr:'👥 Amis', de:'👥 Freunde', nl:'👥 Vrienden', ru:'👥 Друзья', ar:'👥 الأصدقاء' },
-  sidebar_theme: { en:'🌙 Switch theme', fr:'🌙 Changer de thème', de:'🌙 Thema wechseln', nl:'🌙 Thema wisselen', ru:'🌙 Сменить тему', ar:'🌙 تبديل المظهر' },
-  sidebar_design_mode: { en:'🍺 Design mode', fr:'🍺 Mode design', de:'🍺 Design-Modus', nl:'🍺 Ontwerpmodus', ru:'🍺 Режим дизайна', ar:'🍺 وضع التصميم' },
+  title_menu: { en:'Menu', fr:'Menu', de:'Menü', nl:'Menu', ru:'Меню', ar:'القائمة', zh:'菜单', ja:'メニュー' },
+  title_view_profile: { en:'View my profile', fr:'Voir mon profil', de:'Mein Profil ansehen', nl:'Mijn profiel bekijken', ru:'Посмотреть профиль', ar:'عرض ملفي الشخصي', zh:'查看我的资料', ja:'マイプロフィールを見る' },
+  title_design_mode: { en:'Design mode', fr:'Mode design', de:'Design-Modus', nl:'Ontwerpmodus', ru:'Режим дизайна', ar:'وضع التصميم', zh:'设计模式', ja:'デザインモード' },
+  title_change_theme: { en:'Switch theme', fr:'Changer de thème', de:'Thema wechseln', nl:'Thema wisselen', ru:'Сменить тему', ar:'تبديل المظهر', zh:'切换主题', ja:'テーマを切り替え' },
+  title_logout: { en:'Log out', fr:'Se déconnecter', de:'Abmelden', nl:'Uitloggen', ru:'Выйти', ar:'تسجيل الخروج', zh:'退出登录', ja:'ログアウト' },
+  header_notifications: { en:'Notifications', fr:'Notifications', de:'Benachrichtigungen', nl:'Meldingen', ru:'Уведомления', ar:'الإشعارات', zh:'通知', ja:'通知' },
+  header_no_notifications: { en:"You have no notifications.", fr:"Vous n'avez aucune notification.", de:'Du hast keine Benachrichtigungen.', nl:'Je hebt geen meldingen.', ru:'У вас нет уведомлений.', ar:'ليس لديك إشعارات.', zh:'您没有任何通知。', ja:'通知はありません。' },
+  menu_lobby: { en:'🏠 Lobby', fr:'🏠 Hall', de:'🏠 Lobby', nl:'🏠 Lobby', ru:'🏠 Лобби', ar:'🏠 الردهة', zh:'🏠 大厅', ja:'🏠 ロビー' },
+  menu_profile: { en:'👤 My profile', fr:'👤 Mon profil', de:'👤 Mein Profil', nl:'👤 Mijn profiel', ru:'👤 Мой профиль', ar:'👤 ملفي الشخصي', zh:'👤 我的资料', ja:'👤 マイプロフィール' },
+  menu_avatar: { en:'🎭 Avatar', fr:'🎭 Avatar', de:'🎭 Avatar', nl:'🎭 Avatar', ru:'🎭 Аватар', ar:'🎭 الصورة الرمزية', zh:'🎭 头像', ja:'🎭 アバター' },
+  menu_achievements: { en:'🏆 Achievements', fr:'🏆 Succès', de:'🏆 Erfolge', nl:'🏆 Prestaties', ru:'🏆 Достижения', ar:'🏆 الإنجازات', zh:'🏆 成就', ja:'🏆 実績' },
+  menu_shop: { en:'🛒 Shop', fr:'🛒 Boutique', de:'🛒 Shop', nl:'🛒 Winkel', ru:'🛒 Магазин', ar:'🛒 المتجر', zh:'🛒 商店', ja:'🛒 ショップ' },
+  menu_friends: { en:'👥 Friends', fr:'👥 Amis', de:'👥 Freunde', nl:'👥 Vrienden', ru:'👥 Друзья', ar:'👥 الأصدقاء', zh:'👥 好友', ja:'👥 フレンド' },
+  sidebar_theme: { en:'🌙 Switch theme', fr:'🌙 Changer de thème', de:'🌙 Thema wechseln', nl:'🌙 Thema wisselen', ru:'🌙 Сменить тему', ar:'🌙 تبديل المظهر', zh:'🌙 切换主题', ja:'🌙 テーマを切り替え' },
+  sidebar_design_mode: { en:'🍺 Design mode', fr:'🍺 Mode design', de:'🍺 Design-Modus', nl:'🍺 Ontwerpmodus', ru:'🍺 Режим дизайна', ar:'🍺 وضع التصميم', zh:'🍺 设计模式', ja:'🍺 デザインモード' },
 
   // Lobby
-  lobby_title: { en:'Welcome to the Lobby! 🎲', fr:'Bienvenue dans le hall ! 🎲', de:'Willkommen in der Lobby! 🎲', nl:'Welkom in de lobby! 🎲', ru:'Добро пожаловать в лобби! 🎲', ar:'مرحبًا بك في الردهة! 🎲' },
-  lobby_subtitle: { en:'Find a game, invite your friends or create your own table.', fr:'Trouvez une partie, invitez vos amis ou créez votre propre table.', de:'Finde ein Spiel, lade deine Freunde ein oder erstelle deinen eigenen Tisch.', nl:'Vind een spel, nodig je vrienden uit of maak je eigen tafel.', ru:'Найдите игру, пригласите друзей или создайте свой стол.', ar:'ابحث عن مباراة، وادعُ أصدقاءك أو أنشئ طاولتك الخاصة.' },
-  stat_level: { en:'⭐ Level', fr:'⭐ Niveau', de:'⭐ Level', nl:'⭐ Niveau', ru:'⭐ Уровень', ar:'⭐ المستوى' },
-  stat_achievements: { en:'🏆 Achievements unlocked', fr:'🏆 Succès débloqués', de:'🏆 Freigeschaltete Erfolge', nl:'🏆 Ontgrendelde prestaties', ru:'🏆 Открытые достижения', ar:'🏆 الإنجازات المفتوحة' },
-  stat_games: { en:'🎮 Games played', fr:'🎮 Parties jouées', de:'🎮 Gespielte Runden', nl:'🎮 Gespeelde spellen', ru:'🎮 Сыграно игр', ar:'🎮 المباريات الملعوبة' },
-  rooms_available: { en:'🌍 Available rooms', fr:'🌍 Salons disponibles', de:'🌍 Verfügbare Räume', nl:'🌍 Beschikbare kamers', ru:'🌍 Доступные комнаты', ar:'🌍 الغرف المتاحة' },
-  btn_create_room: { en:'➕ Create room', fr:'➕ Créer un salon', de:'➕ Raum erstellen', nl:'➕ Kamer maken', ru:'➕ Создать комнату', ar:'➕ إنشاء غرفة' },
-  btn_join: { en:'Join', fr:'Rejoindre', de:'Beitreten', nl:'Meedoen', ru:'Присоединиться', ar:'انضمام' },
+  lobby_title: { en:'Welcome to the Lobby! 🎲', fr:'Bienvenue dans le hall ! 🎲', de:'Willkommen in der Lobby! 🎲', nl:'Welkom in de lobby! 🎲', ru:'Добро пожаловать в лобби! 🎲', ar:'مرحبًا بك في الردهة! 🎲', zh:'欢迎来到大厅！🎲', ja:'ロビーへようこそ！🎲' },
+  lobby_subtitle: { en:'Find a game, invite your friends or create your own table.', fr:'Trouvez une partie, invitez vos amis ou créez votre propre table.', de:'Finde ein Spiel, lade deine Freunde ein oder erstelle deinen eigenen Tisch.', nl:'Vind een spel, nodig je vrienden uit of maak je eigen tafel.', ru:'Найдите игру, пригласите друзей или создайте свой стол.', ar:'ابحث عن مباراة، وادعُ أصدقاءك أو أنشئ طاولتك الخاصة.', zh:'寻找一局游戏，邀请好友，或创建属于你自己的牌桌。', ja:'ゲームを探したり、友達を招待したり、自分のテーブルを作成しましょう。' },
+  stat_level: { en:'⭐ Level', fr:'⭐ Niveau', de:'⭐ Level', nl:'⭐ Niveau', ru:'⭐ Уровень', ar:'⭐ المستوى', zh:'⭐ 等级', ja:'⭐ レベル' },
+  stat_achievements: { en:'🏆 Achievements unlocked', fr:'🏆 Succès débloqués', de:'🏆 Freigeschaltete Erfolge', nl:'🏆 Ontgrendelde prestaties', ru:'🏆 Открытые достижения', ar:'🏆 الإنجازات المفتوحة', zh:'🏆 已解锁成就', ja:'🏆 解除した実績' },
+  stat_games: { en:'🎮 Games played', fr:'🎮 Parties jouées', de:'🎮 Gespielte Runden', nl:'🎮 Gespeelde spellen', ru:'🎮 Сыграно игр', ar:'🎮 المباريات الملعوبة', zh:'🎮 已玩局数', ja:'🎮 プレイ回数' },
+  rooms_available: { en:'🌍 Available rooms', fr:'🌍 Salons disponibles', de:'🌍 Verfügbare Räume', nl:'🌍 Beschikbare kamers', ru:'🌍 Доступные комнаты', ar:'🌍 الغرف المتاحة', zh:'🌍 可加入的房间', ja:'🌍 参加可能なルーム' },
+  btn_create_room: { en:'➕ Create room', fr:'➕ Créer un salon', de:'➕ Raum erstellen', nl:'➕ Kamer maken', ru:'➕ Создать комнату', ar:'➕ إنشاء غرفة', zh:'➕ 创建房间', ja:'➕ ルームを作成' },
+  btn_join: { en:'Join', fr:'Rejoindre', de:'Beitreten', nl:'Meedoen', ru:'Присоединиться', ar:'انضمام', zh:'加入', ja:'参加する' },
 
   // Salón de dados
-  dice_title: { en:'🎲 Dice Hall', fr:'🎲 Salle de dés', de:'🎲 Würfelsaal', nl:'🎲 Dobbelzaal', ru:'🎲 Зал костей', ar:'🎲 قاعة النرد' },
-  dice_subtitle: { en:'Your avatar really plays here: every roll counts toward your achievements and coins.', fr:'Votre avatar joue vraiment ici : chaque lancer compte pour vos succès et vos pièces.', de:'Dein Avatar spielt hier wirklich mit: Jeder Wurf zählt für deine Erfolge und Münzen.', nl:'Je avatar speelt hier echt mee: elke worp telt voor je prestaties en munten.', ru:'Ваш аватар действительно играет здесь: каждый бросок засчитывается для достижений и монет.', ar:'يلعب رمزك هنا حقًا: كل رمية تُحتسب لإنجازاتك وعملاتك.' },
-  dice_you: { en:'You', fr:'Toi', de:'Du', nl:'Jij', ru:'Вы', ar:'أنت' },
-  dice_default_result: { en:'Roll the dice to start the game.', fr:'Lancez les dés pour commencer la partie.', de:'Würfle, um das Spiel zu starten.', nl:'Gooi de dobbelstenen om het spel te starten.', ru:'Бросьте кости, чтобы начать игру.', ar:'ارمِ النرد لبدء اللعبة.' },
-  btn_roll_dice: { en:'🎲 Roll dice', fr:'🎲 Lancer les dés', de:'🎲 Würfeln', nl:'🎲 Dobbelstenen gooien', ru:'🎲 Бросить кости', ar:'🎲 رمي النرد' },
+  dice_title: { en:'🎲 Dice Hall', fr:'🎲 Salle de dés', de:'🎲 Würfelsaal', nl:'🎲 Dobbelzaal', ru:'🎲 Зал костей', ar:'🎲 قاعة النرد', zh:'🎲 骰子大厅', ja:'🎲 ダイスホール' },
+  dice_subtitle: { en:'Your avatar really plays here: every roll counts toward your achievements and coins.', fr:'Votre avatar joue vraiment ici : chaque lancer compte pour vos succès et vos pièces.', de:'Dein Avatar spielt hier wirklich mit: Jeder Wurf zählt für deine Erfolge und Münzen.', nl:'Je avatar speelt hier echt mee: elke worp telt voor je prestaties en munten.', ru:'Ваш аватар действительно играет здесь: каждый бросок засчитывается для достижений и монет.', ar:'يلعب رمزك هنا حقًا: كل رمية تُحتسب لإنجازاتك وعملاتك.', zh:'你的头像会在这里真实对战：每一次投掷都会计入你的成就和金币。', ja:'ここではあなたのアバターが実際にプレイします。1回のロールごとに実績とコインが加算されます。' },
+  dice_you: { en:'You', fr:'Toi', de:'Du', nl:'Jij', ru:'Вы', ar:'أنت', zh:'你', ja:'あなた' },
+  dice_default_result: { en:'Roll the dice to start the game.', fr:'Lancez les dés pour commencer la partie.', de:'Würfle, um das Spiel zu starten.', nl:'Gooi de dobbelstenen om het spel te starten.', ru:'Бросьте кости, чтобы начать игру.', ar:'ارمِ النرد لبدء اللعبة.', zh:'掷骰子开始游戏。', ja:'サイコロを振ってゲームを始めましょう。' },
+  btn_roll_dice: { en:'🎲 Roll dice', fr:'🎲 Lancer les dés', de:'🎲 Würfeln', nl:'🎲 Dobbelstenen gooien', ru:'🎲 Бросить кости', ar:'🎲 رمي النرد', zh:'🎲 掷骰子', ja:'🎲 サイコロを振る' },
 
   // Perfil
-  profile_subtitle: { en:'Your identity within Dragonbarbudo.', fr:'Votre identité au sein de Dragonbarbudo.', de:'Deine Identität in Dragonbarbudo.', nl:'Jouw identiteit binnen Dragonbarbudo.', ru:'Ваша личность в Dragonbarbudo.', ar:'هويتك داخل Dragonbarbudo.' },
-  profile_desc: { en:'Adventurer, strategist and achievement collector.', fr:'Aventurier, stratège et collectionneur de succès.', de:'Abenteurer, Stratege und Erfolgssammler.', nl:'Avonturier, strateeg en verzamelaar van prestaties.', ru:'Искатель приключений, стратег и коллекционер достижений.', ar:'مغامر واستراتيجي وجامع إنجازات.' },
-  word_achievements: { en:'achievements', fr:'succès', de:'Erfolge', nl:'prestaties', ru:'достижений', ar:'إنجازات' },
-  word_games_played: { en:'games played', fr:'parties jouées', de:'gespielte Runden', nl:'gespeelde spellen', ru:'сыграно игр', ar:'مباريات ملعوبة' },
-  word_coins: { en:'coins', fr:'pièces', de:'Münzen', nl:'munten', ru:'монет', ar:'عملات' },
+  profile_subtitle: { en:'Your identity within Dragonbarbudo.', fr:'Votre identité au sein de Dragonbarbudo.', de:'Deine Identität in Dragonbarbudo.', nl:'Jouw identiteit binnen Dragonbarbudo.', ru:'Ваша личность в Dragonbarbudo.', ar:'هويتك داخل Dragonbarbudo.', zh:'你在 Dragonbarbudo 中的身份。', ja:'Dragonbarbudo におけるあなたのアイデンティティ。' },
+  profile_desc: { en:'Adventurer, strategist and achievement collector.', fr:'Aventurier, stratège et collectionneur de succès.', de:'Abenteurer, Stratege und Erfolgssammler.', nl:'Avonturier, strateeg en verzamelaar van prestaties.', ru:'Искатель приключений, стратег и коллекционер достижений.', ar:'مغامر واستراتيجي وجامع إنجازات.', zh:'冒险家、战略家、成就收集者。', ja:'冒険者であり、戦略家であり、実績コレクター。' },
+  word_achievements: { en:'achievements', fr:'succès', de:'Erfolge', nl:'prestaties', ru:'достижений', ar:'إنجازات', zh:'项成就', ja:'実績' },
+  word_games_played: { en:'games played', fr:'parties jouées', de:'gespielte Runden', nl:'gespeelde spellen', ru:'сыграно игр', ar:'مباريات ملعوبة', zh:'局游戏', ja:'プレイ回数' },
+  word_coins: { en:'coins', fr:'pièces', de:'Münzen', nl:'munten', ru:'монет', ar:'عملات', zh:'枚金币', ja:'コイン' },
 
   // Avatar
-  avatar_title: { en:'🎭 Customize your avatar', fr:'🎭 Personnalisez votre avatar', de:'🎭 Gestalte deinen Avatar', nl:'🎭 Pas je avatar aan', ru:'🎭 Настройте своего аватара', ar:'🎭 خصص صورتك الرمزية' },
-  avatar_subtitle: { en:'Every item is unlocked by playing, through achievements or in the shop.', fr:"Chaque objet se débloque en jouant, grâce aux succès ou dans la boutique.", de:'Jedes Objekt wird durch Spielen, Erfolge oder im Shop freigeschaltet.', nl:'Elk item ontgrendel je door te spelen, via prestaties of in de winkel.', ru:'Каждый предмет открывается игрой, достижениями или в магазине.', ar:'يتم فتح كل عنصر باللعب أو عبر الإنجازات أو من المتجر.' },
-  avatar_preview: { en:'Preview', fr:'Aperçu', de:'Vorschau', nl:'Voorbeeld', ru:'Предпросмотр', ar:'معاينة' },
+  avatar_title: { en:'🎭 Customize your avatar', fr:'🎭 Personnalisez votre avatar', de:'🎭 Gestalte deinen Avatar', nl:'🎭 Pas je avatar aan', ru:'🎭 Настройте своего аватара', ar:'🎭 خصص صورتك الرمزية', zh:'🎭 自定义你的头像', ja:'🎭 アバターをカスタマイズ' },
+  avatar_subtitle: { en:'Every item is unlocked by playing, through achievements or in the shop.', fr:"Chaque objet se débloque en jouant, grâce aux succès ou dans la boutique.", de:'Jedes Objekt wird durch Spielen, Erfolge oder im Shop freigeschaltet.', nl:'Elk item ontgrendel je door te spelen, via prestaties of in de winkel.', ru:'Каждый предмет открывается игрой, достижениями или в магазине.', ar:'يتم فتح كل عنصر باللعب أو عبر الإنجازات أو من المتجر.', zh:'每一件物品都可以通过游戏、成就或商店解锁。', ja:'すべてのアイテムは、プレイ・実績達成・ショップで解除できます。' },
+  avatar_preview: { en:'Preview', fr:'Aperçu', de:'Vorschau', nl:'Voorbeeld', ru:'Предпросмотр', ar:'معاينة', zh:'预览', ja:'プレビュー' },
 
   // Logros
-  achievements_title: { en:'🏆 Your achievements', fr:'🏆 Vos succès', de:'🏆 Deine Erfolge', nl:'🏆 Jouw prestaties', ru:'🏆 Ваши достижения', ar:'🏆 إنجازاتك' },
-  achievements_subtitle: { en:'Complete challenges by playing to unlock coins and avatar items.', fr:'Relevez des défis en jouant pour débloquer des pièces et des objets pour votre avatar.', de:'Erfülle Herausforderungen im Spiel, um Münzen und Avatar-Gegenstände freizuschalten.', nl:'Voltooi uitdagingen door te spelen om munten en avatar-items te ontgrendelen.', ru:'Выполняйте задания в игре, чтобы открывать монеты и предметы для аватара.', ar:'أكمل التحديات أثناء اللعب لفتح العملات وعناصر الصورة الرمزية.' },
+  achievements_title: { en:'🏆 Your achievements', fr:'🏆 Vos succès', de:'🏆 Deine Erfolge', nl:'🏆 Jouw prestaties', ru:'🏆 Ваши достижения', ar:'🏆 إنجازاتك', zh:'🏆 你的成就', ja:'🏆 あなたの実績' },
+  achievements_subtitle: { en:'Complete challenges by playing to unlock coins and avatar items.', fr:'Relevez des défis en jouant pour débloquer des pièces et des objets pour votre avatar.', de:'Erfülle Herausforderungen im Spiel, um Münzen und Avatar-Gegenstände freizuschalten.', nl:'Voltooi uitdagingen door te spelen om munten en avatar-items te ontgrendelen.', ru:'Выполняйте задания в игре, чтобы открывать монеты и предметы для аватара.', ar:'أكمل التحديات أثناء اللعب لفتح العملات وعناصر الصورة الرمزية.', zh:'通过游戏完成挑战，解锁金币和头像物品。', ja:'プレイして課題を達成し、コインやアバターアイテムを解除しましょう。' },
 
   // Tienda
-  shop_subtitle: { en:'Use the coins earned in your games to unlock items.', fr:'Utilisez les pièces gagnées dans vos parties pour débloquer des objets.', de:'Nutze die in deinen Spielen verdienten Münzen, um Gegenstände freizuschalten.', nl:'Gebruik de munten die je in je spellen hebt verdiend om items te ontgrendelen.', ru:'Используйте монеты, заработанные в играх, чтобы открывать предметы.', ar:'استخدم العملات التي كسبتها في مبارياتك لفتح العناصر.' },
+  shop_subtitle: { en:'Use the coins earned in your games to unlock items.', fr:'Utilisez les pièces gagnées dans vos parties pour débloquer des objets.', de:'Nutze die in deinen Spielen verdienten Münzen, um Gegenstände freizuschalten.', nl:'Gebruik de munten die je in je spellen hebt verdiend om items te ontgrendelen.', ru:'Используйте монеты, заработанные в играх, чтобы открывать предметы.', ar:'استخدم العملات التي كسبتها في مبارياتك لفتح العناصر.', zh:'使用在游戏中获得的金币解锁物品。', ja:'ゲームで獲得したコインを使ってアイテムを解除しましょう。' },
 
   // Panel de amigos
-  friends_search_ph: { en:'Search exact username...', fr:"Rechercher un nom d'utilisateur exact...", de:'Genauen Benutzernamen suchen...', nl:'Exacte gebruikersnaam zoeken...', ru:'Поиск по точному имени пользователя...', ar:'ابحث عن اسم مستخدم مطابق...' },
-  btn_search: { en:'Search', fr:'Rechercher', de:'Suchen', nl:'Zoeken', ru:'Поиск', ar:'بحث' },
-  friends_incoming: { en:'Incoming requests', fr:'Demandes reçues', de:'Eingehende Anfragen', nl:'Ontvangen verzoeken', ru:'Входящие заявки', ar:'الطلبات الواردة' },
-  friends_no_incoming: { en:'No requests.', fr:'Aucune demande.', de:'Keine Anfragen.', nl:'Geen verzoeken.', ru:'Нет заявок.', ar:'لا توجد طلبات.' },
-  friends_sent: { en:'Sent requests', fr:'Demandes envoyées', de:'Gesendete Anfragen', nl:'Verzonden verzoeken', ru:'Отправленные заявки', ar:'الطلبات المرسلة' },
-  friends_no_sent: { en:'None pending.', fr:'Aucune en attente.', de:'Keine ausstehend.', nl:'Geen in behandeling.', ru:'Нет ожидающих.', ar:'لا يوجد معلق.' },
-  friends_yours: { en:'Your friends', fr:'Vos amis', de:'Deine Freunde', nl:'Jouw vrienden', ru:'Ваши друзья', ar:'أصدقاؤك' },
-  friends_none: { en:"You don't have any friends yet.", fr:"Vous n'avez pas encore d'amis.", de:'Du hast noch keine Freunde.', nl:'Je hebt nog geen vrienden.', ru:'У вас пока нет друзей.', ar:'ليس لديك أصدقاء بعد.' },
+  friends_search_ph: { en:'Search exact username...', fr:"Rechercher un nom d'utilisateur exact...", de:'Genauen Benutzernamen suchen...', nl:'Exacte gebruikersnaam zoeken...', ru:'Поиск по точному имени пользователя...', ar:'ابحث عن اسم مستخدم مطابق...', zh:'搜索精确用户名…', ja:'ユーザー名を正確に検索…' },
+  btn_search: { en:'Search', fr:'Rechercher', de:'Suchen', nl:'Zoeken', ru:'Поиск', ar:'بحث', zh:'搜索', ja:'検索' },
+  friends_incoming: { en:'Incoming requests', fr:'Demandes reçues', de:'Eingehende Anfragen', nl:'Ontvangen verzoeken', ru:'Входящие заявки', ar:'الطلبات الواردة', zh:'收到的请求', ja:'受信したリクエスト' },
+  friends_no_incoming: { en:'No requests.', fr:'Aucune demande.', de:'Keine Anfragen.', nl:'Geen verzoeken.', ru:'Нет заявок.', ar:'لا توجد طلبات.', zh:'暂无请求。', ja:'リクエストはありません。' },
+  friends_sent: { en:'Sent requests', fr:'Demandes envoyées', de:'Gesendete Anfragen', nl:'Verzonden verzoeken', ru:'Отправленные заявки', ar:'الطلبات المرسلة', zh:'已发送的请求', ja:'送信したリクエスト' },
+  friends_no_sent: { en:'None pending.', fr:'Aucune en attente.', de:'Keine ausstehend.', nl:'Geen in behandeling.', ru:'Нет ожидающих.', ar:'لا يوجد معلق.', zh:'暂无待处理请求。', ja:'保留中のものはありません。' },
+  friends_yours: { en:'Your friends', fr:'Vos amis', de:'Deine Freunde', nl:'Jouw vrienden', ru:'Ваши друзья', ar:'أصدقاؤك', zh:'你的好友', ja:'あなたのフレンド' },
+  friends_none: { en:"You don't have any friends yet.", fr:"Vous n'avez pas encore d'amis.", de:'Du hast noch keine Freunde.', nl:'Je hebt nog geen vrienden.', ru:'У вас пока нет друзей.', ar:'ليس لديك أصدقاء بعد.', zh:'你还没有添加任何好友。', ja:'まだフレンドがいません。' },
 
   // Pie de página
-  footer_info: { en:'Information', fr:'Informations', de:'Information', nl:'Informatie', ru:'Информация', ar:'معلومات' },
-  footer_support: { en:'Support', fr:'Assistance', de:'Support', nl:'Ondersteuning', ru:'Поддержка', ar:'الدعم' },
-  footer_contact: { en:'Contact', fr:'Contact', de:'Kontakt', nl:'Contact', ru:'Контакты', ar:'اتصل بنا' },
-  footer_legal_pre: { en:'All', fr:'Toutes les', de:'Alle', nl:'Alle', ru:'Все', ar:'جميع' },
-  footer_legal_link: { en:'trademarks', fr:'marques déposées', de:'Marken', nl:'handelsmerken', ru:'товарные знаки', ar:'العلامات التجارية' },
-  footer_legal_post: { en:'referenced belong to their respective owners.', fr:'mentionnées appartiennent à leurs propriétaires respectifs.', de:'genannten gehören ihren jeweiligen Eigentümern.', nl:'waarnaar wordt verwezen zijn eigendom van hun respectievelijke eigenaars.', ru:'упомянутые здесь, принадлежат их владельцам.', ar:'المذكورة هي ملك لأصحابها.' },
-  footer_privacy: { en:'Privacy', fr:'Confidentialité', de:'Datenschutz', nl:'Privacy', ru:'Конфиденциальность', ar:'الخصوصية' },
-  footer_legal: { en:'Legal', fr:'Mentions légales', de:'Impressum', nl:'Juridisch', ru:'Юридическая информация', ar:'قانوني' },
-  footer_terms: { en:'Terms', fr:'Conditions', de:'AGB', nl:'Voorwaarden', ru:'Условия', ar:'الشروط' },
-  footer_cookies_policy: { en:'Cookie policy', fr:'Politique de cookies', de:'Cookie-Richtlinie', nl:'Cookiebeleid', ru:'Политика cookie', ar:'سياسة ملفات تعريف الارتباط' },
-  footer_cookies_settings: { en:'Cookie settings', fr:'Paramètres des cookies', de:'Cookie-Einstellungen', nl:'Cookie-instellingen', ru:'Настройки cookie', ar:'إعدادات ملفات تعريف الارتباط' },
-  footer_faq: { en:'FAQ', fr:'FAQ', de:'FAQ', nl:'FAQ', ru:'Вопросы и ответы', ar:'الأسئلة الشائعة' },
+  footer_info: { en:'Information', fr:'Informations', de:'Information', nl:'Informatie', ru:'Информация', ar:'معلومات', zh:'信息', ja:'情報' },
+  footer_support: { en:'Support', fr:'Assistance', de:'Support', nl:'Ondersteuning', ru:'Поддержка', ar:'الدعم', zh:'支持', ja:'サポート' },
+  footer_contact: { en:'Contact', fr:'Contact', de:'Kontakt', nl:'Contact', ru:'Контакты', ar:'اتصل بنا', zh:'联系我们', ja:'お問い合わせ' },
+  footer_legal_pre: { en:'All', fr:'Toutes les', de:'Alle', nl:'Alle', ru:'Все', ar:'جميع', zh:'本页提及的所有', ja:'記載されているすべての' },
+  footer_legal_link: { en:'trademarks', fr:'marques déposées', de:'Marken', nl:'handelsmerken', ru:'товарные знаки', ar:'العلامات التجارية', zh:'商标', ja:'商標' },
+  footer_legal_post: { en:'referenced belong to their respective owners.', fr:'mentionnées appartiennent à leurs propriétaires respectifs.', de:'genannten gehören ihren jeweiligen Eigentümern.', nl:'waarnaar wordt verwezen zijn eigendom van hun respectievelijke eigenaars.', ru:'упомянутые здесь, принадлежат их владельцам.', ar:'المذكورة هي ملك لأصحابها.', zh:'均归其各自所有者所有。', ja:'は、それぞれの所有者に帰属します。' },
+  footer_privacy: { en:'Privacy', fr:'Confidentialité', de:'Datenschutz', nl:'Privacy', ru:'Конфиденциальность', ar:'الخصوصية', zh:'隐私', ja:'プライバシー' },
+  footer_legal: { en:'Legal', fr:'Mentions légales', de:'Impressum', nl:'Juridisch', ru:'Юридическая информация', ar:'قانوني', zh:'法律信息', ja:'法的情報' },
+  footer_terms: { en:'Terms', fr:'Conditions', de:'AGB', nl:'Voorwaarden', ru:'Условия', ar:'الشروط', zh:'条款', ja:'利用規約' },
+  footer_cookies_policy: { en:'Cookie policy', fr:'Politique de cookies', de:'Cookie-Richtlinie', nl:'Cookiebeleid', ru:'Политика cookie', ar:'سياسة ملفات تعريف الارتباط', zh:'Cookie 政策', ja:'Cookie ポリシー' },
+  footer_cookies_settings: { en:'Cookie settings', fr:'Paramètres des cookies', de:'Cookie-Einstellungen', nl:'Cookie-instellingen', ru:'Настройки cookie', ar:'إعدادات ملفات تعريف الارتباط', zh:'Cookie 设置', ja:'Cookie 設定' },
+  footer_faq: { en:'FAQ', fr:'FAQ', de:'FAQ', nl:'FAQ', ru:'Вопросы и ответы', ar:'الأسئلة الشائعة', zh:'常见问题', ja:'よくある質問' },
 
   // Modales
-  modal_create_room_title: { en:'🎲 Create a room', fr:'🎲 Créer un salon', de:'🎲 Raum erstellen', nl:'🎲 Kamer maken', ru:'🎲 Создать комнату', ar:'🎲 إنشاء غرفة' },
-  room_name_ph: { en:'Room name', fr:'Nom du salon', de:'Raumname', nl:'Kamernaam', ru:'Название комнаты', ar:'اسم الغرفة' },
-  game_adventure: { en:'🎲 Adventure game', fr:"🎲 Jeu d'aventure", de:'🎲 Abenteuerspiel', nl:'🎲 Avonturenspel', ru:'🎲 Приключенческая игра', ar:'🎲 لعبة مغامرة' },
-  game_cards: { en:'🃏 Card game', fr:'🃏 Jeu de cartes', de:'🃏 Kartenspiel', nl:'🃏 Kaartspel', ru:'🃏 Карточная игра', ar:'🃏 لعبة ورق' },
-  game_strategy: { en:'♟️ Strategy game', fr:'♟️ Jeu de stratégie', de:'♟️ Strategiespiel', nl:'♟️ Strategiespel', ru:'♟️ Стратегическая игра', ar:'♟️ لعبة استراتيجية' },
-  game_custom: { en:'🗺️ Custom adventure', fr:'🗺️ Aventure personnalisée', de:'🗺️ Individuelles Abenteuer', nl:'🗺️ Aangepast avontuur', ru:'🗺️ Своё приключение', ar:'🗺️ مغامرة مخصصة' },
-  btn_cancel: { en:'Cancel', fr:'Annuler', de:'Abbrechen', nl:'Annuleren', ru:'Отмена', ar:'إلغاء' },
-  btn_create: { en:'Create', fr:'Créer', de:'Erstellen', nl:'Aanmaken', ru:'Создать', ar:'إنشاء' },
-  chat_close: { en:'Close', fr:'Fermer', de:'Schließen', nl:'Sluiten', ru:'Закрыть', ar:'إغلاق' },
+  modal_create_room_title: { en:'🎲 Create a room', fr:'🎲 Créer un salon', de:'🎲 Raum erstellen', nl:'🎲 Kamer maken', ru:'🎲 Создать комнату', ar:'🎲 إنشاء غرفة', zh:'🎲 创建房间', ja:'🎲 ルームを作成' },
+  room_name_ph: { en:'Room name', fr:'Nom du salon', de:'Raumname', nl:'Kamernaam', ru:'Название комнаты', ar:'اسم الغرفة', zh:'房间名称', ja:'ルーム名' },
+  game_adventure: { en:'🎲 Adventure game', fr:"🎲 Jeu d'aventure", de:'🎲 Abenteuerspiel', nl:'🎲 Avonturenspel', ru:'🎲 Приключенческая игра', ar:'🎲 لعبة مغامرة', zh:'🎲 冒险游戏', ja:'🎲 アドベンチャーゲーム' },
+  game_cards: { en:'🃏 Card game', fr:'🃏 Jeu de cartes', de:'🃏 Kartenspiel', nl:'🃏 Kaartspel', ru:'🃏 Карточная игра', ar:'🃏 لعبة ورق', zh:'🃏 纸牌游戏', ja:'🃏 カードゲーム' },
+  game_strategy: { en:'♟️ Strategy game', fr:'♟️ Jeu de stratégie', de:'♟️ Strategiespiel', nl:'♟️ Strategiespel', ru:'♟️ Стратегическая игра', ar:'♟️ لعبة استراتيجية', zh:'♟️ 策略游戏', ja:'♟️ ストラテジーゲーム' },
+  game_custom: { en:'🗺️ Custom adventure', fr:'🗺️ Aventure personnalisée', de:'🗺️ Individuelles Abenteuer', nl:'🗺️ Aangepast avontuur', ru:'🗺️ Своё приключение', ar:'🗺️ مغامرة مخصصة', zh:'🗺️ 自定义冒险', ja:'🗺️ カスタム冒険' },
+  btn_cancel: { en:'Cancel', fr:'Annuler', de:'Abbrechen', nl:'Annuleren', ru:'Отмена', ar:'إلغاء', zh:'取消', ja:'キャンセル' },
+  btn_create: { en:'Create', fr:'Créer', de:'Erstellen', nl:'Aanmaken', ru:'Создать', ar:'إنشاء', zh:'创建', ja:'作成' },
+  chat_close: { en:'Close', fr:'Fermer', de:'Schließen', nl:'Sluiten', ru:'Закрыть', ar:'إغلاق', zh:'关闭', ja:'閉じる' },
 
   // Portada de entrada
-  entry_continue: { en:'Continue', fr:'Continuer', de:'Weiter', nl:'Doorgaan', ru:'Продолжить', ar:'متابعة' },
-  entry_loading: { en:'Loading', fr:'Chargement', de:'Lädt', nl:'Laden', ru:'Загрузка', ar:'جارٍ التحميل' },
+  entry_continue: { en:'Continue', fr:'Continuer', de:'Weiter', nl:'Doorgaan', ru:'Продолжить', ar:'متابعة', zh:'继续', ja:'続ける' },
+  entry_loading: { en:'Loading', fr:'Chargement', de:'Lädt', nl:'Laden', ru:'Загрузка', ar:'جارٍ التحميل', zh:'加载中', ja:'読み込み中' },
 };
 
 /* Traduce un texto que se genera dinámicamente desde JS (no vive en el
@@ -1393,21 +1411,31 @@ function t(key, esFallback) {
 }
 
 function buildLangMenu() {
-  const menu = document.getElementById('langMenu');
   const current = localStorage.getItem('dragonbarbudo_lang') || 'es';
-  menu.innerHTML = LANGUAGES.filter(l => l.enabled).map(l => `
+  const html = LANGUAGES.filter(l => l.enabled).map(l => `
     <button type="button" class="lang-option${l.code === current ? ' active' : ''}" data-lang="${l.code}" onclick="setLanguage('${l.code}')">
       <span class="lang-flag">${LANG_FLAGS[l.code]}</span>
       ${l.label} <small>${l.hint}</small>
     </button>
   `).join('');
+  // Dos menús (portada/login flotante + botón compacto de la cabecera),
+  // siempre con el mismo contenido.
+  const langMenu = document.getElementById('langMenu');
+  const headerLangMenu = document.getElementById('headerLangMenu');
+  if (langMenu) langMenu.innerHTML = html;
+  if (headerLangMenu) headerLangMenu.innerHTML = html;
 }
 function toggleLangMenu() {
   document.getElementById('langSwitcher').classList.toggle('open');
 }
+function toggleHeaderLangMenu() {
+  document.getElementById('headerLangSwitcher').classList.toggle('open');
+}
 document.addEventListener('click', (e) => {
   const switcher = document.getElementById('langSwitcher');
   if (switcher && !switcher.contains(e.target)) switcher.classList.remove('open');
+  const headerSwitcher = document.getElementById('headerLangSwitcher');
+  if (headerSwitcher && !headerSwitcher.contains(e.target)) headerSwitcher.classList.remove('open');
 });
 function applyTranslations(lang) {
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -1437,9 +1465,15 @@ function setLanguage(lang) {
   const info = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
   document.getElementById('langSwitcherFlag').innerHTML = LANG_FLAGS[lang];
   document.getElementById('langSwitcherLabel').textContent = info.label;
+  const headerFlag = document.getElementById('headerLangFlag');
+  const headerCode = document.getElementById('headerLangCode');
+  if (headerFlag) headerFlag.innerHTML = LANG_FLAGS[lang];
+  if (headerCode) headerCode.textContent = lang.toUpperCase();
   buildLangMenu();
   applyTranslations(lang);
   document.getElementById('langSwitcher').classList.remove('open');
+  const headerSwitcher = document.getElementById('headerLangSwitcher');
+  if (headerSwitcher) headerSwitcher.classList.remove('open');
 }
 (function initLangSwitcher() {
   // Guardamos el texto/placeholder original en español antes de tocar nada,
@@ -1448,8 +1482,19 @@ function setLanguage(lang) {
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => el.setAttribute('data-i18n-es-ph', el.placeholder));
   document.querySelectorAll('[data-i18n-title]').forEach(el => el.setAttribute('data-i18n-es-title', el.title));
   const saved = localStorage.getItem('dragonbarbudo_lang');
-  const savedIsEnabled = LANGUAGES.some(l => l.code === saved && l.enabled);
-  setLanguage(savedIsEnabled ? saved : 'es');
+  let initial = 'es';
+  if (LANGUAGES.some(l => l.code === saved && l.enabled)) {
+    // El usuario ya eligió idioma antes: respetamos su elección.
+    initial = saved;
+  } else if (!saved) {
+    // Primera visita (nada guardado todavía): si el navegador está en
+    // inglés, activamos inglés automáticamente; si no, español.
+    const browserLang = ((navigator.languages && navigator.languages[0]) || navigator.language || '').toLowerCase();
+    if (browserLang.startsWith('en') && LANGUAGES.some(l => l.code === 'en' && l.enabled)) {
+      initial = 'en';
+    }
+  }
+  setLanguage(initial);
 })();
 
 /* =========================
@@ -2274,6 +2319,7 @@ function showAuthScreen() {
   document.querySelector('.app').style.display = 'none';
   document.querySelector('.site-footer').style.display = 'block';
   document.getElementById('themeToggleBtn').style.display = 'flex';
+  document.getElementById('langSwitcher').style.display = 'block';
   closeSidebar();
   closeFriendsPanel();
 }
@@ -2281,6 +2327,7 @@ function showAuthScreen() {
 async function enterApp(user) {
   document.getElementById('authScreen').style.display = 'none';
   document.getElementById('themeToggleBtn').style.display = 'none';
+  document.getElementById('langSwitcher').style.display = 'none';
   document.querySelector('header').style.display = 'flex';
   document.querySelector('.app').style.display = 'grid';
   document.querySelector('.site-footer').style.display = 'block';
