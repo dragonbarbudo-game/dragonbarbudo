@@ -654,6 +654,8 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 
 <!-- PANTALLA DE ACCESO -->
 <div class="auth-screen" id="authScreen">
+    <div id="debugViewport" style="position:fixed;bottom:6px;left:6px;z-index:99999;background:rgba(0,0,0,.7);color:#fff;font:12px monospace;padding:4px 8px;border-radius:6px;pointer-events:none;"></div>
+    <script>(function(){var d=document.getElementById('debugViewport');function u(){d.textContent=innerWidth+'x'+innerHeight+' dpr:'+window.devicePixelRatio;}u();window.addEventListener('resize',u);})();</script>
     <img class="auth-scene-fill logo-dark" src="fondo-taberna-oscuro.png" alt="" aria-hidden="true">
     <img class="auth-scene-fill logo-light" src="fondo-taberna-claro.png" alt="" aria-hidden="true">
     <img class="auth-scene logo-dark" src="fondo-taberna-oscuro.png" alt="" aria-hidden="true">
