@@ -2826,6 +2826,7 @@ function continueFromEntry() {
     document.querySelector('header').style.display = 'flex';
     document.querySelector('.app').style.display = 'grid';
     document.querySelector('.site-footer').style.display = 'block';
+    document.getElementById('langSwitcher').style.display = 'none';
     showPage('lobby');
   }
 }
@@ -2837,6 +2838,7 @@ function goToEntryMenu() {
   document.querySelector('header').style.display = 'none';
   document.querySelector('.app').style.display = 'none';
   document.querySelector('.site-footer').style.display = 'none';
+  document.getElementById('langSwitcher').style.display = 'block';
   const entry = document.getElementById('entryScreen');
   entry.classList.remove('leaving');
   entry.style.display = 'flex';
