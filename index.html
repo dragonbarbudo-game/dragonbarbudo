@@ -990,7 +990,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             <div class="lang-menu" id="headerLangMenu"></div>
         </div>
         <button class="theme-toggle" id="themeToggleBtnHeader" onclick="toggleTheme()" title="Cambiar tema" data-i18n-title="title_change_theme">🌙</button>
-        <button class="header-icon-btn coin-menu-btn" onclick="showPage('lobby')" title="Menú principal" data-i18n-title="title_main_menu">
+        <button class="header-icon-btn coin-menu-btn" onclick="goToEntryMenu()" title="Menú principal" data-i18n-title="title_main_menu">
             <img src="moneda-dragonbarbudo.png" alt="Menú principal" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'🏠',style:'font-size:18px'}))">
         </button>
         <button class="door-btn" id="doorBtn" onclick="handleDoorClick()" title="Cerrar sesión" data-i18n-title="title_logout">
@@ -2812,7 +2812,32 @@ let entrySkipped = false; // true en cuanto se sabe que hay sesión: no hace fal
 
 function continueFromEntry() {
   document.getElementById('entryScreen').style.display = 'none';
-  if (!entrySkipped) showAuthScreen();
+  if (!entrySkipped) {
+    showAuthScreen();
+  } else {
+    // Ya había sesión iniciada: esto es una revisita a la portada desde
+    // el icono de la moneda en la cabecera, así que volvemos a la app.
+    document.querySelector('header').style.display = 'flex';
+    document.querySelector('.app').style.display = 'grid';
+    document.querySelector('.site-footer').style.display = 'block';
+    showPage('lobby');
+  }
+}
+
+/* Vuelve a mostrar la portada de entrada (moneda + "Continuar") desde
+   dentro de la app, con el icono de la moneda de la cabecera. Al pulsar
+   la moneda ahí, continueFromEntry() nos devuelve al Lobby. */
+function goToEntryMenu() {
+  document.querySelector('header').style.display = 'none';
+  document.querySelector('.app').style.display = 'none';
+  document.querySelector('.site-footer').style.display = 'none';
+  const entry = document.getElementById('entryScreen');
+  entry.classList.remove('leaving');
+  entry.style.display = 'flex';
+  document.getElementById('entryCoinImg').classList.remove('spinning');
+  document.getElementById('entryContinueLabel').classList.remove('loading');
+  document.getElementById('entryContinueText').textContent = t('entry_continue', 'Continuar');
+  entryCoinClicked = false;
 }
 
 /* Al pulsar la moneda: la hace girar y caer (manteniendo el vuelo que
