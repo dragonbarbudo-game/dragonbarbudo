@@ -75,19 +75,13 @@ header {
 .logo { font-size: 22px; font-weight: 700; color: var(--gold); letter-spacing: .5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .logo span { color: var(--text); }
 /* Logo real en el header de toda la app: alterna claro/oscuro según el tema.
-   Los archivos claro/oscuro de cada tamaño se exportan con el mismo lienzo
-   exacto, así que la altura fija nunca produce ningún salto entre ellos. */
+   Mismo logo (alta resolución) en cualquier tamaño de pantalla, incluido
+   móvil — el archivo de móvil dedicado se quitó por tener poca resolución. */
 .header-logo-link { display: flex; align-items: center; min-width: 0; }
 .header-logo-img { display: none; height: 34px; width: auto; max-width: 100%; }
-.header-logo-img.logo-desktop.logo-dark { display: block; }
-body.light-mode .header-logo-img.logo-desktop.logo-dark { display: none; }
-body.light-mode .header-logo-img.logo-desktop.logo-light { display: block; }
-@media (max-width: 480px) {
-    .header-logo-img.logo-desktop { display: none !important; }
-    .header-logo-img.logo-mobile.logo-dark { display: block; height: 44px; }
-    body.light-mode .header-logo-img.logo-mobile.logo-dark { display: none; }
-    body.light-mode .header-logo-img.logo-mobile.logo-light { display: block; height: 44px; }
-}
+.header-logo-img.logo-dark { display: block; }
+body.light-mode .header-logo-img.logo-dark { display: none; }
+body.light-mode .header-logo-img.logo-light { display: block; }
 .nav-user { display: flex; align-items: center; gap: 15px; flex-shrink: 0; }
 .coins { background: var(--panel); padding: 9px 14px; border-radius: 10px; color: var(--gold-light); font-weight: bold; border: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
 .coin-icon-3d { display: inline-block; width: 22px; height: 22px; perspective: 220px; }
@@ -496,19 +490,14 @@ body.light-mode .auth-screen {
 .auth-box::before { top: -2px; left: -2px; border-right: none; border-bottom: none; border-top-left-radius: 16px; }
 .auth-box::after { bottom: -2px; right: -2px; border-left: none; border-top: none; border-bottom-right-radius: 16px; }
 
-/* Alterna claro/oscuro según el tema. Cada pareja (PC / móvil) se exporta con
-   el mismo lienzo exacto, así que la altura fija nunca produce ningún salto. */
+/* Alterna claro/oscuro según el tema. Mismo logo (alta resolución) en
+   cualquier tamaño de pantalla, incluido móvil, con altura fija para que
+   nunca cambie de tamaño ni salte al alternar tema. */
 .auth-logo-mark { display: flex; align-items: center; justify-content: center; height: 76px; margin-bottom: 22px; }
 .auth-logo-mark img { max-width: 100%; max-height: 100%; width: auto; height: auto; display: none; }
-.auth-logo-mark img.logo-desktop.logo-dark { display: block; }
-body.light-mode .auth-logo-mark img.logo-desktop.logo-dark { display: none; }
-body.light-mode .auth-logo-mark img.logo-desktop.logo-light { display: block; }
-@media (max-width: 480px) {
-    .auth-logo-mark img.logo-desktop { display: none !important; }
-    .auth-logo-mark img.logo-mobile.logo-dark { display: block; }
-    body.light-mode .auth-logo-mark img.logo-mobile.logo-dark { display: none; }
-    body.light-mode .auth-logo-mark img.logo-mobile.logo-light { display: block; }
-}
+.auth-logo-mark img.logo-dark { display: block; }
+body.light-mode .auth-logo-mark img.logo-dark { display: none; }
+body.light-mode .auth-logo-mark img.logo-light { display: block; }
 
 .auth-tabs { display: flex; margin-bottom: 18px; border-radius: 10px; overflow: hidden; border: 1px solid var(--auth-border); }
 .auth-tabs button {
@@ -610,10 +599,8 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 
     <div class="auth-box">
         <div class="auth-logo-mark">
-            <img class="logo-desktop logo-dark" src="logo-dragonbarbudo-oscuro.png" alt="Dragonbarbudo">
-            <img class="logo-desktop logo-light" src="logo-dragonbarbudo-claro.png" alt="Dragonbarbudo">
-            <img class="logo-mobile logo-dark" src="logo-dragonbarbudo-movil-oscuro.png" alt="Dragonbarbudo">
-            <img class="logo-mobile logo-light" src="logo-dragonbarbudo-movil-claro.png" alt="Dragonbarbudo">
+            <img class="logo-dark" src="logo-dragonbarbudo-oscuro.png" alt="Dragonbarbudo">
+            <img class="logo-light" src="logo-dragonbarbudo-claro.png" alt="Dragonbarbudo">
         </div>
 
         <div class="oauth-buttons" id="oauthSection">
@@ -722,10 +709,8 @@ body.light-mode .auth-tabs button.active { color: #fff; }
     <div class="header-left">
         <button class="header-icon-btn menu-toggle-btn" id="menuToggleBtn" onclick="toggleSidebar()" title="Menú" aria-label="Abrir menú">☰</button>
         <a href="#" onclick="return false;" class="header-logo-link" aria-label="Dragonbarbudo">
-            <img class="header-logo-img logo-desktop logo-dark" src="logo-dragonbarbudo-oscuro.png" alt="Dragonbarbudo">
-            <img class="header-logo-img logo-desktop logo-light" src="logo-dragonbarbudo-claro.png" alt="Dragonbarbudo">
-            <img class="header-logo-img logo-mobile logo-dark" src="logo-dragonbarbudo-movil-oscuro.png" alt="Dragonbarbudo">
-            <img class="header-logo-img logo-mobile logo-light" src="logo-dragonbarbudo-movil-claro.png" alt="Dragonbarbudo">
+            <img class="header-logo-img logo-dark" src="logo-dragonbarbudo-oscuro.png" alt="Dragonbarbudo">
+            <img class="header-logo-img logo-light" src="logo-dragonbarbudo-claro.png" alt="Dragonbarbudo">
         </a>
     </div>
     <div class="nav-user">
