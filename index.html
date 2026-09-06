@@ -97,6 +97,7 @@ body.light-mode .header-logo-img.logo-light { display: block; }
 .header-icon-btn { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .header-icon-btn:hover { border-color: var(--gold); }
 .header-icon-btn.on { border-color: var(--ember); background: rgba(209,99,63,.12); }
+.coin-menu-btn img { width: 22px; height: 22px; display: block; border-radius: 50%; }
 .header-avatar-btn { cursor: pointer; flex-shrink: 0; }
 .header-avatar-btn:hover { filter: brightness(1.1); }
 
@@ -989,6 +990,9 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             <div class="lang-menu" id="headerLangMenu"></div>
         </div>
         <button class="theme-toggle" id="themeToggleBtnHeader" onclick="toggleTheme()" title="Cambiar tema" data-i18n-title="title_change_theme">🌙</button>
+        <button class="header-icon-btn coin-menu-btn" onclick="showPage('lobby')" title="Menú principal" data-i18n-title="title_main_menu">
+            <img src="moneda-dragonbarbudo.png" alt="Menú principal" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'🏠',style:'font-size:18px'}))">
+        </button>
         <button class="door-btn" id="doorBtn" onclick="handleDoorClick()" title="Cerrar sesión" data-i18n-title="title_logout">
             <div class="door-frame">
                 <div class="door-panel" id="doorPanel"></div>
@@ -1334,6 +1338,7 @@ const I18N = {
   title_design_mode: { en:'Design mode', fr:'Mode design', de:'Design-Modus', nl:'Ontwerpmodus', ru:'Режим дизайна', ar:'وضع التصميم', zh:'设计模式', ja:'デザインモード' },
   title_change_theme: { en:'Switch theme', fr:'Changer de thème', de:'Thema wechseln', nl:'Thema wisselen', ru:'Сменить тему', ar:'تبديل المظهر', zh:'切换主题', ja:'テーマを切り替え' },
   title_logout: { en:'Log out', fr:'Se déconnecter', de:'Abmelden', nl:'Uitloggen', ru:'Выйти', ar:'تسجيل الخروج', zh:'退出登录', ja:'ログアウト' },
+  title_main_menu: { en:'Main menu', fr:'Menu principal', de:'Hauptmenü', nl:'Hoofdmenu', ru:'Главное меню', ar:'القائمة الرئيسية', zh:'主菜单', ja:'メインメニュー' },
   header_notifications: { en:'Notifications', fr:'Notifications', de:'Benachrichtigungen', nl:'Meldingen', ru:'Уведомления', ar:'الإشعارات', zh:'通知', ja:'通知' },
   header_no_notifications: { en:"You have no notifications.", fr:"Vous n'avez aucune notification.", de:'Du hast keine Benachrichtigungen.', nl:'Je hebt geen meldingen.', ru:'У вас нет уведомлений.', ar:'ليس لديك إشعارات.', zh:'您没有任何通知。', ja:'通知はありません。' },
   menu_lobby: { en:'🏠 Lobby', fr:'🏠 Hall', de:'🏠 Lobby', nl:'🏠 Lobby', ru:'🏠 Лобби', ar:'🏠 الردهة', zh:'🏠 大厅', ja:'🏠 ロビー' },
