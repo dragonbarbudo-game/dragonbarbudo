@@ -166,17 +166,18 @@ body.drawer-open { overflow: hidden; }
 .aura-arcana { background: radial-gradient(circle, rgba(127,217,232,.5), transparent 70%); }
 .frame-ring { border-radius: 50%; background: linear-gradient(135deg, #333742, #22252e); border: 3px solid var(--border); }
 
-/* PIE DE PÁGINA */
-.site-footer { background: var(--bg2); border-top: 1px solid var(--border); padding: 26px 30px; }
+/* PIE DE PÁGINA — fondo oscuro fijo en ambos temas (a juego con la
+   ilustración) para que el texto blanco siempre se lea bien. */
+.site-footer { background: #171a21; border-top: 1px solid #2c3140; padding: 26px 30px; }
 .site-footer-nav { display: flex; flex-wrap: wrap; gap: 24px; margin-bottom: 18px; }
-.site-footer-nav a { color: var(--text); font-weight: 700; font-size: 14px; text-decoration: none; }
+.site-footer-nav a { color: #fff; font-weight: 700; font-size: 14px; text-decoration: none; }
 .site-footer-nav a:hover { color: var(--gold); }
-.site-footer-divider { border-top: 1px solid var(--border); margin-bottom: 18px; }
-.site-footer-legal { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
-.site-footer-legal a { color: var(--muted); text-decoration: underline; }
+.site-footer-divider { border-top: 1px solid #2c3140; margin-bottom: 18px; }
+.site-footer-legal { color: #fff; font-size: 13px; margin-bottom: 14px; }
+.site-footer-legal a { color: #fff; text-decoration: underline; }
 .site-footer-legal a:hover { color: var(--gold); }
 .site-footer-links { display: flex; flex-wrap: wrap; gap: 20px; }
-.site-footer-links a { color: var(--muted); font-size: 13px; text-decoration: none; }
+.site-footer-links a { color: #fff; font-size: 13px; text-decoration: none; }
 .site-footer-links a:hover { color: var(--gold); }
 @media (max-width: 600px) {
     .site-footer { padding: 22px 18px; }
