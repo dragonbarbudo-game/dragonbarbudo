@@ -688,6 +688,48 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 .auth-screen .theme-toggle-fixed svg { width: 18px; height: 18px; display: block; }
 .auth-screen .theme-toggle-fixed:hover { border-color: var(--auth-accent); color: var(--auth-accent); }
 
+/* Selector de idioma — global, flotante abajo a la derecha en
+   cualquier pantalla (entrada, acceso o app). Usa los tokens
+   generales del tema (no los --auth-*, que solo existen dentro de
+   .auth-screen) para que se vea bien en todas partes. */
+.lang-switcher { position: fixed; bottom: 16px; left: 16px; z-index: 650; }
+.lang-switcher-btn {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 20px; padding: 8px 14px; font-family: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: border-color .15s;
+    box-shadow: 0 6px 18px rgba(0,0,0,.25);
+}
+.lang-switcher-btn:hover { border-color: var(--gold); }
+.lang-switcher-btn .lang-caret { width: 12px; height: 12px; flex-shrink: 0; transition: transform .2s ease; }
+.lang-switcher.open .lang-switcher-btn .lang-caret { transform: rotate(180deg); }
+.lang-flag { display: block; width: 20px; height: 14px; border-radius: 2px; overflow: hidden; flex-shrink: 0; box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
+.lang-flag svg { display: block; width: 100%; height: 100%; }
+.lang-menu {
+    display: none;
+    position: absolute; bottom: calc(100% + 8px); left: 0;
+    min-width: 220px;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 6px; box-shadow: 0 12px 32px rgba(0,0,0,.35);
+}
+.lang-switcher.open .lang-menu { display: block; }
+.lang-option {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    background: none; border: none; border-radius: 8px; padding: 8px 10px;
+    font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text);
+    cursor: pointer; text-align: left; opacity: .45; filter: saturate(.5);
+    transition: opacity .15s, background-color .15s, filter .15s;
+}
+.lang-option:hover { background: var(--input-bg); opacity: .8; filter: saturate(.8); }
+.lang-option.active { opacity: 1; filter: saturate(1); background: var(--input-bg); color: var(--gold); }
+.lang-option small { font-weight: 400; color: var(--muted); }
+@media (max-width: 480px) {
+    .lang-switcher { bottom: 10px; left: 10px; }
+    .lang-switcher-btn span:not(.lang-flag) { display: none; }
+    .lang-switcher-btn { padding: 8px; border-radius: 50%; }
+    .lang-switcher-btn .lang-caret { display: none; }
+}
+
 /* =========================================================
    PANTALLA DE ENTRADA — portada previa al login/registro
 ========================================================= */
@@ -788,103 +830,113 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                     <path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/>
                     <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
                 </svg>
-                Continuar con Google
+                <span data-i18n="oauth_google">Continuar con Google</span>
             </button>
             <button type="button" class="oauth-btn" onclick="signInWithProvider('discord')">
                 <svg viewBox="0 0 71 55" fill="#5865F2" xmlns="http://www.w3.org/2000/svg">
                     <path d="M60.1045 4.8978C55.5792 2.8214 50.7265 1.2916 45.6527 0.41542C45.5603 0.39851 45.468 0.440769 45.4204 0.525289C44.7963 1.6353 44.105 3.0834 43.6209 4.2216C38.1637 3.4046 32.7345 3.4046 27.3892 4.2216C26.9051 3.0581 26.1886 1.6353 25.5617 0.525289C25.5141 0.443589 25.4218 0.40133 25.3294 0.41542C20.2584 1.2888 15.4057 2.8186 10.8776 4.8978C10.8384 4.9147 10.8048 4.9429 10.7825 4.9795C1.57795 18.7309 -0.943561 32.1443 0.293408 45.3914C0.299005 45.4562 0.335386 45.5182 0.385761 45.5576C6.45866 50.0174 12.3413 52.7249 18.1147 54.5195C18.2071 54.5477 18.305 54.5139 18.3638 54.4378C19.7295 52.5728 20.9469 50.6063 21.9907 48.5383C22.0523 48.4172 21.9935 48.2735 21.8676 48.2256C19.9366 47.4931 18.0979 46.6 16.3292 45.5858C16.1893 45.5041 16.1781 45.304 16.3068 45.2082C16.679 44.9293 17.0513 44.6391 17.4067 44.3461C17.471 44.2926 17.5606 44.2813 17.6362 44.3151C29.2558 49.6202 41.8354 49.6202 53.3179 44.3151C53.3935 44.2785 53.4831 44.2898 53.5502 44.3433C53.9057 44.6363 54.2779 44.9293 54.6529 45.2082C54.7816 45.304 54.7732 45.5041 54.6333 45.5858C52.8646 46.6197 51.0259 47.4931 49.0921 48.2228C48.9662 48.2707 48.9102 48.4172 48.9718 48.5383C50.038 50.6034 51.2554 52.5699 52.5959 54.435C52.6519 54.5139 52.7526 54.5477 52.845 54.5195C58.6464 52.7249 64.529 50.0174 70.6019 45.5576C70.6551 45.5182 70.6887 45.4591 70.6943 45.3942C72.1747 30.0791 68.2147 16.7757 60.1968 4.9823C60.1772 4.9429 60.1437 4.9147 60.1045 4.8978ZM23.7259 37.3253C20.2276 37.3253 17.3451 34.1136 17.3451 30.1693C17.3451 26.225 20.1717 23.0133 23.7259 23.0133C27.308 23.0133 30.1626 26.2532 30.1066 30.1693C30.1066 34.1136 27.28 37.3253 23.7259 37.3253ZM47.3178 37.3253C43.8196 37.3253 40.9371 34.1136 40.9371 30.1693C40.9371 26.225 43.7636 23.0133 47.3178 23.0133C50.9 23.0133 53.7545 26.2532 53.6986 30.1693C53.6986 34.1136 50.9 37.3253 47.3178 37.3253Z"/>
                 </svg>
-                Continuar con Discord
+                <span data-i18n="oauth_discord">Continuar con Discord</span>
             </button>
         </div>
-        <div class="oauth-divider" id="oauthDivider"><span class="divider-line"></span><i class="divider-gem"></i>o con tu correo<i class="divider-gem"></i><span class="divider-line"></span></div>
+        <div class="oauth-divider" id="oauthDivider"><span class="divider-line"></span><i class="divider-gem"></i><span data-i18n="oauth_divider">o con tu correo</span><i class="divider-gem"></i><span class="divider-line"></span></div>
 
         <div class="auth-tabs">
-            <button id="tabLoginBtn" class="active" onclick="switchAuthTab('login')">Iniciar sesión</button>
-            <button id="tabRegisterBtn" onclick="switchAuthTab('register')">Crear cuenta</button>
+            <button id="tabLoginBtn" class="active" onclick="switchAuthTab('login')" data-i18n="tab_login">Iniciar sesión</button>
+            <button id="tabRegisterBtn" onclick="switchAuthTab('register')" data-i18n="tab_register">Crear cuenta</button>
         </div>
 
         <div class="auth-forms-stack">
         <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
             <div class="auth-field">
                 <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
-                <input type="text" id="loginEmail" placeholder="Correo o nombre de usuario" required>
+                <input type="text" id="loginEmail" placeholder="Correo o nombre de usuario" data-i18n-placeholder="login_email_ph" required>
             </div>
             <div class="password-wrap auth-field">
                 <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-                <input type="password" id="loginPassword" placeholder="Contraseña" required>
+                <input type="password" id="loginPassword" placeholder="Contraseña" data-i18n-placeholder="password" required>
                 <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPassword', this)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
             </div>
             <label class="remember-me">
-                <input type="checkbox" id="rememberMe"> Recordar usuario
+                <input type="checkbox" id="rememberMe"> <span data-i18n="remember_me">Recordar usuario</span>
             </label>
             <div class="auth-error" id="loginError"></div>
-            <button type="submit" class="btn btn-primary">Entrar</button>
-            <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('forgot')">¿Has olvidado tu contraseña?</div>
-            <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('resend')">¿No te llegó el correo de confirmación?</div>
+            <button type="submit" class="btn btn-primary" data-i18n="btn_enter">Entrar</button>
+            <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('forgot')" data-i18n="forgot_password">¿Has olvidado tu contraseña?</div>
+            <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('resend')" data-i18n="resend_confirmation">¿No te llegó el correo de confirmación?</div>
         </form>
 
         <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)">
             <div class="auth-field">
                 <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-7 8-7s8 3 8 7"/></svg>
-                <input type="text" id="registerUsername" placeholder="Nombre de usuario (3-30 caracteres)" required minlength="3" maxlength="30">
+                <input type="text" id="registerUsername" placeholder="Nombre de usuario (3-30 caracteres)" data-i18n-placeholder="register_username_ph" required minlength="3" maxlength="30">
             </div>
             <div class="auth-field">
                 <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
-                <input type="email" id="registerEmail" placeholder="Correo electrónico" required>
+                <input type="email" id="registerEmail" placeholder="Correo electrónico" data-i18n-placeholder="email_address" required>
             </div>
             <div class="password-wrap auth-field">
                 <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-                <input type="password" id="registerPassword" placeholder="Contraseña (mínimo 6 caracteres)" required minlength="6">
+                <input type="password" id="registerPassword" placeholder="Contraseña (mínimo 6 caracteres)" data-i18n-placeholder="register_password_ph" required minlength="6">
                 <button type="button" class="password-toggle" onclick="togglePasswordVisibility('registerPassword', this)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
             </div>
             <div class="auth-error" id="registerError"></div>
-            <button type="submit" class="btn btn-primary">Crear cuenta</button>
+            <button type="submit" class="btn btn-primary" data-i18n="tab_register">Crear cuenta</button>
         </form>
 
         <form class="auth-form" id="forgotForm" onsubmit="handleForgotPassword(event)">
             <div class="auth-field">
                 <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
-                <input type="email" id="forgotEmail" placeholder="Tu correo electrónico" required>
+                <input type="email" id="forgotEmail" placeholder="Tu correo electrónico" data-i18n-placeholder="your_email" required>
             </div>
             <div class="auth-error" id="forgotError"></div>
-            <button type="submit" class="btn btn-primary">Enviar enlace de recuperación</button>
-            <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('login')">Volver a iniciar sesión</div>
+            <button type="submit" class="btn btn-primary" data-i18n="btn_send_recovery">Enviar enlace de recuperación</button>
+            <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('login')" data-i18n="back_to_login">Volver a iniciar sesión</div>
         </form>
 
         <form class="auth-form" id="resetForm" onsubmit="handleResetPassword(event)">
             <div class="password-wrap auth-field">
                 <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-                <input type="password" id="resetPassword" placeholder="Nueva contraseña (mínimo 6 caracteres)" required minlength="6">
+                <input type="password" id="resetPassword" placeholder="Nueva contraseña (mínimo 6 caracteres)" data-i18n-placeholder="reset_password_ph" required minlength="6">
                 <button type="button" class="password-toggle" onclick="togglePasswordVisibility('resetPassword', this)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
             </div>
             <div class="auth-error" id="resetError"></div>
-            <button type="submit" class="btn btn-primary">Guardar nueva contraseña</button>
+            <button type="submit" class="btn btn-primary" data-i18n="btn_save_password">Guardar nueva contraseña</button>
         </form>
 
         <form class="auth-form" id="resendForm" onsubmit="handleResendConfirmation(event)">
             <div class="auth-field">
                 <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
-                <input type="email" id="resendEmail" placeholder="Tu correo electrónico" required>
+                <input type="email" id="resendEmail" placeholder="Tu correo electrónico" data-i18n-placeholder="your_email" required>
             </div>
             <div class="auth-error" id="resendError"></div>
-            <button type="submit" class="btn btn-primary">Reenviar correo de confirmación</button>
-            <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('login')">Volver a iniciar sesión</div>
+            <button type="submit" class="btn btn-primary" data-i18n="btn_resend_confirmation">Reenviar correo de confirmación</button>
+            <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('login')" data-i18n="back_to_login">Volver a iniciar sesión</div>
         </form>
         </div>
 
     </div>
 </div>
 
+<!-- SELECTOR DE IDIOMA — global, visible en cualquier pantalla (entrada, acceso y app) -->
+<div class="lang-switcher" id="langSwitcher">
+    <button type="button" class="lang-switcher-btn" onclick="toggleLangMenu()" id="langSwitcherBtn">
+        <span class="lang-flag" id="langSwitcherFlag"></span>
+        <span id="langSwitcherLabel">Español</span>
+        <svg class="lang-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+    <div class="lang-menu" id="langMenu"></div>
+</div>
+
 <header style="display:none">
     <div class="header-left">
-        <button class="header-icon-btn menu-toggle-btn" id="menuToggleBtn" onclick="toggleSidebar()" title="Menú" aria-label="Abrir menú">☰</button>
+        <button class="header-icon-btn menu-toggle-btn" id="menuToggleBtn" onclick="toggleSidebar()" title="Menú" data-i18n-title="title_menu" aria-label="Abrir menú">☰</button>
         <a href="#" onclick="return false;" class="header-logo-link" aria-label="Dragonbarbudo">
             <img class="header-logo-img logo-dark" src="logo-dragonbarbudo-oscuro.png" alt="Dragonbarbudo">
             <img class="header-logo-img logo-light" src="logo-dragonbarbudo-claro.png" alt="Dragonbarbudo">
@@ -895,17 +947,17 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             <span class="coin-icon-3d"><img src="moneda-dragonbarbudo.png" alt="Moneda" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'🪙',style:'font-size:18px'}))"></span>
             <span id="coinDisplay">0</span>
         </div>
-        <div class="avatar-stage size-sm frame-ring header-avatar-btn" id="headerAvatar" onclick="showPage('profile')" title="Ver mi perfil"></div>
-        <button class="header-icon-btn" id="cheatToggle" onclick="toggleCheatMode()" title="Modo diseño">🍺</button>
+        <div class="avatar-stage size-sm frame-ring header-avatar-btn" id="headerAvatar" onclick="showPage('profile')" title="Ver mi perfil" data-i18n-title="title_view_profile"></div>
+        <button class="header-icon-btn" id="cheatToggle" onclick="toggleCheatMode()" title="Modo diseño" data-i18n-title="title_design_mode">🍺</button>
         <div class="bell-wrap">
             <button class="bell-btn" id="bellBtn" onclick="toggleNotifications()"><span class="bell-emoji" id="bellEmoji">🔔</span><span class="bell-badge" id="bellBadge" style="display:none;">0</span></button>
             <div class="bell-dropdown" id="bellDropdown">
-                <div class="bell-dropdown-header">Notificaciones</div>
-                <div id="bellList"><p class="friend-empty">No tienes notificaciones.</p></div>
+                <div class="bell-dropdown-header" data-i18n="header_notifications">Notificaciones</div>
+                <div id="bellList"><p class="friend-empty" data-i18n="header_no_notifications">No tienes notificaciones.</p></div>
             </div>
         </div>
-        <button class="theme-toggle" id="themeToggleBtnHeader" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
-        <button class="door-btn" id="doorBtn" onclick="handleDoorClick()" title="Cerrar sesión">
+        <button class="theme-toggle" id="themeToggleBtnHeader" onclick="toggleTheme()" title="Cambiar tema" data-i18n-title="title_change_theme">🌙</button>
+        <button class="door-btn" id="doorBtn" onclick="handleDoorClick()" title="Cerrar sesión" data-i18n-title="title_logout">
             <div class="door-frame">
                 <div class="door-panel" id="doorPanel"></div>
             </div>
@@ -922,24 +974,24 @@ body.light-mode .auth-tabs button.active { color: #fff; }
     <aside class="sidebar">
         <button class="sidebar-close-btn" onclick="closeSidebar()" aria-label="Cerrar menú">✕</button>
         <div class="profile-mini">
-            <div class="avatar-stage size-md frame-ring header-avatar-btn" id="sidebarAvatar" onclick="showPage('profile')" title="Ver mi perfil"></div>
+            <div class="avatar-stage size-md frame-ring header-avatar-btn" id="sidebarAvatar" onclick="showPage('profile')" title="Ver mi perfil" data-i18n-title="title_view_profile"></div>
             <div class="username" id="sidebarUsername">Jugador</div>
             <div class="level" id="sidebarLevel">⭐ Nivel 1</div>
         </div>
 
         <div class="menu">
-            <button class="active" data-page="lobby" onclick="showPage('lobby')">🏠 Lobby</button>
-            <button data-page="diceGame" onclick="showPage('diceGame')">🎲 Salón de Dados</button>
-            <button data-page="profile" onclick="showPage('profile')">👤 Mi perfil</button>
-            <button data-page="avatarPage" onclick="showPage('avatarPage')">🎭 Avatar</button>
-            <button data-page="achievements" onclick="showPage('achievements')">🏆 Logros</button>
-            <button data-page="shop" onclick="showPage('shop')">🛒 Tienda</button>
-            <button class="menu-friends-btn" onclick="toggleFriendsPanel()">👥 Amigos</button>
+            <button class="active" data-page="lobby" onclick="showPage('lobby')" data-i18n="menu_lobby">🏠 Lobby</button>
+            <button data-page="diceGame" onclick="showPage('diceGame')" data-i18n="dice_title">🎲 Salón de Dados</button>
+            <button data-page="profile" onclick="showPage('profile')" data-i18n="menu_profile">👤 Mi perfil</button>
+            <button data-page="avatarPage" onclick="showPage('avatarPage')" data-i18n="menu_avatar">🎭 Avatar</button>
+            <button data-page="achievements" onclick="showPage('achievements')" data-i18n="menu_achievements">🏆 Logros</button>
+            <button data-page="shop" onclick="showPage('shop')" data-i18n="menu_shop">🛒 Tienda</button>
+            <button class="menu-friends-btn" onclick="toggleFriendsPanel()" data-i18n="menu_friends">👥 Amigos</button>
         </div>
 
         <div class="sidebar-extra-mobile">
-            <button class="sidebar-extra-btn" id="themeToggleBtnSidebar" onclick="toggleTheme()">🌙 Cambiar tema</button>
-            <button class="sidebar-extra-btn" id="cheatToggleSidebar" onclick="toggleCheatMode()">🍺 Modo diseño</button>
+            <button class="sidebar-extra-btn" id="themeToggleBtnSidebar" onclick="toggleTheme()" data-i18n="sidebar_theme">🌙 Cambiar tema</button>
+            <button class="sidebar-extra-btn" id="cheatToggleSidebar" onclick="toggleCheatMode()" data-i18n="sidebar_design_mode">🍺 Modo diseño</button>
         </div>
     </aside>
 
@@ -949,19 +1001,19 @@ body.light-mode .auth-tabs button.active { color: #fff; }
         <!-- LOBBY -->
         <div class="page active" id="lobby">
             <div class="welcome">
-                <h1>¡Bienvenido al Lobby! 🎲</h1>
-                <p>Encuentra una partida, invita a tus amigos o crea tu propia mesa.</p>
+                <h1 data-i18n="lobby_title">¡Bienvenido al Lobby! 🎲</h1>
+                <p data-i18n="lobby_subtitle">Encuentra una partida, invita a tus amigos o crea tu propia mesa.</p>
             </div>
 
             <div class="stats">
-                <div class="stat"><div class="stat-number" id="statLevel">1</div><div class="stat-label">⭐ Nivel</div></div>
-                <div class="stat"><div class="stat-number" id="statAchievements">0</div><div class="stat-label">🏆 Logros desbloqueados</div></div>
-                <div class="stat"><div class="stat-number" id="statGames">0</div><div class="stat-label">🎮 Partidas jugadas</div></div>
+                <div class="stat"><div class="stat-number" id="statLevel">1</div><div class="stat-label" data-i18n="stat_level">⭐ Nivel</div></div>
+                <div class="stat"><div class="stat-number" id="statAchievements">0</div><div class="stat-label" data-i18n="stat_achievements">🏆 Logros desbloqueados</div></div>
+                <div class="stat"><div class="stat-number" id="statGames">0</div><div class="stat-label" data-i18n="stat_games">🎮 Partidas jugadas</div></div>
             </div>
 
             <div class="section-title">
-                <h2>🌍 Salas disponibles</h2>
-                <button class="btn btn-primary" onclick="openModal()">➕ Crear sala</button>
+                <h2 data-i18n="rooms_available">🌍 Salas disponibles</h2>
+                <button class="btn btn-primary" onclick="openModal()" data-i18n="btn_create_room">➕ Crear sala</button>
             </div>
 
             <div class="rooms" id="roomList">
@@ -970,21 +1022,21 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                         <div class="game-icon">🎲</div>
                         <div class="room-info"><h3>La Taberna de los Dados</h3><p>Juego de aventura · 3 / 4 jugadores</p></div>
                     </div>
-                    <button class="btn btn-primary" onclick="joinRoom('La Taberna de los Dados')">Unirse</button>
+                    <button class="btn btn-primary" onclick="joinRoom('La Taberna de los Dados')" data-i18n="btn_join">Unirse</button>
                 </div>
                 <div class="room">
                     <div class="room-left">
                         <div class="game-icon">🃏</div>
                         <div class="room-info"><h3>Cartas entre amigos</h3><p>Juego de cartas · 2 / 6 jugadores</p></div>
                     </div>
-                    <button class="btn btn-primary" onclick="joinRoom('Cartas entre amigos')">Unirse</button>
+                    <button class="btn btn-primary" onclick="joinRoom('Cartas entre amigos')" data-i18n="btn_join">Unirse</button>
                 </div>
                 <div class="room">
                     <div class="room-left">
                         <div class="game-icon">♟️</div>
                         <div class="room-info"><h3>Reyes y Estrategas</h3><p>Estrategia · 1 / 2 jugadores</p></div>
                     </div>
-                    <button class="btn btn-primary" onclick="joinRoom('Reyes y Estrategas')">Unirse</button>
+                    <button class="btn btn-primary" onclick="joinRoom('Reyes y Estrategas')" data-i18n="btn_join">Unirse</button>
                 </div>
             </div>
         </div>
@@ -992,14 +1044,14 @@ body.light-mode .auth-tabs button.active { color: #fff; }
         <!-- DICE GAME -->
         <div class="page" id="diceGame">
             <div class="welcome">
-                <h1>🎲 Salón de Dados</h1>
-                <p>Tu avatar juega de verdad aquí: cada tirada cuenta para tus logros y monedas.</p>
+                <h1 data-i18n="dice_title">🎲 Salón de Dados</h1>
+                <p data-i18n="dice_subtitle">Tu avatar juega de verdad aquí: cada tirada cuenta para tus logros y monedas.</p>
             </div>
 
             <div class="dice-arena">
                 <div class="arena-side">
                     <div class="avatar-stage size-lg frame-ring" id="diceAvatarPlayer"></div>
-                    <h3>Tú</h3>
+                    <h3 data-i18n="dice_you">Tú</h3>
                     <div class="dice-row" id="diceRowPlayer"><div class="die">-</div><div class="die">-</div></div>
                 </div>
                 <div class="vs">VS</div>
@@ -1010,28 +1062,28 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                 </div>
             </div>
 
-            <div class="dice-result" id="diceResult">Lanza los dados para empezar la partida.</div>
+            <div class="dice-result" id="diceResult" data-i18n="dice_default_result">Lanza los dados para empezar la partida.</div>
             <div class="dice-actions">
-                <button class="btn btn-primary" onclick="rollDice()">🎲 Tirar dados</button>
+                <button class="btn btn-primary" onclick="rollDice()" data-i18n="btn_roll_dice">🎲 Tirar dados</button>
             </div>
         </div>
 
         <!-- PROFILE -->
         <div class="page profile-page" id="profile">
             <div class="welcome">
-                <h1>👤 Mi perfil</h1>
-                <p>Tu identidad dentro de Dragonbarbudo.</p>
+                <h1 data-i18n="menu_profile">👤 Mi perfil</h1>
+                <p data-i18n="profile_subtitle">Tu identidad dentro de Dragonbarbudo.</p>
             </div>
 
             <div class="profile-card">
                 <div class="avatar-stage size-lg frame-ring" id="profileAvatar"></div>
                 <div class="profile-info">
                     <h2 id="profileUsername">Jugador</h2>
-                    <p>Aventurero, estratega y coleccionista de logros.</p>
+                    <p data-i18n="profile_desc">Aventurero, estratega y coleccionista de logros.</p>
                     <p id="profileLevel">⭐ Nivel 1</p>
-                    <p><span id="profileAchievements">0</span> logros</p>
-                    <p><span id="profileGames">0</span> partidas jugadas</p>
-                    <p>🪙 <span id="profileCoins">0</span> monedas</p>
+                    <p><span id="profileAchievements">0</span> <span data-i18n="word_achievements">logros</span></p>
+                    <p><span id="profileGames">0</span> <span data-i18n="word_games_played">partidas jugadas</span></p>
+                    <p>🪙 <span id="profileCoins">0</span> <span data-i18n="word_coins">monedas</span></p>
                     <div class="equip-list" id="profileEquipList"></div>
                 </div>
             </div>
@@ -1040,14 +1092,14 @@ body.light-mode .auth-tabs button.active { color: #fff; }
         <!-- AVATAR -->
         <div class="page" id="avatarPage">
             <div class="welcome">
-                <h1>🎭 Personaliza tu avatar</h1>
-                <p>Cada objeto se desbloquea jugando, con logros o en la tienda.</p>
+                <h1 data-i18n="avatar_title">🎭 Personaliza tu avatar</h1>
+                <p data-i18n="avatar_subtitle">Cada objeto se desbloquea jugando, con logros o en la tienda.</p>
             </div>
 
             <div class="avatar-editor">
                 <div class="avatar-preview-panel">
                     <div class="avatar-stage size-xl frame-ring" id="avatarPreview"></div>
-                    <h3>Vista previa</h3>
+                    <h3 data-i18n="avatar_preview">Vista previa</h3>
                 </div>
 
                 <div id="slotBlocks"></div>
@@ -1057,8 +1109,8 @@ body.light-mode .auth-tabs button.active { color: #fff; }
         <!-- ACHIEVEMENTS -->
         <div class="page" id="achievements">
             <div class="welcome">
-                <h1>🏆 Tus logros</h1>
-                <p>Completa desafíos jugando para desbloquear monedas y objetos de avatar.</p>
+                <h1 data-i18n="achievements_title">🏆 Tus logros</h1>
+                <p data-i18n="achievements_subtitle">Completa desafíos jugando para desbloquear monedas y objetos de avatar.</p>
             </div>
             <div class="achievements" id="achievementList"></div>
         </div>
@@ -1066,8 +1118,8 @@ body.light-mode .auth-tabs button.active { color: #fff; }
         <!-- SHOP -->
         <div class="page" id="shop">
             <div class="welcome">
-                <h1>🛒 Tienda</h1>
-                <p>Utiliza las monedas conseguidas en tus partidas para desbloquear objetos.</p>
+                <h1 data-i18n="menu_shop">🛒 Tienda</h1>
+                <p data-i18n="shop_subtitle">Utiliza las monedas conseguidas en tus partidas para desbloquear objetos.</p>
             </div>
             <div class="shop-grid" id="shopGrid"></div>
         </div>
@@ -1077,29 +1129,29 @@ body.light-mode .auth-tabs button.active { color: #fff; }
     <!-- AMIGOS -->
     <aside class="friends-panel">
         <div class="friend-title" style="display:flex;align-items:center;justify-content:space-between;">
-            <h3>👥 Amigos</h3>
+            <h3 data-i18n="menu_friends">👥 Amigos</h3>
             <button class="friends-close-btn" onclick="closeFriendsPanel()" aria-label="Cerrar amigos">✕</button>
         </div>
 
         <div class="friend-search">
-            <input type="text" id="friendSearchInput" placeholder="Buscar usuario exacto...">
-            <button class="btn btn-primary" onclick="searchUser()">Buscar</button>
+            <input type="text" id="friendSearchInput" placeholder="Buscar usuario exacto..." data-i18n-placeholder="friends_search_ph">
+            <button class="btn btn-primary" onclick="searchUser()" data-i18n="btn_search">Buscar</button>
         </div>
         <div id="friendSearchResult"></div>
 
         <div class="friend-section">
-            <h4>Solicitudes recibidas</h4>
-            <div id="incomingRequests"><p class="friend-empty">Sin solicitudes.</p></div>
+            <h4 data-i18n="friends_incoming">Solicitudes recibidas</h4>
+            <div id="incomingRequests"><p class="friend-empty" data-i18n="friends_no_incoming">Sin solicitudes.</p></div>
         </div>
 
         <div class="friend-section">
-            <h4>Solicitudes enviadas</h4>
-            <div id="sentRequests"><p class="friend-empty">Ninguna pendiente.</p></div>
+            <h4 data-i18n="friends_sent">Solicitudes enviadas</h4>
+            <div id="sentRequests"><p class="friend-empty" data-i18n="friends_no_sent">Ninguna pendiente.</p></div>
         </div>
 
         <div class="friend-section">
-            <h4>Tus amigos</h4>
-            <div id="friendsList"><p class="friend-empty">Todavía no tienes amigos.</p></div>
+            <h4 data-i18n="friends_yours">Tus amigos</h4>
+            <div id="friendsList"><p class="friend-empty" data-i18n="friends_none">Todavía no tienes amigos.</p></div>
         </div>
     </aside>
 </div>
@@ -1107,35 +1159,35 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 <!-- PIE DE PÁGINA (estructura de momento, faltan enlaces/contenido reales) -->
 <footer class="site-footer" style="display:none">
     <nav class="site-footer-nav">
-        <a href="#">Información</a>
-        <a href="#">Asistencia</a>
-        <a href="#">Contacto</a>
+        <a href="#" data-i18n="footer_info">Información</a>
+        <a href="#" data-i18n="footer_support">Asistencia</a>
+        <a href="#" data-i18n="footer_contact">Contacto</a>
     </nav>
     <div class="site-footer-divider"><i></i></div>
-    <p class="site-footer-legal">Todas las <a href="#">marcas comerciales</a> a las que se hace referencia son propiedad de sus respectivos dueños.</p>
+    <p class="site-footer-legal"><span data-i18n="footer_legal_pre">Todas las</span> <a href="#" data-i18n="footer_legal_link">marcas comerciales</a> <span data-i18n="footer_legal_post">a las que se hace referencia son propiedad de sus respectivos dueños.</span></p>
     <nav class="site-footer-links">
-        <a href="#">Privacidad</a>
-        <a href="#">Legal</a>
-        <a href="#">Términos</a>
-        <a href="#">Política de cookies</a>
-        <a href="#">Ajustes de cookies</a>
-        <a href="#">FAQ</a>
+        <a href="#" data-i18n="footer_privacy">Privacidad</a>
+        <a href="#" data-i18n="footer_legal">Legal</a>
+        <a href="#" data-i18n="footer_terms">Términos</a>
+        <a href="#" data-i18n="footer_cookies_policy">Política de cookies</a>
+        <a href="#" data-i18n="footer_cookies_settings">Ajustes de cookies</a>
+        <a href="#" data-i18n="footer_faq">FAQ</a>
     </nav>
 </footer>
 
 <div class="modal-bg" id="modalBg">
     <div class="modal">
-        <h2>🎲 Crear una sala</h2>
-        <input type="text" id="roomName" placeholder="Nombre de la sala">
+        <h2 data-i18n="modal_create_room_title">🎲 Crear una sala</h2>
+        <input type="text" id="roomName" placeholder="Nombre de la sala" data-i18n-placeholder="room_name_ph">
         <select id="roomGame">
-            <option>🎲 Juego de aventura</option>
-            <option>🃏 Juego de cartas</option>
-            <option>♟️ Juego de estrategia</option>
-            <option>🗺️ Aventura personalizada</option>
+            <option data-i18n="game_adventure">🎲 Juego de aventura</option>
+            <option data-i18n="game_cards">🃏 Juego de cartas</option>
+            <option data-i18n="game_strategy">♟️ Juego de estrategia</option>
+            <option data-i18n="game_custom">🗺️ Aventura personalizada</option>
         </select>
         <div class="modal-actions">
-            <button class="btn btn-dark" onclick="closeModal()">Cancelar</button>
-            <button class="btn btn-primary" onclick="createRoom()">Crear</button>
+            <button class="btn btn-dark" onclick="closeModal()" data-i18n="btn_cancel">Cancelar</button>
+            <button class="btn btn-primary" onclick="createRoom()" data-i18n="btn_create">Crear</button>
         </div>
     </div>
 </div>
@@ -1145,7 +1197,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
     <div class="chat-box">
         <div class="chat-header">
             <strong id="chatFriendName">Chat</strong>
-            <button class="btn btn-dark" onclick="closeChat()">Cerrar</button>
+            <button class="btn btn-dark" onclick="closeChat()" data-i18n="chat_close">Cerrar</button>
         </div>
         <div class="chat-messages" id="chatMessages"></div>
         <div class="chat-input-row">
@@ -1190,6 +1242,196 @@ function toggleTheme() {
   applyTheme(next);
 }
 applyTheme(localStorage.getItem('tablehost_theme') || 'light');
+
+/* =========================
+   TRADUCTOR DE LA PANTALLA DE ACCESO
+========================= */
+const LANG_FLAGS = {
+  es: '<svg viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="16" fill="#AA151B"/><rect y="4" width="24" height="8" fill="#F1BF00"/></svg>',
+  en: '<svg viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="16" fill="#00247D"/><path d="M0 0L24 16M24 0L0 16" stroke="#fff" stroke-width="3.2"/><path d="M0 0L24 16M24 0L0 16" stroke="#CF142B" stroke-width="1.3"/><path d="M12 0V16M0 8H24" stroke="#fff" stroke-width="5.4"/><path d="M12 0V16M0 8H24" stroke="#CF142B" stroke-width="2.2"/></svg>',
+  fr: '<svg viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><rect width="8" height="16" fill="#0055A4"/><rect x="8" width="8" height="16" fill="#fff"/><rect x="16" width="8" height="16" fill="#EF4135"/></svg>',
+  de: '<svg viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="16" fill="#000"/><rect y="5.33" width="24" height="10.67" fill="#DD0000"/><rect y="10.67" width="24" height="5.33" fill="#FFCE00"/></svg>',
+  nl: '<svg viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="16" fill="#21468B"/><rect width="24" height="10.67" fill="#fff"/><rect width="24" height="5.33" fill="#AE1C28"/></svg>',
+  ru: '<svg viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="16" fill="#D52B1E"/><rect width="24" height="10.67" fill="#0039A6"/><rect width="24" height="5.33" fill="#fff"/></svg>',
+  ar: '<svg viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="16" fill="#fff"/><rect width="24" height="5.33" fill="#000"/><rect y="10.67" width="24" height="5.33" fill="#007A3D"/><polygon points="0,0 9,8 0,16" fill="#CE1126"/></svg>',
+};
+const LANGUAGES = [
+  { code: 'es', label: 'Español', hint: 'España, castellano' },
+  { code: 'en', label: 'English', hint: 'United Kingdom' },
+  { code: 'fr', label: 'Français', hint: 'France' },
+  { code: 'de', label: 'Deutsch', hint: 'Deutschland' },
+  { code: 'nl', label: 'Nederlands', hint: 'Nederland' },
+  { code: 'ru', label: 'Русский', hint: 'Россия' },
+  { code: 'ar', label: 'العربية', hint: 'عربي' },
+];
+const I18N = {
+  oauth_google: { en:'Continue with Google', fr:'Continuer avec Google', de:'Mit Google fortfahren', nl:'Doorgaan met Google', ru:'Продолжить через Google', ar:'المتابعة باستخدام Google' },
+  oauth_discord: { en:'Continue with Discord', fr:'Continuer avec Discord', de:'Mit Discord fortfahren', nl:'Doorgaan met Discord', ru:'Продолжить через Discord', ar:'المتابعة باستخدام Discord' },
+  oauth_divider: { en:'or with your email', fr:'ou avec votre e-mail', de:'oder mit deiner E-Mail', nl:'of met je e-mail', ru:'или с помощью почты', ar:'أو باستخدام بريدك الإلكتروني' },
+  tab_login: { en:'Log in', fr:'Connexion', de:'Anmelden', nl:'Inloggen', ru:'Вход', ar:'تسجيل الدخول' },
+  tab_register: { en:'Create account', fr:'Créer un compte', de:'Konto erstellen', nl:'Account aanmaken', ru:'Создать аккаунт', ar:'إنشاء حساب' },
+  login_email_ph: { en:'Email or username', fr:"E-mail ou nom d'utilisateur", de:'E-Mail oder Benutzername', nl:'E-mail of gebruikersnaam', ru:'Почта или имя пользователя', ar:'البريد الإلكتروني أو اسم المستخدم' },
+  password: { en:'Password', fr:'Mot de passe', de:'Passwort', nl:'Wachtwoord', ru:'Пароль', ar:'كلمة المرور' },
+  remember_me: { en:'Remember me', fr:'Se souvenir de moi', de:'Angemeldet bleiben', nl:'Onthoud mij', ru:'Запомнить меня', ar:'تذكرني' },
+  btn_enter: { en:'Log in', fr:'Entrer', de:'Anmelden', nl:'Inloggen', ru:'Войти', ar:'دخول' },
+  forgot_password: { en:'Forgot your password?', fr:'Mot de passe oublié ?', de:'Passwort vergessen?', nl:'Wachtwoord vergeten?', ru:'Забыли пароль?', ar:'هل نسيت كلمة المرور؟' },
+  resend_confirmation: { en:"Didn't get the confirmation email?", fr:"Vous n'avez pas reçu l'e-mail de confirmation ?", de:'Keine Bestätigungs-E-Mail erhalten?', nl:'Geen bevestigingsmail ontvangen?', ru:'Не пришло письмо с подтверждением?', ar:'لم يصلك بريد التأكيد؟' },
+  register_username_ph: { en:'Username (3-30 characters)', fr:"Nom d'utilisateur (3-30 caractères)", de:'Benutzername (3-30 Zeichen)', nl:'Gebruikersnaam (3-30 tekens)', ru:'Имя пользователя (3-30 символов)', ar:'اسم المستخدم (3-30 حرفًا)' },
+  email_address: { en:'Email address', fr:'Adresse e-mail', de:'E-Mail-Adresse', nl:'E-mailadres', ru:'Электронная почта', ar:'البريد الإلكتروني' },
+  register_password_ph: { en:'Password (minimum 6 characters)', fr:'Mot de passe (6 caractères minimum)', de:'Passwort (mindestens 6 Zeichen)', nl:'Wachtwoord (minimaal 6 tekens)', ru:'Пароль (минимум 6 символов)', ar:'كلمة المرور (6 أحرف على الأقل)' },
+  your_email: { en:'Your email address', fr:'Votre adresse e-mail', de:'Deine E-Mail-Adresse', nl:'Je e-mailadres', ru:'Ваша электронная почта', ar:'بريدك الإلكتروني' },
+  btn_send_recovery: { en:'Send recovery link', fr:'Envoyer le lien de récupération', de:'Wiederherstellungslink senden', nl:'Herstellink versturen', ru:'Отправить ссылку для восстановления', ar:'إرسال رابط الاسترداد' },
+  back_to_login: { en:'Back to login', fr:'Retour à la connexion', de:'Zurück zur Anmeldung', nl:'Terug naar inloggen', ru:'Назад ко входу', ar:'العودة لتسجيل الدخول' },
+  reset_password_ph: { en:'New password (minimum 6 characters)', fr:'Nouveau mot de passe (6 caractères minimum)', de:'Neues Passwort (mindestens 6 Zeichen)', nl:'Nieuw wachtwoord (minimaal 6 tekens)', ru:'Новый пароль (минимум 6 символов)', ar:'كلمة مرور جديدة (6 أحرف على الأقل)' },
+  btn_save_password: { en:'Save new password', fr:'Enregistrer le nouveau mot de passe', de:'Neues Passwort speichern', nl:'Nieuw wachtwoord opslaan', ru:'Сохранить новый пароль', ar:'حفظ كلمة المرور الجديدة' },
+  btn_resend_confirmation: { en:'Resend confirmation email', fr:"Renvoyer l'e-mail de confirmation", de:'Bestätigungs-E-Mail erneut senden', nl:'Bevestigingsmail opnieuw versturen', ru:'Отправить письмо с подтверждением повторно', ar:'إعادة إرسال بريد التأكيد' },
+
+  // Cabecera / menú lateral
+  title_menu: { en:'Menu', fr:'Menu', de:'Menü', nl:'Menu', ru:'Меню', ar:'القائمة' },
+  title_view_profile: { en:'View my profile', fr:'Voir mon profil', de:'Mein Profil ansehen', nl:'Mijn profiel bekijken', ru:'Посмотреть профиль', ar:'عرض ملفي الشخصي' },
+  title_design_mode: { en:'Design mode', fr:'Mode design', de:'Design-Modus', nl:'Ontwerpmodus', ru:'Режим дизайна', ar:'وضع التصميم' },
+  title_change_theme: { en:'Switch theme', fr:'Changer de thème', de:'Thema wechseln', nl:'Thema wisselen', ru:'Сменить тему', ar:'تبديل المظهر' },
+  title_logout: { en:'Log out', fr:'Se déconnecter', de:'Abmelden', nl:'Uitloggen', ru:'Выйти', ar:'تسجيل الخروج' },
+  header_notifications: { en:'Notifications', fr:'Notifications', de:'Benachrichtigungen', nl:'Meldingen', ru:'Уведомления', ar:'الإشعارات' },
+  header_no_notifications: { en:"You have no notifications.", fr:"Vous n'avez aucune notification.", de:'Du hast keine Benachrichtigungen.', nl:'Je hebt geen meldingen.', ru:'У вас нет уведомлений.', ar:'ليس لديك إشعارات.' },
+  menu_lobby: { en:'🏠 Lobby', fr:'🏠 Hall', de:'🏠 Lobby', nl:'🏠 Lobby', ru:'🏠 Лобби', ar:'🏠 الردهة' },
+  menu_profile: { en:'👤 My profile', fr:'👤 Mon profil', de:'👤 Mein Profil', nl:'👤 Mijn profiel', ru:'👤 Мой профиль', ar:'👤 ملفي الشخصي' },
+  menu_avatar: { en:'🎭 Avatar', fr:'🎭 Avatar', de:'🎭 Avatar', nl:'🎭 Avatar', ru:'🎭 Аватар', ar:'🎭 الصورة الرمزية' },
+  menu_achievements: { en:'🏆 Achievements', fr:'🏆 Succès', de:'🏆 Erfolge', nl:'🏆 Prestaties', ru:'🏆 Достижения', ar:'🏆 الإنجازات' },
+  menu_shop: { en:'🛒 Shop', fr:'🛒 Boutique', de:'🛒 Shop', nl:'🛒 Winkel', ru:'🛒 Магазин', ar:'🛒 المتجر' },
+  menu_friends: { en:'👥 Friends', fr:'👥 Amis', de:'👥 Freunde', nl:'👥 Vrienden', ru:'👥 Друзья', ar:'👥 الأصدقاء' },
+  sidebar_theme: { en:'🌙 Switch theme', fr:'🌙 Changer de thème', de:'🌙 Thema wechseln', nl:'🌙 Thema wisselen', ru:'🌙 Сменить тему', ar:'🌙 تبديل المظهر' },
+  sidebar_design_mode: { en:'🍺 Design mode', fr:'🍺 Mode design', de:'🍺 Design-Modus', nl:'🍺 Ontwerpmodus', ru:'🍺 Режим дизайна', ar:'🍺 وضع التصميم' },
+
+  // Lobby
+  lobby_title: { en:'Welcome to the Lobby! 🎲', fr:'Bienvenue dans le hall ! 🎲', de:'Willkommen in der Lobby! 🎲', nl:'Welkom in de lobby! 🎲', ru:'Добро пожаловать в лобби! 🎲', ar:'مرحبًا بك في الردهة! 🎲' },
+  lobby_subtitle: { en:'Find a game, invite your friends or create your own table.', fr:'Trouvez une partie, invitez vos amis ou créez votre propre table.', de:'Finde ein Spiel, lade deine Freunde ein oder erstelle deinen eigenen Tisch.', nl:'Vind een spel, nodig je vrienden uit of maak je eigen tafel.', ru:'Найдите игру, пригласите друзей или создайте свой стол.', ar:'ابحث عن مباراة، وادعُ أصدقاءك أو أنشئ طاولتك الخاصة.' },
+  stat_level: { en:'⭐ Level', fr:'⭐ Niveau', de:'⭐ Level', nl:'⭐ Niveau', ru:'⭐ Уровень', ar:'⭐ المستوى' },
+  stat_achievements: { en:'🏆 Achievements unlocked', fr:'🏆 Succès débloqués', de:'🏆 Freigeschaltete Erfolge', nl:'🏆 Ontgrendelde prestaties', ru:'🏆 Открытые достижения', ar:'🏆 الإنجازات المفتوحة' },
+  stat_games: { en:'🎮 Games played', fr:'🎮 Parties jouées', de:'🎮 Gespielte Runden', nl:'🎮 Gespeelde spellen', ru:'🎮 Сыграно игр', ar:'🎮 المباريات الملعوبة' },
+  rooms_available: { en:'🌍 Available rooms', fr:'🌍 Salons disponibles', de:'🌍 Verfügbare Räume', nl:'🌍 Beschikbare kamers', ru:'🌍 Доступные комнаты', ar:'🌍 الغرف المتاحة' },
+  btn_create_room: { en:'➕ Create room', fr:'➕ Créer un salon', de:'➕ Raum erstellen', nl:'➕ Kamer maken', ru:'➕ Создать комнату', ar:'➕ إنشاء غرفة' },
+  btn_join: { en:'Join', fr:'Rejoindre', de:'Beitreten', nl:'Meedoen', ru:'Присоединиться', ar:'انضمام' },
+
+  // Salón de dados
+  dice_title: { en:'🎲 Dice Hall', fr:'🎲 Salle de dés', de:'🎲 Würfelsaal', nl:'🎲 Dobbelzaal', ru:'🎲 Зал костей', ar:'🎲 قاعة النرد' },
+  dice_subtitle: { en:'Your avatar really plays here: every roll counts toward your achievements and coins.', fr:'Votre avatar joue vraiment ici : chaque lancer compte pour vos succès et vos pièces.', de:'Dein Avatar spielt hier wirklich mit: Jeder Wurf zählt für deine Erfolge und Münzen.', nl:'Je avatar speelt hier echt mee: elke worp telt voor je prestaties en munten.', ru:'Ваш аватар действительно играет здесь: каждый бросок засчитывается для достижений и монет.', ar:'يلعب رمزك هنا حقًا: كل رمية تُحتسب لإنجازاتك وعملاتك.' },
+  dice_you: { en:'You', fr:'Toi', de:'Du', nl:'Jij', ru:'Вы', ar:'أنت' },
+  dice_default_result: { en:'Roll the dice to start the game.', fr:'Lancez les dés pour commencer la partie.', de:'Würfle, um das Spiel zu starten.', nl:'Gooi de dobbelstenen om het spel te starten.', ru:'Бросьте кости, чтобы начать игру.', ar:'ارمِ النرد لبدء اللعبة.' },
+  btn_roll_dice: { en:'🎲 Roll dice', fr:'🎲 Lancer les dés', de:'🎲 Würfeln', nl:'🎲 Dobbelstenen gooien', ru:'🎲 Бросить кости', ar:'🎲 رمي النرد' },
+
+  // Perfil
+  profile_subtitle: { en:'Your identity within Dragonbarbudo.', fr:'Votre identité au sein de Dragonbarbudo.', de:'Deine Identität in Dragonbarbudo.', nl:'Jouw identiteit binnen Dragonbarbudo.', ru:'Ваша личность в Dragonbarbudo.', ar:'هويتك داخل Dragonbarbudo.' },
+  profile_desc: { en:'Adventurer, strategist and achievement collector.', fr:'Aventurier, stratège et collectionneur de succès.', de:'Abenteurer, Stratege und Erfolgssammler.', nl:'Avonturier, strateeg en verzamelaar van prestaties.', ru:'Искатель приключений, стратег и коллекционер достижений.', ar:'مغامر واستراتيجي وجامع إنجازات.' },
+  word_achievements: { en:'achievements', fr:'succès', de:'Erfolge', nl:'prestaties', ru:'достижений', ar:'إنجازات' },
+  word_games_played: { en:'games played', fr:'parties jouées', de:'gespielte Runden', nl:'gespeelde spellen', ru:'сыграно игр', ar:'مباريات ملعوبة' },
+  word_coins: { en:'coins', fr:'pièces', de:'Münzen', nl:'munten', ru:'монет', ar:'عملات' },
+
+  // Avatar
+  avatar_title: { en:'🎭 Customize your avatar', fr:'🎭 Personnalisez votre avatar', de:'🎭 Gestalte deinen Avatar', nl:'🎭 Pas je avatar aan', ru:'🎭 Настройте своего аватара', ar:'🎭 خصص صورتك الرمزية' },
+  avatar_subtitle: { en:'Every item is unlocked by playing, through achievements or in the shop.', fr:"Chaque objet se débloque en jouant, grâce aux succès ou dans la boutique.", de:'Jedes Objekt wird durch Spielen, Erfolge oder im Shop freigeschaltet.', nl:'Elk item ontgrendel je door te spelen, via prestaties of in de winkel.', ru:'Каждый предмет открывается игрой, достижениями или в магазине.', ar:'يتم فتح كل عنصر باللعب أو عبر الإنجازات أو من المتجر.' },
+  avatar_preview: { en:'Preview', fr:'Aperçu', de:'Vorschau', nl:'Voorbeeld', ru:'Предпросмотр', ar:'معاينة' },
+
+  // Logros
+  achievements_title: { en:'🏆 Your achievements', fr:'🏆 Vos succès', de:'🏆 Deine Erfolge', nl:'🏆 Jouw prestaties', ru:'🏆 Ваши достижения', ar:'🏆 إنجازاتك' },
+  achievements_subtitle: { en:'Complete challenges by playing to unlock coins and avatar items.', fr:'Relevez des défis en jouant pour débloquer des pièces et des objets pour votre avatar.', de:'Erfülle Herausforderungen im Spiel, um Münzen und Avatar-Gegenstände freizuschalten.', nl:'Voltooi uitdagingen door te spelen om munten en avatar-items te ontgrendelen.', ru:'Выполняйте задания в игре, чтобы открывать монеты и предметы для аватара.', ar:'أكمل التحديات أثناء اللعب لفتح العملات وعناصر الصورة الرمزية.' },
+
+  // Tienda
+  shop_subtitle: { en:'Use the coins earned in your games to unlock items.', fr:'Utilisez les pièces gagnées dans vos parties pour débloquer des objets.', de:'Nutze die in deinen Spielen verdienten Münzen, um Gegenstände freizuschalten.', nl:'Gebruik de munten die je in je spellen hebt verdiend om items te ontgrendelen.', ru:'Используйте монеты, заработанные в играх, чтобы открывать предметы.', ar:'استخدم العملات التي كسبتها في مبارياتك لفتح العناصر.' },
+
+  // Panel de amigos
+  friends_search_ph: { en:'Search exact username...', fr:"Rechercher un nom d'utilisateur exact...", de:'Genauen Benutzernamen suchen...', nl:'Exacte gebruikersnaam zoeken...', ru:'Поиск по точному имени пользователя...', ar:'ابحث عن اسم مستخدم مطابق...' },
+  btn_search: { en:'Search', fr:'Rechercher', de:'Suchen', nl:'Zoeken', ru:'Поиск', ar:'بحث' },
+  friends_incoming: { en:'Incoming requests', fr:'Demandes reçues', de:'Eingehende Anfragen', nl:'Ontvangen verzoeken', ru:'Входящие заявки', ar:'الطلبات الواردة' },
+  friends_no_incoming: { en:'No requests.', fr:'Aucune demande.', de:'Keine Anfragen.', nl:'Geen verzoeken.', ru:'Нет заявок.', ar:'لا توجد طلبات.' },
+  friends_sent: { en:'Sent requests', fr:'Demandes envoyées', de:'Gesendete Anfragen', nl:'Verzonden verzoeken', ru:'Отправленные заявки', ar:'الطلبات المرسلة' },
+  friends_no_sent: { en:'None pending.', fr:'Aucune en attente.', de:'Keine ausstehend.', nl:'Geen in behandeling.', ru:'Нет ожидающих.', ar:'لا يوجد معلق.' },
+  friends_yours: { en:'Your friends', fr:'Vos amis', de:'Deine Freunde', nl:'Jouw vrienden', ru:'Ваши друзья', ar:'أصدقاؤك' },
+  friends_none: { en:"You don't have any friends yet.", fr:"Vous n'avez pas encore d'amis.", de:'Du hast noch keine Freunde.', nl:'Je hebt nog geen vrienden.', ru:'У вас пока нет друзей.', ar:'ليس لديك أصدقاء بعد.' },
+
+  // Pie de página
+  footer_info: { en:'Information', fr:'Informations', de:'Information', nl:'Informatie', ru:'Информация', ar:'معلومات' },
+  footer_support: { en:'Support', fr:'Assistance', de:'Support', nl:'Ondersteuning', ru:'Поддержка', ar:'الدعم' },
+  footer_contact: { en:'Contact', fr:'Contact', de:'Kontakt', nl:'Contact', ru:'Контакты', ar:'اتصل بنا' },
+  footer_legal_pre: { en:'All', fr:'Toutes les', de:'Alle', nl:'Alle', ru:'Все', ar:'جميع' },
+  footer_legal_link: { en:'trademarks', fr:'marques déposées', de:'Marken', nl:'handelsmerken', ru:'товарные знаки', ar:'العلامات التجارية' },
+  footer_legal_post: { en:'referenced belong to their respective owners.', fr:'mentionnées appartiennent à leurs propriétaires respectifs.', de:'genannten gehören ihren jeweiligen Eigentümern.', nl:'waarnaar wordt verwezen zijn eigendom van hun respectievelijke eigenaars.', ru:'упомянутые здесь, принадлежат их владельцам.', ar:'المذكورة هي ملك لأصحابها.' },
+  footer_privacy: { en:'Privacy', fr:'Confidentialité', de:'Datenschutz', nl:'Privacy', ru:'Конфиденциальность', ar:'الخصوصية' },
+  footer_legal: { en:'Legal', fr:'Mentions légales', de:'Impressum', nl:'Juridisch', ru:'Юридическая информация', ar:'قانوني' },
+  footer_terms: { en:'Terms', fr:'Conditions', de:'AGB', nl:'Voorwaarden', ru:'Условия', ar:'الشروط' },
+  footer_cookies_policy: { en:'Cookie policy', fr:'Politique de cookies', de:'Cookie-Richtlinie', nl:'Cookiebeleid', ru:'Политика cookie', ar:'سياسة ملفات تعريف الارتباط' },
+  footer_cookies_settings: { en:'Cookie settings', fr:'Paramètres des cookies', de:'Cookie-Einstellungen', nl:'Cookie-instellingen', ru:'Настройки cookie', ar:'إعدادات ملفات تعريف الارتباط' },
+  footer_faq: { en:'FAQ', fr:'FAQ', de:'FAQ', nl:'FAQ', ru:'Вопросы и ответы', ar:'الأسئلة الشائعة' },
+
+  // Modales
+  modal_create_room_title: { en:'🎲 Create a room', fr:'🎲 Créer un salon', de:'🎲 Raum erstellen', nl:'🎲 Kamer maken', ru:'🎲 Создать комнату', ar:'🎲 إنشاء غرفة' },
+  room_name_ph: { en:'Room name', fr:'Nom du salon', de:'Raumname', nl:'Kamernaam', ru:'Название комнаты', ar:'اسم الغرفة' },
+  game_adventure: { en:'🎲 Adventure game', fr:"🎲 Jeu d'aventure", de:'🎲 Abenteuerspiel', nl:'🎲 Avonturenspel', ru:'🎲 Приключенческая игра', ar:'🎲 لعبة مغامرة' },
+  game_cards: { en:'🃏 Card game', fr:'🃏 Jeu de cartes', de:'🃏 Kartenspiel', nl:'🃏 Kaartspel', ru:'🃏 Карточная игра', ar:'🃏 لعبة ورق' },
+  game_strategy: { en:'♟️ Strategy game', fr:'♟️ Jeu de stratégie', de:'♟️ Strategiespiel', nl:'♟️ Strategiespel', ru:'♟️ Стратегическая игра', ar:'♟️ لعبة استراتيجية' },
+  game_custom: { en:'🗺️ Custom adventure', fr:'🗺️ Aventure personnalisée', de:'🗺️ Individuelles Abenteuer', nl:'🗺️ Aangepast avontuur', ru:'🗺️ Своё приключение', ar:'🗺️ مغامرة مخصصة' },
+  btn_cancel: { en:'Cancel', fr:'Annuler', de:'Abbrechen', nl:'Annuleren', ru:'Отмена', ar:'إلغاء' },
+  btn_create: { en:'Create', fr:'Créer', de:'Erstellen', nl:'Aanmaken', ru:'Создать', ar:'إنشاء' },
+  chat_close: { en:'Close', fr:'Fermer', de:'Schließen', nl:'Sluiten', ru:'Закрыть', ar:'إغلاق' },
+};
+
+function buildLangMenu() {
+  const menu = document.getElementById('langMenu');
+  const current = localStorage.getItem('dragonbarbudo_lang') || 'es';
+  menu.innerHTML = LANGUAGES.map(l => `
+    <button type="button" class="lang-option${l.code === current ? ' active' : ''}" data-lang="${l.code}" onclick="setLanguage('${l.code}')">
+      <span class="lang-flag">${LANG_FLAGS[l.code]}</span>
+      ${l.label} <small>${l.hint}</small>
+    </button>
+  `).join('');
+}
+function toggleLangMenu() {
+  document.getElementById('langSwitcher').classList.toggle('open');
+}
+document.addEventListener('click', (e) => {
+  const switcher = document.getElementById('langSwitcher');
+  if (switcher && !switcher.contains(e.target)) switcher.classList.remove('open');
+});
+function applyTranslations(lang) {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const dict = I18N[key];
+    if (!dict) return;
+    el.textContent = lang === 'es' ? el.getAttribute('data-i18n-es') || el.textContent : (dict[lang] || el.textContent);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    const dict = I18N[key];
+    if (!dict) return;
+    if (lang !== 'es' && dict[lang]) el.placeholder = dict[lang];
+    else if (el.getAttribute('data-i18n-es-ph')) el.placeholder = el.getAttribute('data-i18n-es-ph');
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.getAttribute('data-i18n-title');
+    const dict = I18N[key];
+    if (!dict) return;
+    if (lang !== 'es' && dict[lang]) el.title = dict[lang];
+    else if (el.getAttribute('data-i18n-es-title')) el.title = el.getAttribute('data-i18n-es-title');
+  });
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+}
+function setLanguage(lang) {
+  localStorage.setItem('dragonbarbudo_lang', lang);
+  const info = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
+  document.getElementById('langSwitcherFlag').innerHTML = LANG_FLAGS[lang];
+  document.getElementById('langSwitcherLabel').textContent = info.label;
+  buildLangMenu();
+  applyTranslations(lang);
+  document.getElementById('langSwitcher').classList.remove('open');
+}
+(function initLangSwitcher() {
+  // Guardamos el texto/placeholder original en español antes de tocar nada,
+  // para poder volver a español sin recargar la página.
+  document.querySelectorAll('[data-i18n]').forEach(el => el.setAttribute('data-i18n-es', el.textContent));
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => el.setAttribute('data-i18n-es-ph', el.placeholder));
+  document.querySelectorAll('[data-i18n-title]').forEach(el => el.setAttribute('data-i18n-es-title', el.title));
+  setLanguage(localStorage.getItem('dragonbarbudo_lang') || 'es');
+})();
 
 /* =========================
    ILUSTRACIONES SVG (imágenes vectoriales propias, sin emoji)
