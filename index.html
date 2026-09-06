@@ -2364,6 +2364,7 @@ function showAuthScreen() {
 }
 
 async function enterApp(user) {
+  entrySkipped = true; // ya hay sesión válida: si se vuelve a la portada, "Continuar" debe ir al Lobby, no al login
   document.getElementById('authScreen').style.display = 'none';
   document.getElementById('themeToggleBtn').style.display = 'none';
   document.getElementById('langSwitcher').style.display = 'none';
