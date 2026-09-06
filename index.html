@@ -139,6 +139,12 @@ body.drawer-open { overflow: hidden; }
 .profile-mini { display: none; text-align: center; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
 .username { margin-top: 10px; font-weight: 700; font-size: 15px; }
 .level { color: var(--gold); font-size: 13px; margin-top: 4px; }
+.admin-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: linear-gradient(135deg, #d9a441, #f0c975);
+    color: #171817; font-family: 'Cinzel', serif; font-weight: 700; font-size: 11px;
+    letter-spacing: .4px; padding: 3px 9px; border-radius: 20px; margin-top: 6px;
+}
 .menu { margin-top: 20px; }
 .menu button {
     width: 100%; border: none; background: transparent; color: var(--muted);
@@ -1002,6 +1008,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
         <div class="profile-mini">
             <div class="avatar-stage size-md frame-ring header-avatar-btn" id="sidebarAvatar" onclick="showPage('profile')" title="Ver mi perfil" data-i18n-title="title_view_profile"></div>
             <div class="username" id="sidebarUsername">Jugador</div>
+            <span class="admin-badge" id="adminBadgeSidebar" style="display:none">👑 Admin</span>
             <div class="level" id="sidebarLevel">⭐ Nivel 1</div>
         </div>
 
@@ -1105,6 +1112,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                 <div class="avatar-stage size-lg frame-ring" id="profileAvatar"></div>
                 <div class="profile-info">
                     <h2 id="profileUsername">Jugador</h2>
+                    <span class="admin-badge" id="adminBadgeProfile" style="display:none">👑 Admin</span>
                     <p data-i18n="profile_desc">Aventurero, estratega y coleccionista de logros.</p>
                     <p id="profileLevel">⭐ Nivel 1</p>
                     <p><span id="profileAchievements">0</span> <span data-i18n="word_achievements">logros</span></p>
@@ -1582,6 +1590,18 @@ const ACHIEVEMENTS = [
   { id:'coleccionista', name:'Coleccionista', desc:'Desbloquea 4 objetos de avatar.', coins:0, check:s=>countUnlockedExtras(s)>=4, progress:s=>`${Math.min(countUnlockedExtras(s),4)}/4 objetos` },
   { id:'bolsillo', name:'Bolsillo lleno', desc:'Consigue 1000 monedas en total.', coins:0, check:s=>s.totalCoinsEarned>=1000, progress:s=>`${Math.min(s.totalCoinsEarned,1000)}/1000 monedas` }
 ];
+
+/* =========================
+   ADMINISTRADORES
+   Lista fija en el código (no en la base de datos): estas cuentas
+   siempre son admin, aunque se borre o reinicie la base de datos.
+   Para añadir/quitar administradores, edita esta lista.
+========================= */
+const ADMIN_EMAILS = [
+  'gamestorrent.game@gmail.com',
+  'titicuriosi@gmail.com'
+];
+let isAdmin = false;
 
 /* =========================
    ESTADO
@@ -2359,6 +2379,15 @@ async function enterApp(user) {
 
   currentUserId = user.id;
   state = loadState(currentUserId);
+
+  // Rango de administrador: fijo por correo, decidido aquí en cada
+  // inicio de sesión (no depende de ninguna fila de la base de datos),
+  // así que sobrevive aunque se borre o reinicie la base de datos.
+  isAdmin = ADMIN_EMAILS.includes((user.email || '').trim().toLowerCase());
+  if (isAdmin) state.cheatMode = true;
+  document.getElementById('adminBadgeSidebar').style.display = isAdmin ? 'inline-flex' : 'none';
+  document.getElementById('adminBadgeProfile').style.display = isAdmin ? 'inline-flex' : 'none';
+
   initGameUI();
   startFriendsSystem();
 }
