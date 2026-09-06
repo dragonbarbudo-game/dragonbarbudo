@@ -954,7 +954,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 <div class="lang-switcher" id="langSwitcher">
     <button type="button" class="lang-switcher-btn" onclick="toggleLangMenu()" id="langSwitcherBtn">
         <span class="lang-flag" id="langSwitcherFlag"></span>
-        <span id="langSwitcherLabel">Español</span>
+        <span id="langSwitcherLabel">ES</span>
         <svg class="lang-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
     </button>
     <div class="lang-menu" id="langMenu"></div>
@@ -1496,7 +1496,7 @@ function setLanguage(lang) {
   localStorage.setItem('dragonbarbudo_lang', lang);
   const info = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
   document.getElementById('langSwitcherFlag').innerHTML = LANG_FLAGS[lang];
-  document.getElementById('langSwitcherLabel').textContent = info.label;
+  document.getElementById('langSwitcherLabel').textContent = lang.toUpperCase();
   const headerFlag = document.getElementById('headerLangFlag');
   const headerCode = document.getElementById('headerLangCode');
   if (headerFlag) headerFlag.innerHTML = LANG_FLAGS[lang];
