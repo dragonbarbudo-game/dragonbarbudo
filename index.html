@@ -167,24 +167,43 @@ body.drawer-open { overflow: hidden; }
 .frame-ring { border-radius: 50%; background: linear-gradient(135deg, #333742, #22252e); border: 3px solid var(--border); }
 
 /* PIE DE PÁGINA — fondo oscuro fijo en ambos temas (a juego con la
-   ilustración). Texto en el mismo tono "pergamino" cálido que usa el
-   resto de la interfaz sobre fondos oscuros (--text/--muted en su
-   variante oscura), en vez de blanco puro, para que combine con la
-   paleta general y no chirríe. */
-.site-footer { background: #171a21; border-top: 1px solid #2c3140; padding: 26px 30px; }
-.site-footer-nav { display: flex; flex-wrap: wrap; gap: 24px; margin-bottom: 18px; }
-.site-footer-nav a { color: #f1ede4; font-weight: 700; font-size: 14px; text-decoration: none; }
-.site-footer-nav a:hover { color: #d9a441; }
-.site-footer-divider { border-top: 1px solid #2c3140; margin-bottom: 18px; }
-.site-footer-legal { color: #98948a; font-size: 13px; margin-bottom: 14px; }
-.site-footer-legal a { color: #cbc7bb; text-decoration: underline; }
-.site-footer-legal a:hover { color: #d9a441; }
-.site-footer-links { display: flex; flex-wrap: wrap; gap: 20px; }
-.site-footer-links a { color: #cbc7bb; font-size: 13px; text-decoration: none; }
-.site-footer-links a:hover { color: #d9a441; }
+   ilustración), con el mismo lenguaje visual que el resto del pack:
+   tipografía Cinzel en los títulos, acento dorado, divisor con gema. */
+.site-footer { background: #14161c; border-top: 1px solid rgba(217,164,65,.25); padding: 34px 30px 28px; }
+.site-footer-nav { display: flex; flex-wrap: wrap; gap: 30px; margin-bottom: 22px; }
+.site-footer-nav a {
+    position: relative;
+    color: #f4f1e8; font-family: 'Cinzel', serif; font-weight: 600; font-size: 15px;
+    letter-spacing: .4px; text-decoration: none; padding-bottom: 3px;
+}
+.site-footer-nav a::after {
+    content: ''; position: absolute; left: 0; right: 100%; bottom: 0; height: 2px;
+    background: #d9a441; transition: right .2s ease;
+}
+.site-footer-nav a:hover { color: #f0c975; }
+.site-footer-nav a:hover::after { right: 0; }
+.site-footer-divider { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.site-footer-divider::before, .site-footer-divider::after {
+    content: ''; flex: 1; height: 1px; background: linear-gradient(to right, transparent, rgba(217,164,65,.35));
+}
+.site-footer-divider::after { background: linear-gradient(to left, transparent, rgba(217,164,65,.35)); }
+.site-footer-divider i { width: 5px; height: 5px; background: #d9a441; transform: rotate(45deg); flex-shrink: 0; }
+.site-footer-legal { color: #a8a394; font-size: 13px; margin-bottom: 16px; line-height: 1.6; }
+.site-footer-legal a { color: #d9c9a3; text-decoration: underline; text-underline-offset: 2px; }
+.site-footer-legal a:hover { color: #f0c975; }
+.site-footer-links { display: flex; flex-wrap: wrap; gap: 8px 0; }
+.site-footer-links a {
+    color: #cbc4b3; font-size: 12px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase;
+    text-decoration: none; padding: 0 14px; border-right: 1px solid rgba(217,164,65,.2);
+}
+.site-footer-links a:last-child { border-right: none; padding-right: 0; }
+.site-footer-links a:first-child { padding-left: 0; }
+.site-footer-links a:hover { color: #f0c975; }
 @media (max-width: 600px) {
-    .site-footer { padding: 22px 18px; }
-    .site-footer-nav, .site-footer-links { gap: 14px 18px; }
+    .site-footer { padding: 26px 18px; }
+    .site-footer-nav { gap: 18px; }
+    .site-footer-links a { border-right: none; padding: 0; }
+    .site-footer-links { gap: 10px 18px; }
 }
 
 /* MAIN */
@@ -1020,7 +1039,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
         <a href="#">Asistencia</a>
         <a href="#">Contacto</a>
     </nav>
-    <div class="site-footer-divider"></div>
+    <div class="site-footer-divider"><i></i></div>
     <p class="site-footer-legal">Todas las <a href="#">marcas comerciales</a> a las que se hace referencia son propiedad de sus respectivos dueños.</p>
     <nav class="site-footer-links">
         <a href="#">Privacidad</a>
