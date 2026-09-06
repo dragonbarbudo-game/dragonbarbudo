@@ -703,57 +703,60 @@ body.light-mode .auth-tabs button.active { color: #fff; }
     background: #0d0e12;
     background-image: radial-gradient(circle at 50% 42%, rgba(217,164,65,.10), transparent 60%);
 }
-.entry-coin-wrap { width: min(50vw, 300px); }
+.entry-coin-btn {
+    width: min(50vw, 300px);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    perspective: 900px;
+}
 .entry-coin {
     width: 100%;
     display: block;
     animation: entryCoinFloat 4.5s ease-in-out infinite;
+    transform-style: preserve-3d;
 }
+.entry-coin-btn:hover .entry-coin { filter: drop-shadow(0 30px 44px rgba(217,164,65,.55)); }
 @keyframes entryCoinFloat {
     0%, 100% { transform: translateY(0); filter: drop-shadow(0 12px 26px rgba(217,164,65,.28)); }
     50% { transform: translateY(-16px); filter: drop-shadow(0 30px 40px rgba(217,164,65,.5)); }
 }
+/* Al pulsar la moneda: gira sobre sí misma y cae, sin perder el aire
+   flotante de antes (sigue subiendo/bajando hasta el instante del
+   giro, que continúa desde ahí en vez de cortar en seco). */
+@keyframes entryCoinSpinDrop {
+    0%   { transform: translateY(-16px) rotateY(0deg) scale(1); filter: drop-shadow(0 30px 40px rgba(217,164,65,.5)); opacity: 1; }
+    55%  { transform: translateY(14px) rotateY(1080deg) scale(.96); filter: drop-shadow(0 12px 20px rgba(217,164,65,.35)); opacity: 1; }
+    100% { transform: translateY(60px) rotateY(1440deg) scale(.8); filter: drop-shadow(0 4px 8px rgba(217,164,65,.15)); opacity: 0; }
+}
+.entry-coin.spinning { animation: entryCoinSpinDrop 1.1s cubic-bezier(.55,.05,.55,1) forwards; }
+.entry-screen.leaving { opacity: 0; transition: opacity .35s ease .1s; }
 .entry-continue {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 8px 4px;
-    position: relative;
+    color: #f0c975;
     font-family: 'Cinzel', serif;
     font-size: 18px;
     font-weight: 700;
     letter-spacing: 1px;
-    color: #f0c975;
-    transition: color .2s ease;
+    pointer-events: none;
 }
-.entry-continue::after {
-    content: '';
-    position: absolute;
-    left: 0; right: 100%; bottom: 2px;
-    height: 2px;
-    background: #d9a441;
-    transition: right .25s ease;
-}
-.entry-continue:hover { color: #fff; }
-.entry-continue:hover::after { right: 0; }
-.entry-continue svg { width: 17px; height: 17px; transition: transform .25s ease; }
-.entry-continue:hover svg { transform: translateX(5px); }
+.entry-continue svg { width: 17px; height: 17px; }
 </style>
 </head>
 <body>
 
 <!-- PANTALLA DE ENTRADA -->
 <div class="entry-screen" id="entryScreen">
-    <div class="entry-coin-wrap">
-        <img class="entry-coin" src="moneda-dragonbarbudo.png" alt="Dragonbarbudo">
-    </div>
-    <button type="button" class="entry-continue" onclick="continueFromEntry()">
+    <button type="button" class="entry-coin-btn" id="entryCoinBtn" onclick="handleEntryCoinClick()" aria-label="Continuar">
+        <img class="entry-coin" id="entryCoinImg" src="moneda-dragonbarbudo.png" alt="Dragonbarbudo">
+    </button>
+    <div class="entry-continue">
         Continuar
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-    </button>
+    </div>
 </div>
 
 <!-- PANTALLA DE ACCESO -->
@@ -2450,6 +2453,49 @@ let entrySkipped = false; // true en cuanto se sabe que hay sesión: no hace fal
 function continueFromEntry() {
   document.getElementById('entryScreen').style.display = 'none';
   if (!entrySkipped) showAuthScreen();
+}
+
+/* Al pulsar la moneda: la hace girar y caer (manteniendo el vuelo que
+   ya llevaba, sin cortarlo en seco), suena como una moneda cayendo al
+   suelo, y al terminar pasamos a la pantalla de acceso. */
+let entryCoinClicked = false;
+function handleEntryCoinClick() {
+  if (entryCoinClicked) return;
+  entryCoinClicked = true;
+  document.getElementById('entryCoinImg').classList.add('spinning');
+  playCoinDropSound();
+  setTimeout(() => {
+    document.getElementById('entryScreen').classList.add('leaving');
+  }, 750);
+  setTimeout(continueFromEntry, 1150);
+}
+
+function playCoinDropSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = ctx.currentTime;
+    let t = now + 0.03;
+    const hits = 26;
+    for (let i = 0; i < hits; i++) {
+      const progress = i / hits;
+      const gap = 0.13 * Math.pow(1 - progress, 2) + 0.01;
+      t += gap;
+      const freq = 1700 + Math.random() * 500 - progress * 300;
+      const osc = ctx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(180, freq * 0.5), t + 0.07);
+      const gain = ctx.createGain();
+      const vol = 0.04 + 0.15 * (1 - progress);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(vol, t + 0.003);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.1);
+    }
+  } catch (e) { /* si el navegador bloquea audio, no pasa nada */ }
 }
 
 /* Si el usuario inicia o cierra sesión en otra pestaña, lo reflejamos aquí también.
