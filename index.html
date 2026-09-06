@@ -466,16 +466,18 @@ body.light-mode .auth-screen {
         radial-gradient(circle at 20% 20%, rgba(185,130,39,.035) 0, transparent 35%),
         radial-gradient(circle at 80% 70%, rgba(80,80,70,.03) 0, transparent 40%);
 }
-/* Escena de la taberna: ilustración de fondo, anclada abajo a la izquierda,
-   detrás de la tarjeta. Se oculta si no hay sitio para que no estorbe. */
+/* Escena de la taberna: ocupa TODO el fondo de la pantalla de login, en
+   cualquier tamaño (escritorio, tablet, móvil). Al ser position:absolute
+   dentro de .auth-screen (no fixed), se mueve y escala junto con el resto
+   del contenido como un único bloque al hacer zoom. */
 .auth-scene {
     display: none;
     position: absolute;
-    left: 0;
-    bottom: 0;
-    height: 92vh;
-    max-height: 820px;
-    width: auto;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center bottom;
     z-index: 0;
     pointer-events: none;
     user-select: none;
@@ -483,9 +485,6 @@ body.light-mode .auth-screen {
 .auth-scene.logo-dark { display: block; }
 body.light-mode .auth-scene.logo-dark { display: none; }
 body.light-mode .auth-scene.logo-light { display: block; }
-@media (max-width: 1100px) {
-    .auth-scene { display: none !important; }
-}
 
 .auth-box {
     position: relative;
