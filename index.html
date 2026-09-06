@@ -6,7 +6,7 @@
 <title>Dragonbarbudo - Lobby</title>
 <link rel="icon" type="image/png" href="favicon-moneda.png">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -74,6 +74,14 @@ header {
 .header-left { display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1 1 auto; }
 .logo { font-size: 22px; font-weight: 700; color: var(--gold); letter-spacing: .5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .logo span { color: var(--text); }
+/* Logo real (siempre versión clara) en el header de toda la app */
+.header-logo-link { display: flex; align-items: center; min-width: 0; }
+.header-logo-img { display: none; height: 34px; width: auto; max-width: 100%; }
+.header-logo-img.logo-desktop { display: block; }
+@media (max-width: 480px) {
+    .header-logo-img.logo-desktop { display: none; }
+    .header-logo-img.logo-mobile { display: block; height: 44px; }
+}
 .nav-user { display: flex; align-items: center; gap: 15px; flex-shrink: 0; }
 .coins { background: var(--panel); padding: 9px 14px; border-radius: 10px; color: var(--gold-light); font-weight: bold; border: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
 .coin-icon-3d { display: inline-block; width: 22px; height: 22px; perspective: 220px; }
@@ -407,43 +415,113 @@ main { padding: 30px; overflow: hidden; }
     .welcome h1 { font-size: 22px; }
 }
 
-/* AUTENTICACIÓN */
+/* =========================================================
+   AUTENTICACIÓN — pack visual "Dragon Barbudo" (solo esta pantalla)
+========================================================= */
 .auth-screen {
+    --auth-bg: #171817;
+    --auth-panel: #242522;
+    --auth-text: #F1EEE6;
+    --auth-muted: #AAA89F;
+    --auth-border: #3A3B37;
+    --auth-accent: #C8953B;
+    --auth-accent-2: #D7AA55;
+    --auth-accent-3: #B98227;
+    --auth-error: #B94A3D;
+    --auth-btn-bg: #C8953B;
+    --auth-btn-text: #171817;
+    --auth-input-bg: #1c1d1a;
+
     display: flex;
     min-height: 100vh;
     min-height: 100dvh;
     align-items: center;
     justify-content: center;
     padding: 20px;
+    overflow-x: hidden;
     overflow-y: auto;
+    position: relative;
+    font-family: 'Inter', Arial, sans-serif;
+    background-color: var(--auth-bg);
+    background-image:
+        radial-gradient(circle at 20% 20%, rgba(190,150,70,.09) 0, transparent 35%),
+        radial-gradient(circle at 80% 70%, rgba(255,255,255,.05) 0, transparent 40%);
+    color: var(--auth-text);
+    transition: background-color .2s ease;
+}
+body.light-mode .auth-screen {
+    --auth-bg: #F7F7F5;
+    --auth-panel: #FFFFFF;
+    --auth-text: #252525;
+    --auth-muted: #686868;
+    --auth-border: #DDDDD8;
+    --auth-accent: #B98227;
+    --auth-accent-2: #D7AA55;
+    --auth-accent-3: #C8953B;
+    --auth-error: #B94A3D;
+    --auth-btn-bg: #252525;
+    --auth-btn-text: #FFFFFF;
+    --auth-input-bg: #F7F7F5;
+    background-image:
+        radial-gradient(circle at 20% 20%, rgba(185,130,39,.07) 0, transparent 35%),
+        radial-gradient(circle at 80% 70%, rgba(80,80,70,.05) 0, transparent 40%);
 }
 .auth-box {
+    position: relative;
+    z-index: 1;
     width: 100%;
     max-width: 380px;
-    background: var(--panel);
-    border: 1px solid var(--border);
+    background: var(--auth-panel);
+    border: 1px solid var(--auth-border);
     border-radius: 16px;
-    padding: 30px;
+    padding: 32px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.25);
 }
-.auth-box .logo { text-align: center; display: block; margin-bottom: 20px; font-size: 26px; }
-.auth-tabs { display: flex; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+/* Marco ornamental en dos esquinas */
+.auth-box::before, .auth-box::after {
+    content: '';
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    border: 2px solid var(--auth-accent);
+    opacity: .5;
+    pointer-events: none;
+}
+.auth-box::before { top: -2px; left: -2px; border-right: none; border-bottom: none; border-top-left-radius: 16px; }
+.auth-box::after { bottom: -2px; right: -2px; border-left: none; border-top: none; border-bottom-right-radius: 16px; }
+
+/* Se usa siempre el logo claro (tanto en tema claro como oscuro de la app),
+   con altura fija para que nunca cambie de tamaño en ningún ancho de pantalla. */
+.auth-logo-mark { display: flex; align-items: center; justify-content: center; height: 76px; margin-bottom: 22px; }
+.auth-logo-mark img { max-width: 100%; max-height: 100%; width: auto; height: auto; display: none; }
+.auth-logo-mark img.logo-desktop.logo-light { display: block; }
+@media (max-width: 480px) {
+    .auth-logo-mark img.logo-desktop { display: none !important; }
+    .auth-logo-mark img.logo-mobile.logo-light { display: block; }
+}
+
+.auth-tabs { display: flex; margin-bottom: 18px; border-radius: 10px; overflow: hidden; border: 1px solid var(--auth-border); }
 .auth-tabs button {
-    flex: 1; padding: 10px; border: none; background: var(--input-bg); color: var(--muted);
-    cursor: pointer; font-family: inherit; font-weight: 600; font-size: 14px;
+    flex: 1; padding: 10px; border: none; background: var(--auth-input-bg); color: var(--auth-muted);
+    cursor: pointer; font-family: inherit; font-weight: 600; font-size: 14px; transition: .15s;
 }
-.auth-tabs button.active { background: var(--gold); color: #18130a; }
+.auth-tabs button.active { background: var(--auth-accent); color: var(--auth-btn-text); }
+body.light-mode .auth-tabs button.active { color: #fff; }
+
 /* ACCESO CON GOOGLE / DISCORD */
-.oauth-buttons { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.oauth-buttons { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
 .oauth-btn {
     display: flex; align-items: center; justify-content: center; gap: 10px;
-    padding: 11px; border-radius: 8px; border: 1px solid var(--border);
-    background: var(--input-bg); color: var(--text); font-family: inherit;
+    padding: 11px; border-radius: 8px; border: 1px solid var(--auth-border);
+    background: var(--auth-input-bg); color: var(--auth-text); font-family: inherit;
     font-weight: 600; font-size: 14px; cursor: pointer; transition: .15s;
 }
-.oauth-btn:hover { border-color: var(--gold); background: var(--panel-2); }
+.oauth-btn:hover { border-color: var(--auth-accent); }
 .oauth-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
-.oauth-divider { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; margin-bottom: 20px; }
-.oauth-divider::before, .oauth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.oauth-divider { display: flex; align-items: center; gap: 10px; color: var(--auth-muted); font-size: 12px; margin-bottom: 18px; }
+.oauth-divider .divider-line { flex: 1; height: 1px; background: var(--auth-border); }
+.oauth-divider .divider-gem { width: 6px; height: 6px; background: var(--auth-accent); transform: rotate(45deg); flex-shrink: 0; }
+
 /* Los formularios se apilan en la misma celda de grid: el contenedor toma la
    altura del más alto y cambiar de pestaña no mueve el resto de la página. */
 .auth-forms-stack { display: grid; }
@@ -462,27 +540,69 @@ main { padding: 30px; overflow: hidden; }
     .auth-box { padding: 24px 18px; }
 }
 .auth-form input {
-    padding: 12px; background: var(--input-bg); border: 1px solid var(--border);
-    color: var(--input-text); border-radius: 8px; font-family: inherit; font-size: 14px;
+    width: 100%;
+    padding: 12px 12px 12px 40px;
+    background: var(--auth-input-bg); border: 1px solid var(--auth-border);
+    color: var(--auth-text); border-radius: 8px; font-family: inherit; font-size: 14px;
+    transition: border-color .15s;
 }
-.auth-error { color: var(--ember); font-size: 13px; min-height: 18px; }
-.auth-note { color: var(--muted); font-size: 12px; margin-top: 12px; text-align: center; }
+/* El navegador fuerza fondo blanco + texto negro al autocompletar correo/contraseña
+   guardados, ignorando el tema. Lo forzamos de vuelta a los colores del pack. */
+.auth-form input:-webkit-autofill,
+.auth-form input:-webkit-autofill:hover,
+.auth-form input:-webkit-autofill:focus,
+.auth-form input:-webkit-autofill:active {
+    -webkit-text-fill-color: var(--auth-text) !important;
+    caret-color: var(--auth-text);
+    box-shadow: 0 0 0 1000px var(--auth-input-bg) inset !important;
+    transition: background-color 9999s ease-in-out 0s;
+}
+.auth-form input:focus { outline: none; border-color: var(--auth-accent); }
+.auth-field { position: relative; }
+.auth-field .field-icon {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    width: 17px; height: 17px; color: var(--auth-muted); pointer-events: none;
+}
+.auth-error { color: var(--auth-error); font-size: 13px; min-height: 18px; }
+.auth-note { color: var(--auth-muted); font-size: 12px; margin-top: 12px; text-align: center; }
+.auth-note a, .auth-note[style] { color: var(--auth-muted); }
+.auth-screen .btn-primary {
+    background: var(--auth-btn-bg); color: var(--auth-btn-text);
+    font-family: 'Inter', Arial, sans-serif;
+}
+.auth-screen .btn-primary:hover { background: var(--auth-accent-2); color: #171817; transform: translateY(-1px); }
 .password-wrap { position: relative; }
 .password-wrap input { width: 100%; padding-right: 42px; }
-.password-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 17px; color: var(--muted); padding: 4px; }
-.password-toggle:hover { color: var(--text); }
-.remember-me { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); cursor: pointer; }
-.remember-me input { width: auto; accent-color: var(--gold); cursor: pointer; }
+.password-toggle {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; color: var(--auth-muted); padding: 6px;
+    display: flex; align-items: center; justify-content: center;
+}
+.password-toggle svg { width: 18px; height: 18px; }
+.password-toggle:hover { color: var(--auth-accent); }
+.remember-me { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--auth-muted); cursor: pointer; }
+.remember-me input { width: auto; accent-color: var(--auth-accent); cursor: pointer; }
+.auth-screen .theme-toggle-fixed {
+    z-index: 2;
+    background: var(--auth-panel); border: 1px solid var(--auth-border); color: var(--auth-text);
+}
+.auth-screen .theme-toggle-fixed svg { width: 18px; height: 18px; display: block; }
+.auth-screen .theme-toggle-fixed:hover { border-color: var(--auth-accent); color: var(--auth-accent); }
 </style>
 </head>
 <body>
 
-<button class="theme-toggle theme-toggle-fixed" id="themeToggleBtn" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
-
 <!-- PANTALLA DE ACCESO -->
 <div class="auth-screen" id="authScreen">
+    <button class="theme-toggle theme-toggle-fixed" id="themeToggleBtn" onclick="toggleTheme()" title="Cambiar tema">
+        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M20.7 14.6a8.5 8.5 0 1 1-9.3-12 .6.6 0 0 1 .7.9 6.8 6.8 0 0 0 8.9 8.9.6.6 0 0 1 .8.7 8.5 8.5 0 0 1-1.1 1.5z"/></svg>
+    </button>
+
     <div class="auth-box">
-        <div class="logo">🎲 Dragon<span style="color:var(--text)">barbudo</span></div>
+        <div class="auth-logo-mark">
+            <img class="logo-desktop logo-light" src="logo-dragonbarbudo-claro.png" alt="Dragonbarbudo">
+            <img class="logo-mobile logo-light" src="logo-dragonbarbudo-movil-claro.png" alt="Dragonbarbudo">
+        </div>
 
         <div class="oauth-buttons" id="oauthSection">
             <button type="button" class="oauth-btn" onclick="signInWithProvider('google')">
@@ -501,7 +621,7 @@ main { padding: 30px; overflow: hidden; }
                 Continuar con Discord
             </button>
         </div>
-        <div class="oauth-divider" id="oauthDivider">o con tu correo</div>
+        <div class="oauth-divider" id="oauthDivider"><span class="divider-line"></span><i class="divider-gem"></i>o con tu correo<i class="divider-gem"></i><span class="divider-line"></span></div>
 
         <div class="auth-tabs">
             <button id="tabLoginBtn" class="active" onclick="switchAuthTab('login')">Iniciar sesión</button>
@@ -510,10 +630,16 @@ main { padding: 30px; overflow: hidden; }
 
         <div class="auth-forms-stack">
         <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
-            <input type="text" id="loginEmail" placeholder="Correo o nombre de usuario" required>
-            <div class="password-wrap">
+            <div class="auth-field">
+                <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+                <input type="text" id="loginEmail" placeholder="Correo o nombre de usuario" required>
+            </div>
+            <div class="password-wrap auth-field">
+                <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
                 <input type="password" id="loginPassword" placeholder="Contraseña" required>
-                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPassword', this)">👁️</button>
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPassword', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
             </div>
             <label class="remember-me">
                 <input type="checkbox" id="rememberMe"> Recordar usuario
@@ -525,34 +651,52 @@ main { padding: 30px; overflow: hidden; }
         </form>
 
         <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)">
-            <input type="text" id="registerUsername" placeholder="Nombre de usuario (3-30 caracteres)" required minlength="3" maxlength="30">
-            <input type="email" id="registerEmail" placeholder="Correo electrónico" required>
-            <div class="password-wrap">
+            <div class="auth-field">
+                <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-7 8-7s8 3 8 7"/></svg>
+                <input type="text" id="registerUsername" placeholder="Nombre de usuario (3-30 caracteres)" required minlength="3" maxlength="30">
+            </div>
+            <div class="auth-field">
+                <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+                <input type="email" id="registerEmail" placeholder="Correo electrónico" required>
+            </div>
+            <div class="password-wrap auth-field">
+                <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
                 <input type="password" id="registerPassword" placeholder="Contraseña (mínimo 6 caracteres)" required minlength="6">
-                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('registerPassword', this)">👁️</button>
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('registerPassword', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
             </div>
             <div class="auth-error" id="registerError"></div>
             <button type="submit" class="btn btn-primary">Crear cuenta</button>
         </form>
 
         <form class="auth-form" id="forgotForm" onsubmit="handleForgotPassword(event)">
-            <input type="email" id="forgotEmail" placeholder="Tu correo electrónico" required>
+            <div class="auth-field">
+                <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+                <input type="email" id="forgotEmail" placeholder="Tu correo electrónico" required>
+            </div>
             <div class="auth-error" id="forgotError"></div>
             <button type="submit" class="btn btn-primary">Enviar enlace de recuperación</button>
             <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('login')">Volver a iniciar sesión</div>
         </form>
 
         <form class="auth-form" id="resetForm" onsubmit="handleResetPassword(event)">
-            <div class="password-wrap">
+            <div class="password-wrap auth-field">
+                <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
                 <input type="password" id="resetPassword" placeholder="Nueva contraseña (mínimo 6 caracteres)" required minlength="6">
-                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('resetPassword', this)">👁️</button>
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('resetPassword', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
             </div>
             <div class="auth-error" id="resetError"></div>
             <button type="submit" class="btn btn-primary">Guardar nueva contraseña</button>
         </form>
 
         <form class="auth-form" id="resendForm" onsubmit="handleResendConfirmation(event)">
-            <input type="email" id="resendEmail" placeholder="Tu correo electrónico" required>
+            <div class="auth-field">
+                <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+                <input type="email" id="resendEmail" placeholder="Tu correo electrónico" required>
+            </div>
             <div class="auth-error" id="resendError"></div>
             <button type="submit" class="btn btn-primary">Reenviar correo de confirmación</button>
             <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('login')">Volver a iniciar sesión</div>
@@ -565,7 +709,10 @@ main { padding: 30px; overflow: hidden; }
 <header style="display:none">
     <div class="header-left">
         <button class="header-icon-btn menu-toggle-btn" id="menuToggleBtn" onclick="toggleSidebar()" title="Menú" aria-label="Abrir menú">☰</button>
-        <div class="logo">🎲 Dragon<span>barbudo</span></div>
+        <a href="#" onclick="return false;" class="header-logo-link" aria-label="Dragonbarbudo">
+            <img class="header-logo-img logo-desktop" src="logo-dragonbarbudo-claro.png" alt="Dragonbarbudo">
+            <img class="header-logo-img logo-mobile" src="logo-dragonbarbudo-movil-claro.png" alt="Dragonbarbudo">
+        </a>
     </div>
     <div class="nav-user">
         <div class="coins">
@@ -826,15 +973,20 @@ main { padding: 30px; overflow: hidden; }
 /* =========================
    MODO CLARO / OSCURO
 ========================= */
+const SUN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg>';
+const MOON_ICON = '<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M20.7 14.6a8.5 8.5 0 1 1-9.3-12 .6.6 0 0 1 .7.9 6.8 6.8 0 0 0 8.9 8.9.6.6 0 0 1 .8.7 8.5 8.5 0 0 1-1.1 1.5z"/></svg>';
+
 function applyTheme(theme) {
   document.body.classList.toggle('light-mode', theme === 'light');
-  const icon = theme === 'light' ? '☀️' : '🌙';
+  const emoji = theme === 'light' ? '☀️' : '🌙';
   const floating = document.getElementById('themeToggleBtn');
   const header = document.getElementById('themeToggleBtnHeader');
   const sidebarBtn = document.getElementById('themeToggleBtnSidebar');
-  if (floating) floating.textContent = icon;
-  if (header) header.textContent = icon;
-  if (sidebarBtn) sidebarBtn.textContent = icon + ' Cambiar tema';
+  // El botón flotante de la pantalla de login usa los iconos SVG del pack visual;
+  // el resto de la app (header/sidebar, fuera del alcance de este rediseño) sigue con emoji.
+  if (floating) floating.innerHTML = theme === 'light' ? SUN_ICON : MOON_ICON;
+  if (header) header.textContent = emoji;
+  if (sidebarBtn) sidebarBtn.textContent = emoji + ' Cambiar tema';
 }
 function toggleTheme() {
   const isLight = document.body.classList.contains('light-mode');
@@ -1438,11 +1590,14 @@ function translateAuthError(error) {
   return 'Ha ocurrido un error: ' + msg;
 }
 
+const EYE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M3 3l18 18"/><path d="M10.6 5.2C11.06 5.07 11.53 5 12 5c7 0 10.5 7 10.5 7-.47.94-1.16 2-2.1 3"/><path d="M6.6 6.6C3.6 8.4 1.5 12 1.5 12s3.5 7 10.5 7c1.4 0 2.68-.28 3.8-.75"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+
 function togglePasswordVisibility(inputId, btn) {
   const input = document.getElementById(inputId);
   const isHidden = input.type === 'password';
   input.type = isHidden ? 'text' : 'password';
-  btn.textContent = isHidden ? '🙈' : '👁️';
+  btn.innerHTML = isHidden ? EYE_OFF_ICON : EYE_ICON;
 }
 
 async function handleResendConfirmation(event) {

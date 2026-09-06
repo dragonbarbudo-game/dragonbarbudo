@@ -6,3 +6,7 @@ desktop.ini
 DRAGÓN BARBUDO.txt
 sea-dragon_38125.ico
 Imágenes/
+
+# NUNCA subir credenciales ni accesos directos locales
+client_secret_*.json
+*.url
