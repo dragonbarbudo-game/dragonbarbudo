@@ -472,10 +472,11 @@ body.light-mode .auth-screen {
    del contenido como un único bloque al hacer zoom. */
 .auth-scene {
     display: none;
-    position: absolute;
+    position: fixed;
     inset: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
     object-fit: cover;
     object-position: center bottom;
     z-index: 0;
@@ -491,10 +492,11 @@ body.light-mode .auth-scene.logo-light { display: block; }
    sin tocar el archivo de imagen original. */
 .auth-scene-fill {
     display: none;
-    position: absolute;
+    position: fixed;
     inset: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
     object-fit: cover;
     object-position: center bottom;
     transform: scale(1.25);
