@@ -367,8 +367,9 @@ main { padding: 30px; overflow: hidden; }
 .modal input, .modal select { width: 100%; padding: 12px; margin-bottom: 15px; background: var(--input-bg); border: 1px solid var(--border); color: var(--input-text); border-radius: 8px; font-family: inherit; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
 
-/* TOAST */
-#toastHost { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 200; }
+/* TOAST — sube un poco para no chocar con el selector de idioma,
+   que también vive en la esquina inferior derecha. */
+#toastHost { position: fixed; bottom: 80px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 200; }
 .toast { background: var(--panel-2); border: 1px solid var(--gold); color: var(--text); padding: 12px 18px; border-radius: 10px; font-size: 14px; max-width: 300px; animation: toast-in .2s ease-out; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -692,7 +693,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
    cualquier pantalla (entrada, acceso o app). Usa los tokens
    generales del tema (no los --auth-*, que solo existen dentro de
    .auth-screen) para que se vea bien en todas partes. */
-.lang-switcher { position: fixed; bottom: 16px; left: 16px; z-index: 650; }
+.lang-switcher { position: fixed; bottom: 16px; right: 16px; z-index: 650; }
 .lang-switcher-btn {
     display: flex; align-items: center; gap: 8px;
     background: var(--bg2); border: 1px solid var(--border); color: var(--text);
@@ -707,7 +708,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 .lang-flag svg { display: block; width: 100%; height: 100%; }
 .lang-menu {
     display: none;
-    position: absolute; bottom: calc(100% + 8px); left: 0;
+    position: absolute; bottom: calc(100% + 8px); right: 0;
     min-width: 220px;
     background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
     padding: 6px; box-shadow: 0 12px 32px rgba(0,0,0,.35);
@@ -724,7 +725,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 .lang-option.active { opacity: 1; filter: saturate(1); background: var(--input-bg); color: var(--gold); }
 .lang-option small { font-weight: 400; color: var(--muted); }
 @media (max-width: 480px) {
-    .lang-switcher { bottom: 10px; left: 10px; }
+    .lang-switcher { bottom: 10px; right: 10px; }
     .lang-switcher-btn span:not(.lang-flag) { display: none; }
     .lang-switcher-btn { padding: 8px; border-radius: 50%; }
     .lang-switcher-btn .lang-caret { display: none; }
@@ -799,7 +800,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
         <img class="entry-coin" id="entryCoinImg" src="moneda-dragonbarbudo.png" alt="Dragonbarbudo">
     </button>
     <div class="entry-continue" id="entryContinueLabel">
-        <span id="entryContinueText">Continuar</span>
+        <span id="entryContinueText" data-i18n="entry_continue">Continuar</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
     </div>
     <audio id="coinDropAudio" src="sonido-moneda.mp3" preload="auto"></audio>
@@ -1255,14 +1256,18 @@ const LANG_FLAGS = {
   ru: '<svg viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="16" fill="#D52B1E"/><rect width="24" height="10.67" fill="#0039A6"/><rect width="24" height="5.33" fill="#fff"/></svg>',
   ar: '<svg viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="16" fill="#fff"/><rect width="24" height="5.33" fill="#000"/><rect y="10.67" width="24" height="5.33" fill="#007A3D"/><polygon points="0,0 9,8 0,16" fill="#CE1126"/></svg>',
 };
+/* Todos los idiomas ya están traducidos y listos (banderas + textos);
+   "enabled: false" solo los oculta del menú hasta que se pida
+   activarlos — no hace falta volver a traducir nada, basta con poner
+   enabled:true. */
 const LANGUAGES = [
-  { code: 'es', label: 'Español', hint: 'España, castellano' },
-  { code: 'en', label: 'English', hint: 'United Kingdom' },
-  { code: 'fr', label: 'Français', hint: 'France' },
-  { code: 'de', label: 'Deutsch', hint: 'Deutschland' },
-  { code: 'nl', label: 'Nederlands', hint: 'Nederland' },
-  { code: 'ru', label: 'Русский', hint: 'Россия' },
-  { code: 'ar', label: 'العربية', hint: 'عربي' },
+  { code: 'es', label: 'Español', hint: 'España, castellano', enabled: true },
+  { code: 'en', label: 'English', hint: 'United Kingdom', enabled: true },
+  { code: 'fr', label: 'Français', hint: 'France', enabled: false },
+  { code: 'de', label: 'Deutsch', hint: 'Deutschland', enabled: false },
+  { code: 'nl', label: 'Nederlands', hint: 'Nederland', enabled: false },
+  { code: 'ru', label: 'Русский', hint: 'Россия', enabled: false },
+  { code: 'ar', label: 'العربية', hint: 'عربي', enabled: false },
 ];
 const I18N = {
   oauth_google: { en:'Continue with Google', fr:'Continuer avec Google', de:'Mit Google fortfahren', nl:'Doorgaan met Google', ru:'Продолжить через Google', ar:'المتابعة باستخدام Google' },
@@ -1373,12 +1378,24 @@ const I18N = {
   btn_cancel: { en:'Cancel', fr:'Annuler', de:'Abbrechen', nl:'Annuleren', ru:'Отмена', ar:'إلغاء' },
   btn_create: { en:'Create', fr:'Créer', de:'Erstellen', nl:'Aanmaken', ru:'Создать', ar:'إنشاء' },
   chat_close: { en:'Close', fr:'Fermer', de:'Schließen', nl:'Sluiten', ru:'Закрыть', ar:'إغلاق' },
+
+  // Portada de entrada
+  entry_continue: { en:'Continue', fr:'Continuer', de:'Weiter', nl:'Doorgaan', ru:'Продолжить', ar:'متابعة' },
+  entry_loading: { en:'Loading', fr:'Chargement', de:'Lädt', nl:'Laden', ru:'Загрузка', ar:'جارٍ التحميل' },
 };
+
+/* Traduce un texto que se genera dinámicamente desde JS (no vive en el
+   HTML como data-i18n), usando el idioma activo en cada momento. */
+function t(key, esFallback) {
+  const lang = localStorage.getItem('dragonbarbudo_lang') || 'es';
+  if (lang === 'es') return esFallback;
+  return (I18N[key] && I18N[key][lang]) || esFallback;
+}
 
 function buildLangMenu() {
   const menu = document.getElementById('langMenu');
   const current = localStorage.getItem('dragonbarbudo_lang') || 'es';
-  menu.innerHTML = LANGUAGES.map(l => `
+  menu.innerHTML = LANGUAGES.filter(l => l.enabled).map(l => `
     <button type="button" class="lang-option${l.code === current ? ' active' : ''}" data-lang="${l.code}" onclick="setLanguage('${l.code}')">
       <span class="lang-flag">${LANG_FLAGS[l.code]}</span>
       ${l.label} <small>${l.hint}</small>
@@ -1430,7 +1447,9 @@ function setLanguage(lang) {
   document.querySelectorAll('[data-i18n]').forEach(el => el.setAttribute('data-i18n-es', el.textContent));
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => el.setAttribute('data-i18n-es-ph', el.placeholder));
   document.querySelectorAll('[data-i18n-title]').forEach(el => el.setAttribute('data-i18n-es-title', el.title));
-  setLanguage(localStorage.getItem('dragonbarbudo_lang') || 'es');
+  const saved = localStorage.getItem('dragonbarbudo_lang');
+  const savedIsEnabled = LANGUAGES.some(l => l.code === saved && l.enabled);
+  setLanguage(savedIsEnabled ? saved : 'es');
 })();
 
 /* =========================
@@ -2709,7 +2728,7 @@ function handleEntryCoinClick() {
   if (entryCoinClicked) return;
   entryCoinClicked = true;
   document.getElementById('entryCoinImg').classList.add('spinning');
-  document.getElementById('entryContinueText').textContent = 'Cargando';
+  document.getElementById('entryContinueText').textContent = t('entry_loading', 'Cargando');
   document.getElementById('entryContinueLabel').classList.add('loading');
   playCoinAudio();
   setTimeout(() => {
