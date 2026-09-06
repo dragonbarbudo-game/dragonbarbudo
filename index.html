@@ -724,6 +724,17 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 .lang-option:hover { background: var(--input-bg); opacity: .8; filter: saturate(.8); }
 .lang-option.active { opacity: 1; filter: saturate(1); background: var(--input-bg); color: var(--gold); }
 .lang-option small { font-weight: 400; color: var(--muted); }
+/* Idiomas aún no activados: se ven en la lista (para saber que ya
+   están preparados) pero en un gris bastante más oscuro/apagado que
+   los activos, y sin poder pulsarlos. */
+.lang-option.disabled {
+    opacity: .32;
+    filter: grayscale(1);
+    color: var(--muted);
+    cursor: not-allowed;
+    pointer-events: none;
+}
+.lang-option.disabled small { color: var(--muted); opacity: .7; }
 /* Variante para la cabecera de la app: en flujo normal junto al resto
    de iconos (no flotante), con el menú abriéndose hacia abajo en vez
    de hacia arriba. */
@@ -1412,8 +1423,11 @@ function t(key, esFallback) {
 
 function buildLangMenu() {
   const current = localStorage.getItem('dragonbarbudo_lang') || 'es';
-  const html = LANGUAGES.filter(l => l.enabled).map(l => `
-    <button type="button" class="lang-option${l.code === current ? ' active' : ''}" data-lang="${l.code}" onclick="setLanguage('${l.code}')">
+  // Se listan TODOS los idiomas, incluidos los aún no activados: estos
+  // se muestran en gris apagado, sin poder pulsarlos (solo para dejar
+  // ver que ya están "preparados" para más adelante).
+  const html = LANGUAGES.map(l => `
+    <button type="button" class="lang-option${l.code === current ? ' active' : ''}${l.enabled ? '' : ' disabled'}" data-lang="${l.code}" ${l.enabled ? `onclick="setLanguage('${l.code}')"` : 'disabled'}>
       <span class="lang-flag">${LANG_FLAGS[l.code]}</span>
       ${l.label} <small>${l.hint}</small>
     </button>
