@@ -760,6 +760,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
         <span id="entryContinueText">Continuar</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
     </div>
+    <audio id="coinDropAudio" src="sonido-moneda.mp3" preload="auto"></audio>
 </div>
 
 <!-- PANTALLA DE ACCESO -->
@@ -2468,14 +2469,29 @@ function handleEntryCoinClick() {
   document.getElementById('entryCoinImg').classList.add('spinning');
   document.getElementById('entryContinueText').textContent = 'Cargando';
   document.getElementById('entryContinueLabel').classList.add('loading');
-  playCoinDropSound();
+  playCoinAudio();
   setTimeout(() => {
     document.getElementById('entryScreen').classList.add('leaving');
-  }, 1550);
-  setTimeout(continueFromEntry, 1900);
+  }, 2250);
+  setTimeout(continueFromEntry, 2600);
 }
 
-/* Sonido de moneda cayendo: un golpe grave inicial (moneda de canto
+/* Reproduce el sonido real de monedas cayendo (archivo proporcionado
+   por el usuario). Si por lo que sea no se puede reproducir (formato,
+   navegador, etc.), recurrimos al sonido sintetizado como reserva. */
+function playCoinAudio() {
+  try {
+    const audio = document.getElementById('coinDropAudio');
+    audio.currentTime = 0;
+    const p = audio.play();
+    if (p && p.catch) p.catch(() => playCoinDropSound());
+  } catch (e) {
+    playCoinDropSound();
+  }
+}
+
+/* Sonido de moneda cayendo (reserva sintetizada, por si el audio real
+   no se puede reproducir): un golpe grave inicial (moneda de canto
    contra el suelo) + varios rebotes cada vez más flojos y seguidos +
    un puñado de monedas cayendo y tintineando juntas: muchos "clincs"
    metálicos superpuestos, de tono variado (como monedas distintas),
