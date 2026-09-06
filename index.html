@@ -2472,17 +2472,43 @@ function handleEntryCoinClick() {
   playCoinAudio();
   setTimeout(() => {
     document.getElementById('entryScreen').classList.add('leaving');
-  }, 2250);
-  setTimeout(continueFromEntry, 2600);
+  }, 1600);
+  setTimeout(continueFromEntry, 1950);
 }
 
+/* El archivo de audio trae ~0.69s de silencio inicial antes del primer
+   "clinc". Lo precargamos como AudioBuffer y lo arrancamos con ese
+   desfase (start(0, offset)) para que el sonido empiece EXACTAMENTE en
+   el instante del clic, a la vez que arranca el giro — sin el retraso
+   que había antes ni la latencia de "buscar" un punto en un <audio>. */
+const COIN_AUDIO_ONSET = 0.66;
+let coinAudioBuffer = null;
+let coinAudioCtx = null;
+(async function preloadCoinAudio() {
+  try {
+    coinAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const res = await fetch('sonido-moneda.mp3');
+    const buf = await res.arrayBuffer();
+    coinAudioBuffer = await coinAudioCtx.decodeAudioData(buf);
+  } catch (e) { /* si falla, playCoinAudio() recurre al <audio> normal */ }
+})();
+
 /* Reproduce el sonido real de monedas cayendo (archivo proporcionado
-   por el usuario). Si por lo que sea no se puede reproducir (formato,
-   navegador, etc.), recurrimos al sonido sintetizado como reserva. */
+   por el usuario), recortando el silencio inicial. Si el buffer no
+   llegó a cargar a tiempo, recurre al <audio> normal (con el mismo
+   desfase); si nada de eso funciona, al sonido sintetizado. */
 function playCoinAudio() {
   try {
+    if (coinAudioBuffer && coinAudioCtx) {
+      if (coinAudioCtx.state === 'suspended') coinAudioCtx.resume();
+      const src = coinAudioCtx.createBufferSource();
+      src.buffer = coinAudioBuffer;
+      src.connect(coinAudioCtx.destination);
+      src.start(0, COIN_AUDIO_ONSET);
+      return;
+    }
     const audio = document.getElementById('coinDropAudio');
-    audio.currentTime = 0;
+    audio.currentTime = COIN_AUDIO_ONSET;
     const p = audio.play();
     if (p && p.catch) p.catch(() => playCoinDropSound());
   } catch (e) {
