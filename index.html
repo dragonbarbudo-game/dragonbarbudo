@@ -491,6 +491,33 @@ body.light-mode .auth-screen {
 .auth-scene.logo-dark { display: block; }
 body.light-mode .auth-scene.logo-dark { display: none; }
 body.light-mode .auth-scene.logo-light { display: block; }
+/* Capa de relleno: la misma escena, ampliada y desenfocada, colocada
+   justo detrás de la nítida. El recorte de la ilustración es irregular
+   (tiene transparencia en los bordes), así que en proporciones de
+   pantalla muy parecidas a las de la imagen (p. ej. tablet) casi no hay
+   zoom/recorte y esos bordes transparentes quedan a la vista; esta capa
+   asegura que ahí se vea un degradado de la propia escena en vez del
+   fondo plano. Al ir ampliada un 40% queda cubierta casi por completo
+   por la capa nítida y solo asoma en ese margen fino. */
+.auth-scene-fill {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    object-fit: cover;
+    object-position: center 30%;
+    transform: scale(1.4);
+    filter: blur(40px) saturate(1.15);
+    z-index: 0;
+    pointer-events: none;
+    user-select: none;
+}
+.auth-scene-fill.logo-dark { display: block; }
+body.light-mode .auth-scene-fill.logo-dark { display: none; }
+body.light-mode .auth-scene-fill.logo-light { display: block; }
 
 .auth-box {
     position: relative;
@@ -627,6 +654,8 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 
 <!-- PANTALLA DE ACCESO -->
 <div class="auth-screen" id="authScreen">
+    <img class="auth-scene-fill logo-dark" src="fondo-taberna-oscuro.png" alt="" aria-hidden="true">
+    <img class="auth-scene-fill logo-light" src="fondo-taberna-claro.png" alt="" aria-hidden="true">
     <img class="auth-scene logo-dark" src="fondo-taberna-oscuro.png" alt="" aria-hidden="true">
     <img class="auth-scene logo-light" src="fondo-taberna-claro.png" alt="" aria-hidden="true">
 
