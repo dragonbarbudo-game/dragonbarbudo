@@ -1011,7 +1011,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 </div>
 
 <!-- PIE DE PÁGINA (estructura de momento, faltan enlaces/contenido reales) -->
-<footer class="site-footer">
+<footer class="site-footer" style="display:none">
     <nav class="site-footer-nav">
         <a href="#">Información</a>
         <a href="#">Asistencia</a>
@@ -1917,6 +1917,7 @@ function showAuthScreen() {
   document.getElementById('authScreen').style.display = 'flex';
   document.querySelector('header').style.display = 'none';
   document.querySelector('.app').style.display = 'none';
+  document.querySelector('.site-footer').style.display = 'none';
   document.getElementById('themeToggleBtn').style.display = 'flex';
   closeSidebar();
   closeFriendsPanel();
@@ -1927,6 +1928,7 @@ async function enterApp(user) {
   document.getElementById('themeToggleBtn').style.display = 'none';
   document.querySelector('header').style.display = 'flex';
   document.querySelector('.app').style.display = 'grid';
+  document.querySelector('.site-footer').style.display = 'block';
   showPage('lobby'); // siempre entra por el Lobby, sea cuenta nueva o usuario recordado
 
   const { data: profile, error } = await supabaseClient
