@@ -167,18 +167,21 @@ body.drawer-open { overflow: hidden; }
 .frame-ring { border-radius: 50%; background: linear-gradient(135deg, #333742, #22252e); border: 3px solid var(--border); }
 
 /* PIE DE PÁGINA — fondo oscuro fijo en ambos temas (a juego con la
-   ilustración) para que el texto blanco siempre se lea bien. */
+   ilustración). Texto en el mismo tono "pergamino" cálido que usa el
+   resto de la interfaz sobre fondos oscuros (--text/--muted en su
+   variante oscura), en vez de blanco puro, para que combine con la
+   paleta general y no chirríe. */
 .site-footer { background: #171a21; border-top: 1px solid #2c3140; padding: 26px 30px; }
 .site-footer-nav { display: flex; flex-wrap: wrap; gap: 24px; margin-bottom: 18px; }
-.site-footer-nav a { color: #fff; font-weight: 700; font-size: 14px; text-decoration: none; }
-.site-footer-nav a:hover { color: var(--gold); }
+.site-footer-nav a { color: #f1ede4; font-weight: 700; font-size: 14px; text-decoration: none; }
+.site-footer-nav a:hover { color: #d9a441; }
 .site-footer-divider { border-top: 1px solid #2c3140; margin-bottom: 18px; }
-.site-footer-legal { color: #fff; font-size: 13px; margin-bottom: 14px; }
-.site-footer-legal a { color: #fff; text-decoration: underline; }
-.site-footer-legal a:hover { color: var(--gold); }
+.site-footer-legal { color: #98948a; font-size: 13px; margin-bottom: 14px; }
+.site-footer-legal a { color: #cbc7bb; text-decoration: underline; }
+.site-footer-legal a:hover { color: #d9a441; }
 .site-footer-links { display: flex; flex-wrap: wrap; gap: 20px; }
-.site-footer-links a { color: #fff; font-size: 13px; text-decoration: none; }
-.site-footer-links a:hover { color: var(--gold); }
+.site-footer-links a { color: #cbc7bb; font-size: 13px; text-decoration: none; }
+.site-footer-links a:hover { color: #d9a441; }
 @media (max-width: 600px) {
     .site-footer { padding: 22px 18px; }
     .site-footer-nav, .site-footer-links { gap: 14px 18px; }
