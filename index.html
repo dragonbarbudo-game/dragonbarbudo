@@ -687,12 +687,77 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 }
 .auth-screen .theme-toggle-fixed svg { width: 18px; height: 18px; display: block; }
 .auth-screen .theme-toggle-fixed:hover { border-color: var(--auth-accent); color: var(--auth-accent); }
+
+/* =========================================================
+   PANTALLA DE ENTRADA — portada previa al login/registro
+========================================================= */
+.entry-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 20px;
+    background: #0d0e12;
+    background-image: radial-gradient(circle at 50% 42%, rgba(217,164,65,.10), transparent 60%);
+}
+.entry-coin-wrap { width: min(50vw, 300px); }
+.entry-coin {
+    width: 100%;
+    display: block;
+    animation: entryCoinFloat 4.5s ease-in-out infinite;
+}
+@keyframes entryCoinFloat {
+    0%, 100% { transform: translateY(0); filter: drop-shadow(0 12px 26px rgba(217,164,65,.28)); }
+    50% { transform: translateY(-16px); filter: drop-shadow(0 30px 40px rgba(217,164,65,.5)); }
+}
+.entry-continue {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px 4px;
+    position: relative;
+    font-family: 'Cinzel', serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #f0c975;
+    transition: color .2s ease;
+}
+.entry-continue::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 100%; bottom: 2px;
+    height: 2px;
+    background: #d9a441;
+    transition: right .25s ease;
+}
+.entry-continue:hover { color: #fff; }
+.entry-continue:hover::after { right: 0; }
+.entry-continue svg { width: 17px; height: 17px; transition: transform .25s ease; }
+.entry-continue:hover svg { transform: translateX(5px); }
 </style>
 </head>
 <body>
 
+<!-- PANTALLA DE ENTRADA -->
+<div class="entry-screen" id="entryScreen">
+    <div class="entry-coin-wrap">
+        <img class="entry-coin" src="moneda-dragonbarbudo.png" alt="Dragonbarbudo">
+    </div>
+    <button type="button" class="entry-continue" onclick="continueFromEntry()">
+        Continuar
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </button>
+</div>
+
 <!-- PANTALLA DE ACCESO -->
-<div class="auth-screen" id="authScreen">
+<div class="auth-screen" id="authScreen" style="display:none">
     <img class="auth-scene-fill logo-dark" src="fondo-taberna-oscuro.png" alt="" aria-hidden="true">
     <img class="auth-scene-fill logo-light" src="fondo-taberna-claro.png" alt="" aria-hidden="true">
     <img class="auth-scene logo-dark" src="fondo-taberna-oscuro.png" alt="" aria-hidden="true">
@@ -1033,7 +1098,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 </div>
 
 <!-- PIE DE PÁGINA (estructura de momento, faltan enlaces/contenido reales) -->
-<footer class="site-footer">
+<footer class="site-footer" style="display:none">
     <nav class="site-footer-nav">
         <a href="#">Información</a>
         <a href="#">Asistencia</a>
@@ -2369,14 +2434,23 @@ function subscribeGameInvites() {
 }
 
 /* Al cargar la página, comprobamos si ya hay una sesión abierta */
+let entrySkipped = false; // true en cuanto se sabe que hay sesión: no hace falta pasar por "Continuar"
+
 (async function checkSession() {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) {
+    entrySkipped = true;
+    document.getElementById('entryScreen').style.display = 'none';
     await enterApp(session.user);
-  } else {
-    showAuthScreen();
   }
+  // Si no hay sesión, nos quedamos en la pantalla de entrada hasta que el
+  // usuario pulse "Continuar" (ver continueFromEntry()).
 })();
+
+function continueFromEntry() {
+  document.getElementById('entryScreen').style.display = 'none';
+  if (!entrySkipped) showAuthScreen();
+}
 
 /* Si el usuario inicia o cierra sesión en otra pestaña, lo reflejamos aquí también.
    También cubre la vuelta desde Google/Discord: Supabase redirige de vuelta a esta
