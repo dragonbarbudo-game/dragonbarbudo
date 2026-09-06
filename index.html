@@ -485,6 +485,27 @@ body.light-mode .auth-screen {
 .auth-scene.logo-dark { display: block; }
 body.light-mode .auth-scene.logo-dark { display: none; }
 body.light-mode .auth-scene.logo-light { display: block; }
+/* Capa desenfocada de la misma escena, un poco más grande, colocada
+   detrás de la nítida: rellena las esquinas donde la silueta transparente
+   de la ilustración no llega, sin dejar ver un corte de color plano y
+   sin tocar el archivo de imagen original. */
+.auth-scene-fill {
+    display: none;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center bottom;
+    transform: scale(1.25);
+    filter: blur(60px) saturate(1.15);
+    z-index: 0;
+    pointer-events: none;
+    user-select: none;
+}
+.auth-scene-fill.logo-dark { display: block; }
+body.light-mode .auth-scene-fill.logo-dark { display: none; }
+body.light-mode .auth-scene-fill.logo-light { display: block; }
 
 .auth-box {
     position: relative;
@@ -621,6 +642,8 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 
 <!-- PANTALLA DE ACCESO -->
 <div class="auth-screen" id="authScreen">
+    <img class="auth-scene-fill logo-dark" src="fondo-taberna-oscuro.png" alt="" aria-hidden="true">
+    <img class="auth-scene-fill logo-light" src="fondo-taberna-claro.png" alt="" aria-hidden="true">
     <img class="auth-scene logo-dark" src="fondo-taberna-oscuro.png" alt="" aria-hidden="true">
     <img class="auth-scene logo-light" src="fondo-taberna-claro.png" alt="" aria-hidden="true">
 
