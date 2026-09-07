@@ -3187,6 +3187,8 @@ async function enterApp(user) {
 
   initGameUI();
   startFriendsSystem();
+  flushPendingInviteBanner();
+  flushPendingGameNotifications();
 }
 
 /* =========================
@@ -3549,7 +3551,43 @@ async function sendGameInvite(friendId, friendName, game) {
   toast(`🎮 Invitación a ${GAME_NAMES[game] || game} enviada a ${friendName}.`);
 }
 
+/* Las invitaciones a jugar no deben verse mientras se está en Home o en
+   Acceso (login/registro): si llegan ahí, se guardan y se muestran en
+   cuanto se entra de verdad a la app (ver flushPendingInviteBanner). */
+let pendingInviteBanner = null;
+function isOnHomeOrAuthScreen() {
+  const entry = document.getElementById('entryScreen');
+  const auth = document.getElementById('authScreen');
+  return getComputedStyle(entry).display !== 'none' || getComputedStyle(auth).display !== 'none';
+}
+function flushPendingInviteBanner() {
+  if (!pendingInviteBanner) return;
+  const { text, onAccept, onDecline } = pendingInviteBanner;
+  pendingInviteBanner = null;
+  showInviteBanner(text, onAccept, onDecline);
+}
+
+/* Mismo criterio para los avisos de "tu amigo ha aceptado/rechazado la
+   partida" (y el salto automático a la partida): si llegan estando en
+   Home o Acceso, se guardan y se disparan en cuanto se entra a la app. */
+let pendingGameNotifications = [];
+function runOrQueueGameNotification(fn) {
+  if (isOnHomeOrAuthScreen()) {
+    pendingGameNotifications.push(fn);
+  } else {
+    fn();
+  }
+}
+function flushPendingGameNotifications() {
+  const queued = pendingGameNotifications;
+  pendingGameNotifications = [];
+  queued.forEach(fn => fn());
+}
 function showInviteBanner(text, onAccept, onDecline) {
+  if (isOnHomeOrAuthScreen()) {
+    pendingInviteBanner = { text, onAccept, onDecline };
+    return;
+  }
   const banner = document.getElementById('inviteBanner');
   document.getElementById('inviteBannerText').textContent = text;
   const acceptBtn = document.getElementById('inviteAcceptBtn');
@@ -3615,15 +3653,17 @@ function subscribeGameInvites() {
         const invite = payload.new;
         if (invite.status === 'accepted') {
           const name = await getUsername(invite.receiver_id);
-          toast(`✅ ${name} ha aceptado tu invitación. ¡A jugar!`);
-          if (invite.game === 'connect4' && invite.game_id) {
-            openConnect4Game(invite.game_id);
-          } else {
-            showPage('diceGame');
-          }
+          runOrQueueGameNotification(() => {
+            toast(`✅ ${name} ha aceptado tu invitación. ¡A jugar!`);
+            if (invite.game === 'connect4' && invite.game_id) {
+              openConnect4Game(invite.game_id);
+            } else {
+              showPage('diceGame');
+            }
+          });
         } else if (invite.status === 'declined') {
           const name = await getUsername(invite.receiver_id);
-          toast(`${name} ha rechazado tu invitación.`);
+          runOrQueueGameNotification(() => toast(`${name} ha rechazado tu invitación.`));
         }
       }
     )
@@ -3656,6 +3696,8 @@ function continueFromEntry() {
     document.querySelector('.site-footer').style.display = 'block';
     document.getElementById('langSwitcher').style.display = 'block';
     showPage('lobby');
+    flushPendingInviteBanner();
+    flushPendingGameNotifications();
   }
 }
 
