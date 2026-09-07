@@ -2478,7 +2478,10 @@ function connect4Zoom(direction) {
   wrap.addEventListener('wheel', (e) => {
     if (!e.ctrlKey && !e.metaKey) return; // sin Ctrl, la rueda sigue haciendo scroll normal
     e.preventDefault();
-    connect4SetZoom(connect4ZoomLevel - e.deltaY * 0.01);
+    // Cada "muesca" de la rueda cambia el zoom lo mismo que un clic del
+    // menú ➖/➕ (misma sensibilidad), en vez de un paso proporcional al
+    // deltaY (que varía mucho entre ratón y trackpad).
+    connect4Zoom(e.deltaY < 0 ? 1 : -1);
   }, { passive: false });
 
   let pinchStartDist = null;
