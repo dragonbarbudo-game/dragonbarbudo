@@ -146,6 +146,11 @@ body.drawer-open { overflow: hidden; }
     color: #171817; font-family: 'Cinzel', serif; font-weight: 700; font-size: 11px;
     letter-spacing: .4px; padding: 3px 9px; border-radius: 20px; margin-top: 6px;
 }
+/* Contador de visitas — visible solo para admins, junto a su insignia */
+.visit-counter {
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--muted); font-size: 11px; margin-top: 6px;
+}
 .menu { margin-top: 20px; }
 .menu button {
     width: 100%; border: none; background: transparent; color: var(--muted);
@@ -1138,6 +1143,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             <div class="avatar-stage size-md frame-ring header-avatar-btn" id="sidebarAvatar" onclick="showPage('profile')" title="Ver mi perfil" data-i18n-title="title_view_profile"></div>
             <div class="username" id="sidebarUsername">Jugador</div>
             <span class="admin-badge" id="adminBadgeSidebar" style="display:none">👑 Admin</span>
+            <span class="visit-counter" id="visitCounter" style="display:none"></span>
             <div class="level" id="sidebarLevel">⭐ Nivel 1</div>
         </div>
 
@@ -1763,6 +1769,7 @@ function isUnlocked(slot, item) {
 }
 
 function toggleCheatMode() {
+  if (!isAdmin) return; // el modo diseño solo lo pueden usar las cuentas admin
   state.cheatMode = !state.cheatMode;
   save();
   renderCheatToggle();
@@ -2262,6 +2269,35 @@ const SUPABASE_URL = 'https://yptdxphximblpzlrgjpg.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdGR4cGh4aW1ibHB6bHJnanBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1MTI2ODIsImV4cCI6MjEwNDA4ODY4Mn0.aA2jm-SC6xRI1_klg-17M-Po81RZP6dnpDfRBDQq_gc';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+/* =========================
+   CONTADOR DE VISITAS (solo visible para admins)
+   Cuenta cada carga de página, sea quien sea el visitante, llamando a
+   la función increment_visit_count() de Supabase (hay que crearla una
+   vez en el panel de Supabase; ver el SQL entregado aparte). El
+   número solo se muestra si la cuenta que ha iniciado sesión es admin.
+========================= */
+let siteVisitCount = null;
+async function trackSiteVisit() {
+  try {
+    const { data, error } = await supabaseClient.rpc('increment_visit_count');
+    if (!error && typeof data === 'number') {
+      siteVisitCount = data;
+      renderVisitCounter();
+    }
+  } catch (e) { /* si la función todavía no existe en Supabase, no pasa nada */ }
+}
+function renderVisitCounter() {
+  const el = document.getElementById('visitCounter');
+  if (!el) return;
+  if (isAdmin && siteVisitCount !== null) {
+    el.textContent = `👁️ ${siteVisitCount.toLocaleString('es-ES')} visitas`;
+    el.style.display = 'inline-flex';
+  } else {
+    el.style.display = 'none';
+  }
+}
+trackSiteVisit();
+
 /* Traduce los errores técnicos de Supabase a mensajes en español sencillo */
 function translateAuthError(error) {
   if (!error) return '';
@@ -2543,9 +2579,12 @@ async function enterApp(user) {
   // inicio de sesión (no depende de ninguna fila de la base de datos),
   // así que sobrevive aunque se borre o reinicie la base de datos.
   isAdmin = ADMIN_EMAILS.includes((user.email || '').trim().toLowerCase());
-  if (isAdmin) state.cheatMode = true;
+  state.cheatMode = isAdmin; // el modo diseño es cosa de admins: se fuerza en ambos sentidos
   document.getElementById('adminBadgeSidebar').style.display = isAdmin ? 'inline-flex' : 'none';
   document.getElementById('adminBadgeProfile').style.display = isAdmin ? 'inline-flex' : 'none';
+  document.getElementById('cheatToggle').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('cheatToggleSidebar').style.display = isAdmin ? 'flex' : 'none';
+  renderVisitCounter();
 
   initGameUI();
   startFriendsSystem();
