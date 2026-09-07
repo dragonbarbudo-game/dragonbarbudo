@@ -113,11 +113,9 @@ body.light-mode .header-logo-img.logo-light { display: block; }
     padding: 11px 12px; color: var(--text); font-family: inherit; font-size: 14px; cursor: pointer; margin-bottom: 8px;
 }
 .sidebar-extra-btn.on { border-color: var(--ember); color: var(--gold-light); }
-/* Grupo admin: envuelve el botón "Admin" y, dentro, "Modo diseño" anidado
-   un poco más adentro para dejar claro que depende del rango admin. */
-.sidebar-admin-group { border: 1px solid var(--border); border-radius: 10px; padding: 8px 8px 0; margin-bottom: 8px; background: rgba(217,164,65,.06); }
-.sidebar-admin-group .sidebar-extra-btn { margin-bottom: 8px; }
-.sidebar-extra-btn-nested { margin-left: 16px; width: calc(100% - 16px); font-size: 13px; opacity: .92; }
+/* Botón "Modo diseño" dentro del propio Panel de Admin (arriba a la derecha) */
+.admin-welcome { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
+#cheatToggleAdmin.on { background: var(--ember); color: #fff; }
 .drawer-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 450; }
 .drawer-backdrop.show { display: block; }
 body.drawer-open { overflow: hidden; }
@@ -1164,13 +1162,9 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 
         <div class="sidebar-extra-mobile">
             <button class="sidebar-extra-btn" id="themeToggleBtnSidebar" onclick="toggleTheme()" data-i18n="sidebar_theme">🌙 Cambiar tema</button>
-
-            <!-- Grupo admin: solo visible para cuentas admin. El modo diseño
-                 vive dentro de este grupo porque es exclusivo de admins. -->
-            <div class="sidebar-admin-group" id="adminGroupSidebar" style="display:none">
-                <button class="sidebar-extra-btn" id="adminMenuBtn" onclick="showPage('adminPage'); loadAdminStats();">📊 Admin</button>
-                <button class="sidebar-extra-btn sidebar-extra-btn-nested" id="cheatToggleSidebar" onclick="toggleCheatMode()" data-i18n="sidebar_design_mode">🍺 Modo diseño</button>
-            </div>
+            <!-- Solo visible para cuentas admin. El modo diseño ya no se activa
+                 desde aquí: vive dentro de la propia página del Panel de Admin. -->
+            <button class="sidebar-extra-btn" id="adminMenuBtn" onclick="showPage('adminPage'); loadAdminStats();" style="display:none">📊 Admin</button>
         </div>
     </aside>
 
@@ -1312,9 +1306,12 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 
         <!-- ADMIN (solo visible/accesible para las cuentas admin) -->
         <div class="page" id="adminPage">
-            <div class="welcome">
-                <h1>📊 Panel de administración</h1>
-                <p>Estadísticas del sitio, solo visibles para cuentas admin.</p>
+            <div class="welcome admin-welcome">
+                <div>
+                    <h1>📊 Panel de administración</h1>
+                    <p>Estadísticas del sitio, solo visibles para cuentas admin.</p>
+                </div>
+                <button class="btn btn-dark" id="cheatToggleAdmin" onclick="toggleCheatMode()" title="Modo diseño" data-i18n-title="title_design_mode" data-i18n="sidebar_design_mode">🍺 Modo diseño</button>
             </div>
 
             <div class="stats">
@@ -1815,10 +1812,10 @@ function toggleCheatMode() {
 }
 
 function renderCheatToggle() {
-  // El botón vive solo dentro del grupo Admin del cajón de menú (ya no
-  // se repite en el header).
-  const sidebarEl = document.getElementById('cheatToggleSidebar');
-  if (sidebarEl) sidebarEl.classList.toggle('on', state.cheatMode);
+  // El botón vive solo dentro de la página del Panel de Admin (ya no se
+  // repite en el header ni en el cajón de menú).
+  const el = document.getElementById('cheatToggleAdmin');
+  if (el) el.classList.toggle('on', state.cheatMode);
 }
 function countUnlockedExtras(s) {
   return Object.values(s.unlocked).reduce((sum, arr) => sum + arr.length, 0);
