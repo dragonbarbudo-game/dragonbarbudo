@@ -466,11 +466,6 @@ main { padding: 30px; overflow: hidden; }
     .nav-user { gap: 6px; }
     .coins span:not(.coin-icon-3d) { font-size: 12px; }
     .welcome h1 { font-size: 22px; }
-    /* En móvil, el botón de idioma de la cabecera solo muestra la
-       bandera (sin el código ES/EN) para ahorrar espacio; el menú
-       desplegable, al abrirlo, sigue mostrando el nombre completo. */
-    #headerLangCode { display: none; }
-    .lang-header-btn { padding: 7px 8px; }
 }
 
 /* =========================================================
@@ -751,13 +746,6 @@ body.light-mode .auth-tabs button.active { color: #fff; }
     pointer-events: none;
 }
 .lang-option.disabled small { color: var(--muted); opacity: .7; }
-/* Variante para la cabecera de la app: en flujo normal junto al resto
-   de iconos (no flotante), con el menú abriéndose hacia abajo en vez
-   de hacia arriba. */
-.lang-switcher-header { position: relative; bottom: auto; right: auto; left: auto; z-index: auto; }
-.lang-header-btn { gap: 5px; font-weight: 700; font-size: 12px; padding: 7px 10px; }
-#headerLangCode { letter-spacing: .5px; }
-.lang-switcher-header .lang-menu { bottom: auto; top: calc(100% + 8px); right: 0; }
 @media (max-width: 480px) {
     .lang-switcher { bottom: 10px; right: 10px; }
     .lang-switcher-btn span:not(.lang-flag) { display: none; }
@@ -1130,13 +1118,6 @@ body.light-mode .auth-tabs button.active { color: #fff; }
         <button class="header-icon-btn coin-menu-btn" onclick="goToEntryMenu()" title="Menú principal" data-i18n-title="title_main_menu">
             <img src="moneda-dragonbarbudo.png" alt="Menú principal" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'🏠',style:'font-size:18px'}))">
         </button>
-        <div class="lang-switcher lang-switcher-header" id="headerLangSwitcher">
-            <button type="button" class="header-icon-btn lang-header-btn" id="headerLangBtn" onclick="toggleHeaderLangMenu()">
-                <span class="lang-flag" id="headerLangFlag"></span>
-                <span id="headerLangCode">ES</span>
-            </button>
-            <div class="lang-menu" id="headerLangMenu"></div>
-        </div>
         <button class="door-btn" id="doorBtn" onclick="handleDoorClick()" title="Cerrar sesión" data-i18n-title="title_logout">
             <div class="door-frame">
                 <div class="door-panel" id="doorPanel"></div>
@@ -1595,24 +1576,14 @@ function buildLangMenu() {
       ${l.label} <small>${l.hint}</small>
     </button>
   `).join('');
-  // Dos menús (portada/login flotante + botón compacto de la cabecera),
-  // siempre con el mismo contenido.
-  const langMenu = document.getElementById('langMenu');
-  const headerLangMenu = document.getElementById('headerLangMenu');
-  if (langMenu) langMenu.innerHTML = html;
-  if (headerLangMenu) headerLangMenu.innerHTML = html;
+  document.getElementById('langMenu').innerHTML = html;
 }
 function toggleLangMenu() {
   document.getElementById('langSwitcher').classList.toggle('open');
 }
-function toggleHeaderLangMenu() {
-  document.getElementById('headerLangSwitcher').classList.toggle('open');
-}
 document.addEventListener('click', (e) => {
   const switcher = document.getElementById('langSwitcher');
   if (switcher && !switcher.contains(e.target)) switcher.classList.remove('open');
-  const headerSwitcher = document.getElementById('headerLangSwitcher');
-  if (headerSwitcher && !headerSwitcher.contains(e.target)) headerSwitcher.classList.remove('open');
 });
 function applyTranslations(lang) {
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -1642,15 +1613,9 @@ function setLanguage(lang) {
   const info = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
   document.getElementById('langSwitcherFlag').innerHTML = LANG_FLAGS[lang];
   document.getElementById('langSwitcherLabel').textContent = lang.toUpperCase();
-  const headerFlag = document.getElementById('headerLangFlag');
-  const headerCode = document.getElementById('headerLangCode');
-  if (headerFlag) headerFlag.innerHTML = LANG_FLAGS[lang];
-  if (headerCode) headerCode.textContent = lang.toUpperCase();
   buildLangMenu();
   applyTranslations(lang);
   document.getElementById('langSwitcher').classList.remove('open');
-  const headerSwitcher = document.getElementById('headerLangSwitcher');
-  if (headerSwitcher) headerSwitcher.classList.remove('open');
 }
 (function initLangSwitcher() {
   // Guardamos el texto/placeholder original en español antes de tocar nada,
@@ -2555,7 +2520,7 @@ async function enterApp(user) {
   document.body.classList.remove('home-active');
   document.getElementById('authScreen').style.display = 'none';
   document.getElementById('themeToggleBtn').style.display = 'none';
-  document.getElementById('langSwitcher').style.display = 'none';
+  document.getElementById('langSwitcher').style.display = 'block'; // el selector de idioma se ve igual en toda la web, también dentro de la app
   document.querySelector('header').style.display = 'flex';
   document.querySelector('.app').style.display = 'grid';
   document.querySelector('.site-footer').style.display = 'block';
@@ -3009,7 +2974,7 @@ function continueFromEntry() {
     document.querySelector('header').style.display = 'flex';
     document.querySelector('.app').style.display = 'grid';
     document.querySelector('.site-footer').style.display = 'block';
-    document.getElementById('langSwitcher').style.display = 'none';
+    document.getElementById('langSwitcher').style.display = 'block';
     showPage('lobby');
   }
 }
