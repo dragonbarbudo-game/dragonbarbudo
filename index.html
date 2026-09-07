@@ -464,6 +464,8 @@ main { padding: 30px; overflow: hidden; }
 .c4-vs { font-family: 'Cinzel', serif; color: var(--gold); font-size: 13px; }
 .c4-piece-icon { display: inline-block; width: 16px; height: 16px; border-radius: 50%; }
 .c4-status { font-size: 14px; font-weight: 700; }
+.c4-postgame { display: flex; justify-content: center; gap: 12px; margin-bottom: 18px; }
+.c4-postgame-btn { font-size: 15px; padding: 10px 22px; }
 .c4-board-wrap { overflow: auto; padding: 8px 0; touch-action: manipulation; }
 /* El zoom cambia --c4-zoom (ver connect4SetZoom), y el tamaño real de
    casillas/fichas se recalcula con calc(): así el tablero de verdad
@@ -1380,6 +1382,11 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                     </div>
                 </div>
                 <div class="c4-status" id="connect4Status">Cargando partida…</div>
+            </div>
+
+            <div class="c4-postgame" id="c4PostGameActions" style="display:none;">
+                <button class="btn btn-primary c4-postgame-btn" onclick="connect4Rematch()" title="Revancha">🔁 Revancha</button>
+                <button class="btn btn-dark c4-postgame-btn" onclick="leaveConnect4Game()" title="Salir">🚪 Salir</button>
             </div>
 
             <div class="c4-board-wrap" id="c4BoardWrap">
@@ -2501,13 +2508,15 @@ function connect4Render() {
   document.getElementById('connect4Board').innerHTML = html;
 
   const statusEl = document.getElementById('connect4Status');
-  if (connect4State.status === 'finished') {
+  const finished = connect4State.status === 'finished';
+  if (finished) {
     if (connect4State.winner === 0) statusEl.textContent = '🤝 Empate.';
     else if (connect4State.winner === myNum) statusEl.textContent = '🏆 ¡Has ganado!';
     else statusEl.textContent = `😔 Ha ganado ${connect4Names[connect4State.winner]}.`;
   } else {
     statusEl.textContent = myTurn ? '🟢 Tu turno' : `⏳ Turno de ${connect4Names[connect4State.turn]}`;
   }
+  document.getElementById('c4PostGameActions').style.display = finished ? 'flex' : 'none';
 }
 
 async function connect4MakeMove(col) {
@@ -2546,6 +2555,26 @@ async function connect4MakeMove(col) {
     updated_at: new Date().toISOString()
   }).eq('id', connect4State.id);
   if (error) toast('❌ No se pudo hacer el movimiento.');
+}
+
+/* Revancha: en partidas contra bot, empieza una nueva con la misma
+   dificultad. En partidas online, reinicia la misma fila de Supabase
+   (mismos dos jugadores): como ambos siguen suscritos a esa partida,
+   se reinicia para los dos a la vez sin tener que enviar otra invitación. */
+async function connect4Rematch() {
+  if (!connect4State) return;
+  if (connect4State.isBot) {
+    connect4StartBotGame(connect4State.botDifficulty);
+    return;
+  }
+  const { error } = await supabaseClient.from('connect4_games').update({
+    board: connect4EmptyBoard(),
+    turn: 1,
+    status: 'active',
+    winner: null,
+    updated_at: new Date().toISOString()
+  }).eq('id', connect4State.id);
+  if (error) toast('❌ No se pudo iniciar la revancha.');
 }
 
 function leaveConnect4Game() {
