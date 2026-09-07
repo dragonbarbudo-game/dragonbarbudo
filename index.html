@@ -336,7 +336,10 @@ main { padding: 30px; overflow: hidden; }
 .theme-toggle-fixed { position: fixed; top: 16px; right: 16px; z-index: 400; }
 
 /* INVITACIÓN A JUGAR */
-.invite-banner { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 300; background: var(--panel-2); border: 1px solid var(--gold); border-radius: 12px; padding: 14px 18px; align-items: center; gap: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.4); }
+/* z-index por encima de TODO lo demás en la web (header 600, cajones
+   500, selector de idioma 650...), para que la invitación a jugar
+   nunca quede tapada, se desplace la página hacia donde se desplace. */
+.invite-banner { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 900; background: var(--panel-2); border: 1px solid var(--gold); border-radius: 12px; padding: 14px 18px; align-items: center; gap: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.4); }
 .invite-banner.show { display: flex; }
 .invite-banner .btn { padding: 7px 12px; font-size: 13px; }
 .friend { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-radius: 8px; }
