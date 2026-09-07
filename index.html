@@ -236,6 +236,10 @@ main { padding: 30px; overflow: hidden; }
 /* STATS */
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
 .stat { background: var(--panel); padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
+.stat-clickable { cursor: pointer; transition: border-color .15s; }
+.stat-clickable:hover { border-color: var(--gold); }
+.page-back-btn { background: none; border: none; color: var(--muted); font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; padding: 0; margin-bottom: 16px; }
+.page-back-btn:hover { color: var(--gold); }
 .stat-number { font-size: 24px; color: var(--gold); font-weight: 700; }
 .stat-label { color: var(--muted); margin-top: 5px; font-size: 13px; }
 
@@ -1315,7 +1319,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             </div>
 
             <div class="stats">
-                <div class="stat"><div class="stat-number" id="adminStatPlayers">–</div><div class="stat-label">👥 Jugadores registrados</div></div>
+                <div class="stat stat-clickable" onclick="showPage('adminPlayersPage'); loadAdminPlayersList();" title="Ver el listado de jugadores"><div class="stat-number" id="adminStatPlayers">–</div><div class="stat-label">👥 Jugadores registrados</div></div>
                 <div class="stat"><div class="stat-number" id="adminStatOnline">–</div><div class="stat-label">🟢 En línea ahora</div></div>
                 <div class="stat"><div class="stat-number" id="adminStatVisitsTotal">–</div><div class="stat-label">👁️ Visitantes únicos (total)</div></div>
                 <div class="stat"><div class="stat-number" id="adminStatVisitsToday">–</div><div class="stat-label">📅 Visitas de hoy</div></div>
@@ -1326,6 +1330,18 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                 <button class="btn btn-dark" onclick="loadAdminStats()">🔄 Actualizar</button>
             </div>
             <div class="rooms" id="adminVisitsTable">
+                <p class="friend-empty">Cargando…</p>
+            </div>
+        </div>
+
+        <!-- ADMIN › JUGADORES (subpágina, solo accesible desde el Panel de Admin) -->
+        <div class="page" id="adminPlayersPage">
+            <button class="page-back-btn" onclick="showPage('adminPage')">← Volver</button>
+            <div class="welcome">
+                <h1>👥 Jugadores registrados</h1>
+                <p>Todas las cuentas registradas y si están conectadas ahora mismo.</p>
+            </div>
+            <div class="rooms" id="adminPlayersList">
                 <p class="friend-empty">Cargando…</p>
             </div>
         </div>
@@ -2022,7 +2038,8 @@ const PAGE_TITLES = {
   avatarPage: 'Avatar',
   achievements: 'Logros',
   shop: 'Tienda',
-  adminPage: 'Admin'
+  adminPage: 'Admin',
+  adminPlayersPage: 'Jugadores'
 };
 function setPageTitle(name) {
   document.title = 'Dragonbarbudo - ' + name;
@@ -2363,6 +2380,7 @@ presenceChannel
   .on('presence', { event: 'sync' }, () => {
     activePlayersCount = Object.keys(presenceChannel.presenceState()).length;
     renderActivePlayersCounter();
+    renderAdminPlayersList(); // si el admin tiene abierto el listado, se actualiza solo
   })
   .subscribe((status) => {
     if (status === 'SUBSCRIBED') {
@@ -2427,6 +2445,64 @@ async function loadAdminStats() {
   } else {
     tableEl.innerHTML = '<p class="friend-empty">Todavía no hay datos de visitas por día.</p>';
   }
+}
+
+/* =========================
+   ADMIN › JUGADORES REGISTRADOS (con su estado en línea)
+========================= */
+let adminPlayersCache = null;
+
+// ids de usuario conectados ahora mismo, según la presencia en tiempo
+// real (la misma que alimenta "En línea ahora").
+function getOnlineUserIds() {
+  const ids = new Set();
+  Object.values(presenceChannel.presenceState()).forEach(metas => {
+    metas.forEach(meta => { if (meta.user_id) ids.add(meta.user_id); });
+  });
+  return ids;
+}
+
+async function loadAdminPlayersList() {
+  if (!isAdmin) return;
+  const listEl = document.getElementById('adminPlayersList');
+  listEl.innerHTML = '<p class="friend-empty">Cargando…</p>';
+  const { data: players, error } = await supabaseClient
+    .from('profiles')
+    .select('id, username, display_name')
+    .order('username', { ascending: true });
+  if (error) {
+    listEl.innerHTML = '<p class="friend-empty">No se pudo cargar la lista.</p>';
+    return;
+  }
+  adminPlayersCache = players || [];
+  renderAdminPlayersList();
+}
+
+function renderAdminPlayersList() {
+  const listEl = document.getElementById('adminPlayersList');
+  if (!listEl || !adminPlayersCache) return;
+  if (!adminPlayersCache.length) {
+    listEl.innerHTML = '<p class="friend-empty">Todavía no hay jugadores registrados.</p>';
+    return;
+  }
+  const onlineIds = getOnlineUserIds();
+  // Conectados primero, y dentro de cada grupo por orden alfabético.
+  const sorted = [...adminPlayersCache].sort((a, b) => {
+    const aOnline = onlineIds.has(a.id), bOnline = onlineIds.has(b.id);
+    if (aOnline !== bOnline) return aOnline ? -1 : 1;
+    return (a.username || '').localeCompare(b.username || '');
+  });
+  listEl.innerHTML = sorted.map(p => {
+    const name = p.display_name || p.username || 'Jugador';
+    const online = onlineIds.has(p.id);
+    return `
+      <div class="room">
+        <div class="room-left">
+          <div class="game-icon">${online ? '🟢' : '⚪'}</div>
+          <div class="room-info"><h3>${name}</h3><p>${online ? 'Conectado ahora' : 'Desconectado'}</p></div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 /* Traduce los errores técnicos de Supabase a mensajes en español sencillo */
@@ -2714,7 +2790,7 @@ async function enterApp(user) {
   state.cheatMode = isAdmin; // el modo diseño es cosa de admins: se fuerza en ambos sentidos
   document.getElementById('adminBadgeSidebar').style.display = isAdmin ? 'inline-flex' : 'none';
   document.getElementById('adminBadgeProfile').style.display = isAdmin ? 'inline-flex' : 'none';
-  document.getElementById('adminGroupSidebar').style.display = isAdmin ? 'block' : 'none';
+  document.getElementById('adminMenuBtn').style.display = isAdmin ? 'block' : 'none';
   renderVisitCounter();
   renderActivePlayersCounter();
   joinPresence(user.id); // cuenta como "jugador en línea" solo a partir de aquí (cuenta registrada)
