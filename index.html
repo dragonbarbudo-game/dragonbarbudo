@@ -816,6 +816,10 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 }
 .entry-story span { font-size: 11px; color: #b5ae9e; text-align: center; }
 
+/* Espacio de sobra al final para que el botón fijo "volver arriba"
+   (esquina inferior izquierda) nunca tape el primer enlace de esta
+   fila, que es la última sección de la página. */
+.entry-quicklinks { padding-bottom: 100px; }
 .entry-quicklinks-row { display: flex; flex-wrap: wrap; gap: 12px; }
 .entry-quicklink {
     display: inline-flex; align-items: center; gap: 8px;
