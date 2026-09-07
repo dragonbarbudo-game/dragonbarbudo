@@ -238,6 +238,23 @@ main { padding: 30px; overflow: hidden; }
 .stat { background: var(--panel); padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
 .stat-clickable { cursor: pointer; transition: border-color .15s; }
 .stat-clickable:hover { border-color: var(--gold); }
+/* Botones de icono (acciones sobre un jugador en el panel de Admin),
+   con su texto solo al pasar el ratón. */
+.player-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.icon-action-btn {
+    position: relative; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+    font-size: 15px; cursor: pointer; font-family: inherit; color: var(--text);
+}
+.icon-action-btn:hover { border-color: var(--gold); }
+.icon-action-btn.danger:hover { border-color: #e05d5d; }
+.icon-action-btn::after {
+    content: attr(data-tooltip); position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%);
+    background: #14161c; color: var(--text); font-size: 11px; font-weight: 700; white-space: nowrap;
+    padding: 5px 9px; border-radius: 6px; border: 1px solid var(--border);
+    opacity: 0; pointer-events: none; transition: opacity .12s; z-index: 20;
+}
+.icon-action-btn:hover::after { opacity: 1; }
 .page-back-btn { background: none; border: none; color: var(--muted); font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; padding: 0; margin-bottom: 16px; }
 .page-back-btn:hover { color: var(--gold); }
 .stat-number { font-size: 24px; color: var(--gold); font-weight: 700; }
@@ -1429,6 +1446,48 @@ body.light-mode .auth-tabs button.active { color: #fff; }
     </div>
 </div>
 
+<!-- ADMIN › VER PERFIL (solo lectura) -->
+<div class="modal-bg" id="adminProfileModalBg">
+    <div class="modal">
+        <h2><span id="adminProfileModalAvatar">🧙</span> <span id="adminProfileModalName">Jugador</span></h2>
+        <p style="color:var(--muted); margin-top:-6px;" id="adminProfileModalUsername"></p>
+        <p id="adminProfileModalStatus" style="margin-top:10px; font-weight:700;"></p>
+        <p style="color:var(--muted); font-size:13px;" id="adminProfileModalLastSeen"></p>
+        <div class="modal-actions">
+            <button class="btn btn-dark" onclick="closeAdminProfileModal()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ADMIN › PANEL MÁGICO (acciones administrativas sobre un jugador) -->
+<div class="modal-bg" id="adminMagicModalBg">
+    <div class="modal">
+        <h2>🪄 Panel mágico — <span id="adminMagicModalName">Jugador</span></h2>
+        <p style="color:var(--muted); font-size:13px; margin-bottom:16px;">Acciones administrativas sobre esta cuenta.</p>
+        <label style="display:block; font-size:12px; color:var(--muted); margin-bottom:6px;">Nombre visible</label>
+        <div style="display:flex; gap:8px; margin-bottom:16px;">
+            <input type="text" id="adminMagicNameInput" placeholder="Nuevo nombre visible" style="flex:1; width:auto; margin-bottom:0;">
+            <button class="btn btn-primary" onclick="adminRenameUser()">Guardar</button>
+        </div>
+        <p class="friend-msg">🔧 Más acciones próximamente.</p>
+        <div class="modal-actions">
+            <button class="btn btn-dark" onclick="closeAdminMagicModal()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- CONFIRMACIÓN GENÉRICA (se reutiliza para acciones irreversibles, p.ej. eliminar usuario) -->
+<div class="modal-bg" id="confirmModalBg">
+    <div class="modal">
+        <h2 id="confirmModalTitle">¿Estás seguro?</h2>
+        <p id="confirmModalText" style="color:var(--muted); margin: 10px 0 6px;"></p>
+        <div class="modal-actions">
+            <button class="btn btn-dark" onclick="closeConfirmModal()">Cancelar</button>
+            <button class="btn btn-primary" id="confirmModalConfirmBtn" style="background:#e05d5d; color:#fff;">Confirmar</button>
+        </div>
+    </div>
+</div>
+
 <div id="toastHost"></div>
 
 <!-- INVITACIÓN A JUGAR -->
@@ -2195,6 +2254,15 @@ function joinRoom(roomName) {
 document.getElementById('modalBg').addEventListener('click', function (event) {
   if (event.target === this) closeModal();
 });
+document.getElementById('adminProfileModalBg').addEventListener('click', function (event) {
+  if (event.target === this) closeAdminProfileModal();
+});
+document.getElementById('adminMagicModalBg').addEventListener('click', function (event) {
+  if (event.target === this) closeAdminMagicModal();
+});
+document.getElementById('confirmModalBg').addEventListener('click', function (event) {
+  if (event.target === this) closeConfirmModal();
+});
 
 /* =========================
    TOASTS
@@ -2468,7 +2536,7 @@ async function loadAdminPlayersList() {
   listEl.innerHTML = '<p class="friend-empty">Cargando…</p>';
   const { data: players, error } = await supabaseClient
     .from('profiles')
-    .select('id, username, display_name')
+    .select('id, username, display_name, avatar, last_seen')
     .order('username', { ascending: true });
   if (error) {
     listEl.innerHTML = '<p class="friend-empty">No se pudo cargar la lista.</p>';
@@ -2501,8 +2569,123 @@ function renderAdminPlayersList() {
           <div class="game-icon">${online ? '🟢' : '⚪'}</div>
           <div class="room-info"><h3>${name}</h3><p>${online ? 'Conectado ahora' : 'Desconectado'}</p></div>
         </div>
+        <div class="player-actions">
+          <button class="icon-action-btn" data-tooltip="Ir a su perfil" onclick="adminOpenProfile('${p.id}')">👤</button>
+          <button class="icon-action-btn" data-tooltip="Enviar mensaje" onclick="adminSendMessage('${p.id}')">✉️</button>
+          <button class="icon-action-btn" data-tooltip="Abrir panel mágico" onclick="adminOpenMagicPanel('${p.id}')">🪄</button>
+          <button class="icon-action-btn danger" data-tooltip="Eliminar usuario" onclick="adminDeleteUser('${p.id}')">🗑️</button>
+        </div>
       </div>`;
   }).join('');
+}
+
+function adminFindPlayer(id) {
+  return (adminPlayersCache || []).find(p => p.id === id);
+}
+
+/* Ir a su perfil: ficha de solo lectura con lo que sí guarda Supabase
+   (el resto del progreso del jugador vive en su propio navegador). */
+function adminOpenProfile(id) {
+  const p = adminFindPlayer(id);
+  if (!p) return;
+  const online = getOnlineUserIds().has(id);
+  document.getElementById('adminProfileModalAvatar').textContent = p.avatar || '🧙';
+  document.getElementById('adminProfileModalName').textContent = p.display_name || p.username || 'Jugador';
+  document.getElementById('adminProfileModalUsername').textContent = p.username ? ('@' + p.username) : '';
+  document.getElementById('adminProfileModalStatus').textContent = online ? '🟢 Conectado ahora' : '⚪ Desconectado';
+  document.getElementById('adminProfileModalLastSeen').textContent = p.last_seen
+    ? ('Última conexión: ' + new Date(p.last_seen).toLocaleString('es-ES'))
+    : 'Sin registro de última conexión.';
+  document.getElementById('adminProfileModalBg').style.display = 'flex';
+}
+function closeAdminProfileModal() {
+  document.getElementById('adminProfileModalBg').style.display = 'none';
+}
+
+/* Enviar mensaje: reutiliza el chat privado ya existente, sin exigir amistad. */
+function adminSendMessage(id) {
+  const p = adminFindPlayer(id);
+  if (!p) return;
+  openChat(id, p.display_name || p.username || 'Jugador');
+}
+
+/* Panel mágico: acciones administrativas sobre esa cuenta. De momento solo
+   permite cambiar el nombre visible; es el sitio donde añadir más acciones
+   más adelante. */
+let adminMagicTargetId = null;
+function adminOpenMagicPanel(id) {
+  const p = adminFindPlayer(id);
+  if (!p) return;
+  adminMagicTargetId = id;
+  document.getElementById('adminMagicModalName').textContent = p.display_name || p.username || 'Jugador';
+  document.getElementById('adminMagicNameInput').value = p.display_name || '';
+  document.getElementById('adminMagicModalBg').style.display = 'flex';
+}
+function closeAdminMagicModal() {
+  document.getElementById('adminMagicModalBg').style.display = 'none';
+  adminMagicTargetId = null;
+}
+async function adminRenameUser() {
+  if (!adminMagicTargetId) return;
+  const newName = document.getElementById('adminMagicNameInput').value.trim();
+  if (!newName) return;
+  const { error } = await supabaseClient.from('profiles').update({ display_name: newName }).eq('id', adminMagicTargetId);
+  if (error) {
+    toast('❌ No se pudo cambiar el nombre (puede faltar permiso en Supabase para editar el perfil de otra cuenta).');
+    return;
+  }
+  toast('✅ Nombre actualizado.');
+  closeAdminMagicModal();
+  loadAdminPlayersList();
+}
+
+/* Eliminar usuario: pide confirmación y borra la cuenta de verdad (Auth +
+   perfil) a través de la Cloudflare Function /api/admin/delete-user, que
+   comprueba que quien llama es admin antes de tocar nada. */
+function adminDeleteUser(id) {
+  const p = adminFindPlayer(id);
+  if (!p) return;
+  const name = p.display_name || p.username || 'este jugador';
+  showConfirmModal(
+    '🗑️ Eliminar usuario',
+    `Esto eliminará la cuenta de "${name}" de forma permanente. Esta acción no se puede deshacer. ¿Continuar?`,
+    () => doAdminDeleteUser(id)
+  );
+}
+async function doAdminDeleteUser(id) {
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const resp = await fetch('/api/admin/delete-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (session?.access_token || '') },
+      body: JSON.stringify({ userId: id })
+    });
+    const result = await resp.json().catch(() => ({}));
+    if (resp.ok && result.ok) {
+      toast('✅ Cuenta eliminada.');
+      loadAdminPlayersList();
+      loadAdminStats();
+    } else {
+      toast('❌ No se pudo eliminar la cuenta.');
+    }
+  } catch (e) {
+    toast('❌ No se pudo eliminar la cuenta.');
+  }
+}
+
+/* Modal de confirmación genérico, reutilizable para cualquier acción
+   irreversible (como eliminar un usuario). */
+function showConfirmModal(title, text, onConfirm) {
+  document.getElementById('confirmModalTitle').textContent = title;
+  document.getElementById('confirmModalText').textContent = text;
+  const btn = document.getElementById('confirmModalConfirmBtn');
+  const newBtn = btn.cloneNode(true); // limpia el onclick de la vez anterior
+  btn.replaceWith(newBtn);
+  newBtn.onclick = () => { closeConfirmModal(); onConfirm(); };
+  document.getElementById('confirmModalBg').style.display = 'flex';
+}
+function closeConfirmModal() {
+  document.getElementById('confirmModalBg').style.display = 'none';
 }
 
 /* Traduce los errores técnicos de Supabase a mensajes en español sencillo */
