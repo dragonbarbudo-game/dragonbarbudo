@@ -177,6 +177,10 @@ body.drawer-open { overflow: hidden; }
    ilustración), con el mismo lenguaje visual que el resto del pack:
    tipografía Cinzel en los títulos, acento dorado, divisor con gema. */
 .site-footer { background: #14161c; border-top: 1px solid rgba(217,164,65,.25); padding: 34px 30px 28px; }
+/* En Home hay dos botones fijos en las esquinas inferiores (volver
+   arriba e idioma); se deja hueco de sobra para que no tapen la
+   última fila de enlaces del footer al llegar al final. */
+body.home-active .site-footer { padding-bottom: 90px; }
 .site-footer-nav { display: flex; flex-wrap: wrap; gap: 30px; margin-bottom: 22px; }
 .site-footer-nav a {
     position: relative;
@@ -887,7 +891,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 @keyframes entryTextBlink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
 </style>
 </head>
-<body>
+<body class="home-active">
 
 <!-- PANTALLA DE ENTRADA (HOME) -->
 <div class="entry-screen" id="entryScreen">
@@ -1334,7 +1338,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 </div>
 
 <!-- PIE DE PÁGINA (estructura de momento, faltan enlaces/contenido reales) -->
-<footer class="site-footer" style="display:none">
+<footer class="site-footer">
     <nav class="site-footer-nav">
         <a href="#" data-i18n="footer_info">Información</a>
         <a href="#" data-i18n="footer_support">Asistencia</a>
@@ -2525,6 +2529,7 @@ function playDoorCreakSound() {
 
 function showAuthScreen() {
   setPageTitle('Acceso');
+  document.body.classList.remove('home-active');
   document.getElementById('authScreen').style.display = 'flex';
   document.querySelector('header').style.display = 'none';
   document.querySelector('.app').style.display = 'none';
@@ -2537,6 +2542,7 @@ function showAuthScreen() {
 
 async function enterApp(user) {
   entrySkipped = true; // ya hay sesión válida: si se vuelve a la portada, "Continuar" debe ir al Lobby, no al login
+  document.body.classList.remove('home-active');
   document.getElementById('authScreen').style.display = 'none';
   document.getElementById('themeToggleBtn').style.display = 'none';
   document.getElementById('langSwitcher').style.display = 'none';
@@ -3003,9 +3009,10 @@ function continueFromEntry() {
    la moneda ahí, continueFromEntry() nos devuelve al Lobby. */
 function goToEntryMenu() {
   setPageTitle('Home');
+  document.body.classList.add('home-active');
   document.querySelector('header').style.display = 'none';
   document.querySelector('.app').style.display = 'none';
-  document.querySelector('.site-footer').style.display = 'none';
+  document.querySelector('.site-footer').style.display = 'block'; // el pie de página se ve en todas las pantallas, incluida Home
   document.getElementById('langSwitcher').style.display = 'block';
   const entry = document.getElementById('entryScreen');
   entry.classList.remove('leaving');
