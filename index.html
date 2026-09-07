@@ -1155,6 +1155,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             <button data-page="avatarPage" onclick="showPage('avatarPage')" data-i18n="menu_avatar">🎭 Avatar</button>
             <button data-page="achievements" onclick="showPage('achievements')" data-i18n="menu_achievements">🏆 Logros</button>
             <button data-page="shop" onclick="showPage('shop')" data-i18n="menu_shop">🛒 Tienda</button>
+            <button data-page="adminPage" id="adminMenuBtn" onclick="showPage('adminPage'); loadAdminStats();" style="display:none">📊 Admin</button>
             <button class="menu-friends-btn" onclick="toggleFriendsPanel()" data-i18n="menu_friends">👥 Amigos</button>
         </div>
 
@@ -1298,6 +1299,29 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                 <p data-i18n="shop_subtitle">Utiliza las monedas conseguidas en tus partidas para desbloquear objetos.</p>
             </div>
             <div class="shop-grid" id="shopGrid"></div>
+        </div>
+
+        <!-- ADMIN (solo visible/accesible para las cuentas admin) -->
+        <div class="page" id="adminPage">
+            <div class="welcome">
+                <h1>📊 Panel de administración</h1>
+                <p>Estadísticas del sitio, solo visibles para cuentas admin.</p>
+            </div>
+
+            <div class="stats">
+                <div class="stat"><div class="stat-number" id="adminStatPlayers">–</div><div class="stat-label">👥 Jugadores registrados</div></div>
+                <div class="stat"><div class="stat-number" id="adminStatOnline">–</div><div class="stat-label">🟢 En línea ahora</div></div>
+                <div class="stat"><div class="stat-number" id="adminStatVisitsTotal">–</div><div class="stat-label">👁️ Visitantes únicos (total)</div></div>
+                <div class="stat"><div class="stat-number" id="adminStatVisitsToday">–</div><div class="stat-label">📅 Visitas de hoy</div></div>
+            </div>
+
+            <div class="section-title">
+                <h2>📈 Visitas por día</h2>
+                <button class="btn btn-dark" onclick="loadAdminStats()">🔄 Actualizar</button>
+            </div>
+            <div class="rooms" id="adminVisitsTable">
+                <p class="friend-empty">Cargando…</p>
+            </div>
         </div>
 
     </main>
@@ -1991,7 +2015,8 @@ const PAGE_TITLES = {
   profile: 'Perfil',
   avatarPage: 'Avatar',
   achievements: 'Logros',
-  shop: 'Tienda'
+  shop: 'Tienda',
+  adminPage: 'Admin'
 };
 function setPageTitle(name) {
   document.title = 'Dragonbarbudo - ' + name;
@@ -2273,21 +2298,30 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* =========================
-   CONTADOR DE VISITAS (solo visible para admins)
-   Cuenta cada carga de página, sea quien sea el visitante, llamando a
-   la función increment_visit_count() de Supabase (hay que crearla una
-   vez en el panel de Supabase; ver el SQL entregado aparte). El
-   número solo se muestra si la cuenta que ha iniciado sesión es admin.
+   VISITAS ÚNICAS POR IP (solo visible para admins)
+   Cada visita se registra en el backend (Cloudflare Pages Function en
+   /functions/api/track-visit.js), que lee la IP real del visitante y
+   solo la cuenta una vez por IP y día en la tabla site_visits — así
+   refrescar la página o volver a entrar el mismo día no infla el
+   número. El detalle completo (por día) se ve en el panel de Admin;
+   aquí solo se guarda el total de visitantes únicos de siempre, para
+   el indicador pequeño del sidebar y de "Mi perfil".
 ========================= */
 let siteVisitCount = null;
 async function trackSiteVisit() {
   try {
-    const { data, error } = await supabaseClient.rpc('increment_visit_count');
-    if (!error && typeof data === 'number') {
-      siteVisitCount = data;
+    await fetch('/api/track-visit', { method: 'POST' });
+  } catch (e) { /* si la Function todavía no está desplegada, no pasa nada */ }
+  loadVisitSummary();
+}
+async function loadVisitSummary() {
+  try {
+    const { data, error } = await supabaseClient.from('site_visits_summary').select('*').single();
+    if (!error && data) {
+      siteVisitCount = data.total_unique_visitors;
       renderVisitCounter();
     }
-  } catch (e) { /* si la función todavía no existe en Supabase, no pasa nada */ }
+  } catch (e) { /* la vista todavía no existe en Supabase: se ignora */ }
 }
 function renderVisitCounter() {
   // Se repite en el cajón de menú (solo visible en tablet/móvil) y en la
@@ -2297,7 +2331,7 @@ function renderVisitCounter() {
     const el = document.getElementById(id);
     if (!el) return;
     if (isAdmin && siteVisitCount !== null) {
-      el.textContent = `👁️ ${siteVisitCount.toLocaleString('es-ES')} visitas`;
+      el.textContent = `👁️ ${siteVisitCount.toLocaleString('es-ES')} visitantes`;
       el.style.display = 'inline-flex';
     } else {
       el.style.display = 'none';
@@ -2307,27 +2341,37 @@ function renderVisitCounter() {
 trackSiteVisit();
 
 /* =========================
-   JUGADORES ACTIVOS EN TIEMPO REAL (solo visible para admins)
-   Usa un canal de Supabase Realtime (Presence) para saber cuántas
-   pestañas/visitantes hay conectados ahora mismo, sea cual sea la
-   página en la que estén (Home, login o dentro de la app). No hace
-   falta ninguna tabla: la presencia es efímera y vive solo mientras
-   dura la conexión websocket de cada visitante.
+   JUGADORES CONECTADOS EN TIEMPO REAL (solo cuentas registradas)
+   Usa Supabase Realtime Presence, pero solo se "entra" al canal tras
+   iniciar sesión (ver enterApp/joinPresence) y se sale al cerrar sesión
+   (ver handleLogout/leavePresence). La clave de presencia es la propia
+   id de usuario, así varias pestañas de la misma persona cuentan como
+   una sola, y los visitantes anónimos (Home/login) no cuentan como
+   "en línea".
 ========================= */
 let activePlayersCount = 0;
-const presenceChannel = supabaseClient.channel('site-presence', {
-  config: { presence: { key: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now() + '-' + Math.random()) } }
-});
+let presenceReady = false;
+let pendingPresenceUserId = null;
+const presenceChannel = supabaseClient.channel('site-presence');
 presenceChannel
   .on('presence', { event: 'sync' }, () => {
     activePlayersCount = Object.keys(presenceChannel.presenceState()).length;
     renderActivePlayersCounter();
   })
-  .subscribe(async (status) => {
+  .subscribe((status) => {
     if (status === 'SUBSCRIBED') {
-      await presenceChannel.track({ online_at: new Date().toISOString() });
+      presenceReady = true;
+      if (pendingPresenceUserId) { joinPresence(pendingPresenceUserId); pendingPresenceUserId = null; }
     }
   });
+async function joinPresence(userId) {
+  if (!presenceReady) { pendingPresenceUserId = userId; return; }
+  try { await presenceChannel.track({ user_id: userId, online_at: new Date().toISOString() }); } catch (e) {}
+}
+async function leavePresence() {
+  if (!presenceReady) return;
+  try { await presenceChannel.untrack(); } catch (e) {}
+}
 function renderActivePlayersCounter() {
   ['activePlayersCounter', 'activePlayersCounterProfile'].forEach(id => {
     const el = document.getElementById(id);
@@ -2339,6 +2383,39 @@ function renderActivePlayersCounter() {
       el.style.display = 'none';
     }
   });
+}
+
+/* =========================
+   PANEL DE ADMIN — estadísticas del sitio (solo cuentas admin)
+========================= */
+function formatVisitDate(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+async function loadAdminStats() {
+  if (!isAdmin) return;
+  document.getElementById('adminStatOnline').textContent = activePlayersCount.toLocaleString('es-ES');
+
+  const { count: totalPlayers } = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true });
+  document.getElementById('adminStatPlayers').textContent = (totalPlayers ?? 0).toLocaleString('es-ES');
+
+  const { data: summary } = await supabaseClient.from('site_visits_summary').select('*').single();
+  document.getElementById('adminStatVisitsTotal').textContent = (summary?.total_unique_visitors ?? 0).toLocaleString('es-ES');
+  document.getElementById('adminStatVisitsToday').textContent = (summary?.visits_today ?? 0).toLocaleString('es-ES');
+
+  const tableEl = document.getElementById('adminVisitsTable');
+  const { data: daily } = await supabaseClient.from('site_visits_daily').select('*').order('visit_date', { ascending: false }).limit(14);
+  if (daily && daily.length) {
+    tableEl.innerHTML = daily.map(row => `
+      <div class="room">
+        <div class="room-left">
+          <div class="room-info"><h3>${formatVisitDate(row.visit_date)}</h3><p>${row.unique_visitors} visitantes únicos · ${row.total_hits} visitas totales</p></div>
+        </div>
+      </div>
+    `).join('');
+  } else {
+    tableEl.innerHTML = '<p class="friend-empty">Todavía no hay datos de visitas por día.</p>';
+  }
 }
 
 /* Traduce los errores técnicos de Supabase a mensajes en español sencillo */
@@ -2528,6 +2605,7 @@ async function handleLogout() {
   if (accountCheckIntervalId) clearInterval(accountCheckIntervalId);
   if (inviteChannel) { supabaseClient.removeChannel(inviteChannel); inviteChannel = null; }
   if (inboxChannel) { supabaseClient.removeChannel(inboxChannel); inboxChannel = null; }
+  await leavePresence(); // deja de contar como "jugador en línea"
   currentUserId = null;
   await supabaseClient.auth.signOut();
   showAuthScreen();
@@ -2627,8 +2705,10 @@ async function enterApp(user) {
   document.getElementById('adminBadgeProfile').style.display = isAdmin ? 'inline-flex' : 'none';
   document.getElementById('cheatToggle').style.display = isAdmin ? 'flex' : 'none';
   document.getElementById('cheatToggleSidebar').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('adminMenuBtn').style.display = isAdmin ? 'block' : 'none';
   renderVisitCounter();
   renderActivePlayersCounter();
+  joinPresence(user.id); // cuenta como "jugador en línea" solo a partir de aquí (cuenta registrada)
 
   initGameUI();
   startFriendsSystem();
