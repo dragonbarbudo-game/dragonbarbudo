@@ -113,6 +113,11 @@ body.light-mode .header-logo-img.logo-light { display: block; }
     padding: 11px 12px; color: var(--text); font-family: inherit; font-size: 14px; cursor: pointer; margin-bottom: 8px;
 }
 .sidebar-extra-btn.on { border-color: var(--ember); color: var(--gold-light); }
+/* Grupo admin: envuelve el botón "Admin" y, dentro, "Modo diseño" anidado
+   un poco más adentro para dejar claro que depende del rango admin. */
+.sidebar-admin-group { border: 1px solid var(--border); border-radius: 10px; padding: 8px 8px 0; margin-bottom: 8px; background: rgba(217,164,65,.06); }
+.sidebar-admin-group .sidebar-extra-btn { margin-bottom: 8px; }
+.sidebar-extra-btn-nested { margin-left: 16px; width: calc(100% - 16px); font-size: 13px; opacity: .92; }
 .drawer-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 450; }
 .drawer-backdrop.show { display: block; }
 body.drawer-open { overflow: hidden; }
@@ -1155,13 +1160,18 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             <button data-page="avatarPage" onclick="showPage('avatarPage')" data-i18n="menu_avatar">🎭 Avatar</button>
             <button data-page="achievements" onclick="showPage('achievements')" data-i18n="menu_achievements">🏆 Logros</button>
             <button data-page="shop" onclick="showPage('shop')" data-i18n="menu_shop">🛒 Tienda</button>
-            <button data-page="adminPage" id="adminMenuBtn" onclick="showPage('adminPage'); loadAdminStats();" style="display:none">📊 Admin</button>
             <button class="menu-friends-btn" onclick="toggleFriendsPanel()" data-i18n="menu_friends">👥 Amigos</button>
         </div>
 
         <div class="sidebar-extra-mobile">
             <button class="sidebar-extra-btn" id="themeToggleBtnSidebar" onclick="toggleTheme()" data-i18n="sidebar_theme">🌙 Cambiar tema</button>
-            <button class="sidebar-extra-btn" id="cheatToggleSidebar" onclick="toggleCheatMode()" data-i18n="sidebar_design_mode">🍺 Modo diseño</button>
+
+            <!-- Grupo admin: solo visible para cuentas admin. El modo diseño
+                 vive dentro de este grupo porque es exclusivo de admins. -->
+            <div class="sidebar-admin-group" id="adminGroupSidebar" style="display:none">
+                <button class="sidebar-extra-btn" id="adminMenuBtn" onclick="showPage('adminPage'); loadAdminStats();">📊 Admin</button>
+                <button class="sidebar-extra-btn sidebar-extra-btn-nested" id="cheatToggleSidebar" onclick="toggleCheatMode()" data-i18n="sidebar_design_mode">🍺 Modo diseño</button>
+            </div>
         </div>
     </aside>
 
@@ -2709,8 +2719,7 @@ async function enterApp(user) {
   document.getElementById('adminBadgeSidebar').style.display = isAdmin ? 'inline-flex' : 'none';
   document.getElementById('adminBadgeProfile').style.display = isAdmin ? 'inline-flex' : 'none';
   document.getElementById('cheatToggle').style.display = isAdmin ? 'flex' : 'none';
-  document.getElementById('cheatToggleSidebar').style.display = isAdmin ? 'flex' : 'none';
-  document.getElementById('adminMenuBtn').style.display = isAdmin ? 'block' : 'none';
+  document.getElementById('adminGroupSidebar').style.display = isAdmin ? 'block' : 'none';
   renderVisitCounter();
   renderActivePlayersCounter();
   joinPresence(user.id); // cuenta como "jugador en línea" solo a partir de aquí (cuenta registrada)
