@@ -3375,8 +3375,9 @@ async function handleResendConfirmation(event) {
 function switchAuthTab(tab) {
   const isMainTab = (tab === 'login' || tab === 'register');
   document.querySelector('.auth-tabs').style.display = isMainTab ? 'flex' : 'none';
-  document.getElementById('oauthSection').style.display = isMainTab ? 'flex' : 'none';
-  document.getElementById('oauthDivider').style.display = isMainTab ? 'flex' : 'none';
+  const showOauth = isMainTab && OAUTH_LOGIN_ENABLED; // ver toggleOauthButtons(): login social desactivado en beta
+  document.getElementById('oauthSection').style.display = showOauth ? 'flex' : 'none';
+  document.getElementById('oauthDivider').style.display = showOauth ? 'flex' : 'none';
   document.getElementById('tabLoginBtn').classList.toggle('active', tab === 'login');
   document.getElementById('tabRegisterBtn').classList.toggle('active', tab === 'register');
   document.getElementById('loginForm').classList.toggle('active', tab === 'login');
@@ -3490,6 +3491,23 @@ async function handleLogin(event) {
 
   await enterApp(data.user);
 }
+
+/* Login social (Google/Discord) desactivado mientras estamos en beta: la
+   pantalla de consentimiento de Google todavía no tiene marca propia (sale
+   "yptdxphximblpzlrgjpg.supabase.co" en vez de "DragonBarbudo") ni está
+   verificada, y no queremos exponer eso a usuarios reales todavía. El
+   registro/inicio de sesión con correo y contraseña sigue funcionando
+   igual. En cuanto se configure el nombre/logo en Google Cloud Console
+   (y, si hace falta, se pase la verificación), basta con cambiar esto a
+   `true` para que los botones de Google/Discord vuelvan a aparecer. */
+const OAUTH_LOGIN_ENABLED = false;
+(function toggleOauthButtons() {
+  if (OAUTH_LOGIN_ENABLED) return;
+  const section = document.getElementById('oauthSection');
+  const divider = document.getElementById('oauthDivider');
+  if (section) section.style.display = 'none';
+  if (divider) divider.style.display = 'none';
+})();
 
 /* Acceso con Google / Discord: Supabase redirige a la pantalla del proveedor
    y, al volver, onAuthStateChange('SIGNED_IN') termina de meternos en la app. */
