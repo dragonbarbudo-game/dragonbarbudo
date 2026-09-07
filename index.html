@@ -466,6 +466,11 @@ main { padding: 30px; overflow: hidden; }
     .nav-user { gap: 6px; }
     .coins span:not(.coin-icon-3d) { font-size: 12px; }
     .welcome h1 { font-size: 22px; }
+    /* En móvil, el botón de idioma de la cabecera solo muestra la
+       bandera (sin el código ES/EN) para ahorrar espacio; el menú
+       desplegable, al abrirlo, sigue mostrando el nombre completo. */
+    #headerLangCode { display: none; }
+    .lang-header-btn { padding: 7px 8px; }
 }
 
 /* =========================================================
@@ -750,7 +755,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
    de iconos (no flotante), con el menú abriéndose hacia abajo en vez
    de hacia arriba. */
 .lang-switcher-header { position: relative; bottom: auto; right: auto; left: auto; z-index: auto; }
-.lang-header-btn { gap: 6px; font-weight: 700; font-size: 13px; }
+.lang-header-btn { gap: 5px; font-weight: 700; font-size: 12px; padding: 7px 10px; }
 #headerLangCode { letter-spacing: .5px; }
 .lang-switcher-header .lang-menu { bottom: auto; top: calc(100% + 8px); right: 0; }
 @media (max-width: 480px) {
@@ -1121,6 +1126,10 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                 <div id="bellList"><p class="friend-empty" data-i18n="header_no_notifications">No tienes notificaciones.</p></div>
             </div>
         </div>
+        <button class="theme-toggle" id="themeToggleBtnHeader" onclick="toggleTheme()" title="Cambiar tema" data-i18n-title="title_change_theme">🌙</button>
+        <button class="header-icon-btn coin-menu-btn" onclick="goToEntryMenu()" title="Menú principal" data-i18n-title="title_main_menu">
+            <img src="moneda-dragonbarbudo.png" alt="Menú principal" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'🏠',style:'font-size:18px'}))">
+        </button>
         <div class="lang-switcher lang-switcher-header" id="headerLangSwitcher">
             <button type="button" class="header-icon-btn lang-header-btn" id="headerLangBtn" onclick="toggleHeaderLangMenu()">
                 <span class="lang-flag" id="headerLangFlag"></span>
@@ -1128,10 +1137,6 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             </button>
             <div class="lang-menu" id="headerLangMenu"></div>
         </div>
-        <button class="theme-toggle" id="themeToggleBtnHeader" onclick="toggleTheme()" title="Cambiar tema" data-i18n-title="title_change_theme">🌙</button>
-        <button class="header-icon-btn coin-menu-btn" onclick="goToEntryMenu()" title="Menú principal" data-i18n-title="title_main_menu">
-            <img src="moneda-dragonbarbudo.png" alt="Menú principal" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'🏠',style:'font-size:18px'}))">
-        </button>
         <button class="door-btn" id="doorBtn" onclick="handleDoorClick()" title="Cerrar sesión" data-i18n-title="title_logout">
             <div class="door-frame">
                 <div class="door-panel" id="doorPanel"></div>
