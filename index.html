@@ -418,13 +418,25 @@ main { padding: 30px; overflow: hidden; }
 .c4-vs { font-family: 'Cinzel', serif; color: var(--gold); font-size: 14px; }
 .c4-piece-icon { display: inline-block; width: 18px; height: 18px; border-radius: 50%; }
 .c4-status { text-align: center; font-size: 16px; font-weight: 700; margin-bottom: 16px; min-height: 24px; }
-.c4-board-wrap { overflow: auto; padding: 20px 0 60px; touch-action: manipulation; }
-.c4-board { display: flex; gap: 8px; background: #1b3a6b; padding: 16px; border-radius: 16px; width: fit-content; margin: 0 auto; transition: transform .12s; transform-origin: top center; }
+.c4-board-wrap { overflow: auto; padding: 20px 0; touch-action: manipulation; }
+/* El zoom cambia --c4-zoom (ver connect4SetZoom), y el tamaño real de
+   casillas/fichas se recalcula con calc(): así el tablero de verdad
+   ocupa más o menos espacio en la página (en vez de solo "verse" más
+   grande con transform, que no reserva sitio y acababa solapando los
+   botones de abajo). El resto del contenido se reordena solo. */
+.c4-board { --c4-cell-base: 64px; --c4-zoom: 1; display: flex; gap: 8px; background: #1b3a6b; padding: 16px; border-radius: 16px; width: fit-content; margin: 0 auto; }
 .c4-col { display: flex; flex-direction: column; gap: 8px; cursor: pointer; border-radius: 8px; transition: background .12s; }
 .c4-col:hover { background: rgba(255,255,255,.06); }
 .c4-col.c4-col-disabled { cursor: not-allowed; }
-.c4-cell { width: 64px; height: 64px; background: #12141a; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-.c4-piece { width: 54px; height: 54px; border-radius: 50%; }
+.c4-cell {
+    width: calc(var(--c4-cell-base) * var(--c4-zoom)); height: calc(var(--c4-cell-base) * var(--c4-zoom));
+    background: #12141a; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    transition: width .12s, height .12s;
+}
+.c4-piece {
+    width: calc(var(--c4-cell-base) * var(--c4-zoom) * 0.84); height: calc(var(--c4-cell-base) * var(--c4-zoom) * 0.84);
+    border-radius: 50%; transition: width .12s, height .12s;
+}
 .c4-red { background: radial-gradient(circle at 35% 30%, #ff8a80, #d32f2f); }
 .c4-yellow { background: radial-gradient(circle at 35% 30%, #fff59d, #fbc02d); }
 .c4-actions { display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; }
@@ -432,13 +444,10 @@ main { padding: 30px; overflow: hidden; }
 .c4-zoom-controls .btn { padding: 8px 13px; font-size: 15px; }
 #c4ZoomLabel { min-width: 42px; text-align: center; color: var(--muted); font-size: 13px; }
 @media (max-width: 700px) {
-    .c4-cell { width: 44px; height: 44px; }
-    .c4-piece { width: 36px; height: 36px; }
+    .c4-board { --c4-cell-base: 44px; }
 }
 @media (max-width: 480px) {
-    .c4-cell { width: 34px; height: 34px; }
-    .c4-piece { width: 28px; height: 28px; }
-    .c4-board { padding: 8px; gap: 4px; }
+    .c4-board { --c4-cell-base: 34px; padding: 8px; gap: 4px; }
     .c4-col { gap: 4px; }
 }
 
@@ -2460,7 +2469,9 @@ function connect4OpenChat() {
 
 function connect4SetZoom(level) {
   connect4ZoomLevel = Math.min(1.6, Math.max(0.6, level));
-  document.getElementById('connect4Board').style.transform = `scale(${connect4ZoomLevel.toFixed(2)})`;
+  // Cambia el tamaño real de las casillas (no un transform visual), para
+  // que el tablero nunca se salga de su sitio ni se solape con nada.
+  document.getElementById('connect4Board').style.setProperty('--c4-zoom', connect4ZoomLevel.toFixed(2));
   document.getElementById('c4ZoomLabel').textContent = Math.round(connect4ZoomLevel * 100) + '%';
 }
 function connect4Zoom(direction) {
