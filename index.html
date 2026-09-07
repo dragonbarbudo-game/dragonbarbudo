@@ -1199,14 +1199,15 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             <button data-page="avatarPage" onclick="showPage('avatarPage')" data-i18n="menu_avatar">🎭 Avatar</button>
             <button data-page="achievements" onclick="showPage('achievements')" data-i18n="menu_achievements">🏆 Logros</button>
             <button data-page="shop" onclick="showPage('shop')" data-i18n="menu_shop">🛒 Tienda</button>
+            <!-- Solo visible para cuentas admin (ver enterApp). Va en el menú
+                 principal, no en el cajón "solo tablet/móvil", para que también
+                 se vea en escritorio. -->
+            <button data-page="adminPage" id="adminMenuBtn" onclick="showPage('adminPage'); loadAdminStats();" style="display:none">📊 Admin</button>
             <button class="menu-friends-btn" onclick="toggleFriendsPanel()" data-i18n="menu_friends">👥 Amigos</button>
         </div>
 
         <div class="sidebar-extra-mobile">
             <button class="sidebar-extra-btn" id="themeToggleBtnSidebar" onclick="toggleTheme()" data-i18n="sidebar_theme">🌙 Cambiar tema</button>
-            <!-- Solo visible para cuentas admin. El modo diseño ya no se activa
-                 desde aquí: vive dentro de la propia página del Panel de Admin. -->
-            <button class="sidebar-extra-btn" id="adminMenuBtn" onclick="showPage('adminPage'); loadAdminStats();" style="display:none">📊 Admin</button>
         </div>
     </aside>
 
