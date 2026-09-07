@@ -273,6 +273,32 @@ main { padding: 30px; overflow: hidden; }
 /* SECTION */
 .section-title { display: flex; justify-content: space-between; align-items: center; margin: 25px 0 15px; }
 .section-title h2 { font-size: 19px; }
+
+/* TARJETAS DE JUEGO (Lobby) — "portada" grande y llamativa que invita a
+   entrar. Mientras no haya arte propio, se usa un fondo degradado con
+   fichas de muestra; en cuanto haya una imagen real, basta con
+   cambiar el fondo de .game-card-art-c4. */
+.games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-bottom: 10px; }
+.game-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; cursor: pointer; transition: transform .15s ease, border-color .15s; }
+.game-card:hover { transform: translateY(-3px); border-color: var(--gold); }
+.game-card-art { height: 130px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.game-card-art-c4 { background: linear-gradient(135deg, #1b3a6b, #12244a); }
+.game-card-art .game-card-piece { width: 34px; height: 34px; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,.35); }
+.game-card-art .game-card-piece:nth-child(2) { transform: translateY(10px); }
+.game-card-art .game-card-piece:nth-child(3) { transform: translateY(-6px); }
+.game-card-art .game-card-piece:nth-child(4) { transform: translateY(14px); }
+.game-card-body { padding: 14px 16px; }
+.game-card-body h3 { font-size: 16px; margin-bottom: 4px; }
+.game-card-body p { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+.game-card-cta { padding: 8px 16px; font-size: 13px; }
+
+/* Modal de entrada a Conecta 4 (Bots / Amigo) */
+.c4-entry-option { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; font-family: inherit; color: var(--text); transition: border-color .15s; }
+.c4-entry-option:hover { border-color: var(--gold); }
+.c4-entry-option small { color: var(--muted); font-weight: 400; }
+.c4-entry-icon { font-size: 28px; flex-shrink: 0; }
+.c4-difficulty-options { display: flex; gap: 8px; flex-wrap: wrap; }
+.c4-difficulty-options .btn { flex: 1; min-width: 100px; }
 .btn { border: none; padding: 11px 16px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: .15s; font-family: 'Manrope', sans-serif; }
 .btn-primary { background: var(--gold); color: #18130a; }
 .btn-primary:hover { background: var(--gold-light); transform: translateY(-1px); }
@@ -1267,6 +1293,22 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                 <h2 data-i18n="games_section_title">🎮 Juegos</h2>
             </div>
 
+            <div class="games-grid">
+                <div class="game-card" onclick="openConnect4EntryModal()">
+                    <div class="game-card-art game-card-art-c4">
+                        <span class="game-card-piece c4-red"></span>
+                        <span class="game-card-piece c4-yellow"></span>
+                        <span class="game-card-piece c4-red"></span>
+                        <span class="game-card-piece c4-yellow"></span>
+                    </div>
+                    <div class="game-card-body">
+                        <h3>🔴🟡 Conecta 4</h3>
+                        <p>Contra bots o con amigos, en tiempo real.</p>
+                        <span class="btn btn-primary game-card-cta">▶ Jugar</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="section-title">
                 <h2 data-i18n="rooms_available">🌍 Salas disponibles</h2>
                 <button class="btn btn-primary" onclick="openModal()" data-i18n="btn_create_room">➕ Crear sala</button>
@@ -1348,7 +1390,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 
             <div class="c4-actions">
                 <button class="btn btn-dark" onclick="leaveConnect4Game()">← Salir de la partida</button>
-                <button class="btn btn-primary" onclick="connect4OpenChat()">💬 Chat</button>
+                <button class="btn btn-primary" id="c4ChatBtn" onclick="connect4OpenChat()">💬 Chat</button>
                 <div class="c4-zoom-controls">
                     <button class="btn btn-dark" onclick="connect4Zoom(-1)" aria-label="Alejar">➖</button>
                     <span id="c4ZoomLabel">100%</span>
@@ -1569,6 +1611,44 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 
         <div class="modal-actions">
             <button class="btn btn-dark" onclick="closeAdminMagicModal()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- CONECTA 4 › ENTRADA (elegir Bots o invitar a un amigo) -->
+<div class="modal-bg" id="connect4EntryModalBg">
+    <div class="modal">
+        <h2>🔴🟡 Conecta 4</h2>
+
+        <div id="c4EntryChoices">
+            <button class="c4-entry-option" onclick="showConnect4BotDifficulty()">
+                <span class="c4-entry-icon">🤖</span>
+                <span><strong>Jugar con Bots</strong><br><small>Practica solo, a tu ritmo</small></span>
+            </button>
+            <button class="c4-entry-option" onclick="showConnect4FriendPicker()">
+                <span class="c4-entry-icon">👥</span>
+                <span><strong>Invitar a un amigo</strong><br><small>Online, en tiempo real</small></span>
+            </button>
+        </div>
+
+        <div id="c4EntryBotDifficulty" style="display:none;">
+            <p class="friend-msg" style="margin-bottom:10px;">Elige la dificultad:</p>
+            <div class="c4-difficulty-options">
+                <button class="btn btn-dark" onclick="connect4StartBotGame('easy')">😊 Fácil</button>
+                <button class="btn btn-dark" onclick="connect4StartBotGame('normal')">🙂 Normal</button>
+                <button class="btn btn-dark" onclick="connect4StartBotGame('hard')">😈 Difícil</button>
+            </div>
+            <button class="page-back-btn" onclick="showConnect4EntryChoices()" style="margin-top:16px;">← Volver</button>
+        </div>
+
+        <div id="c4EntryFriendPicker" style="display:none;">
+            <p class="friend-msg" style="margin-bottom:10px;">Elige a quién invitar:</p>
+            <div id="c4FriendPickerList"><p class="friend-empty">Cargando…</p></div>
+            <button class="page-back-btn" onclick="showConnect4EntryChoices()" style="margin-top:16px;">← Volver</button>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn btn-dark" onclick="closeConnect4EntryModal()">Cancelar</button>
         </div>
     </div>
 </div>
@@ -2387,6 +2467,7 @@ async function openConnect4Game(gameId) {
   document.getElementById('c4RivalName').textContent = connect4Names[rivalNum];
   document.querySelector('#c4PlayerYou .c4-piece-icon').className = 'c4-piece-icon ' + (myNum === 1 ? 'c4-red' : 'c4-yellow');
   document.querySelector('#c4PlayerRival .c4-piece-icon').className = 'c4-piece-icon ' + (rivalNum === 1 ? 'c4-red' : 'c4-yellow');
+  document.getElementById('c4ChatBtn').style.display = 'inline-flex';
 
   connect4SetZoom(1);
 
@@ -2433,7 +2514,7 @@ function connect4Render() {
 
 async function connect4MakeMove(col) {
   if (!connect4State || connect4State.status !== 'active') return;
-  const myNum = connect4State.player1_id === currentUserId ? 1 : 2;
+  const myNum = connect4State.isBot ? 1 : (connect4State.player1_id === currentUserId ? 1 : 2);
   if (connect4State.turn !== myNum) { toast('⏳ No es tu turno.'); return; }
 
   const board = [...connect4State.board];
@@ -2443,11 +2524,26 @@ async function connect4MakeMove(col) {
 
   const won = connect4CheckWinner(board, row, col, myNum);
   const isDraw = !won && board.every(v => v !== 0);
+  const finished = won || isDraw;
+
+  if (connect4State.isBot) {
+    // Partida local contra el bot: no hay Supabase de por medio.
+    connect4State = {
+      ...connect4State,
+      board,
+      turn: finished ? connect4State.turn : 2,
+      status: finished ? 'finished' : 'active',
+      winner: won ? myNum : (isDraw ? 0 : null)
+    };
+    connect4Render();
+    if (!finished) setTimeout(connect4PlayBotTurn, 550); // pequeña pausa para que no parezca instantáneo
+    return;
+  }
 
   const { error } = await supabaseClient.from('connect4_games').update({
     board,
-    turn: won || isDraw ? connect4State.turn : (myNum === 1 ? 2 : 1),
-    status: won || isDraw ? 'finished' : 'active',
+    turn: finished ? connect4State.turn : (myNum === 1 ? 2 : 1),
+    status: finished ? 'finished' : 'active',
     winner: won ? myNum : (isDraw ? 0 : null),
     updated_at: new Date().toISOString()
   }).eq('id', connect4State.id);
@@ -2459,6 +2555,209 @@ function leaveConnect4Game() {
   connect4State = null;
   connect4RivalId = null;
   showPage('lobby');
+}
+
+/* =========================
+   CONECTA 4 › MODO BOTS (un jugador, 3 niveles de dificultad)
+========================= */
+function connect4DifficultyLabel(difficulty) {
+  return { easy: 'Fácil', normal: 'Normal', hard: 'Difícil' }[difficulty] || difficulty;
+}
+
+function connect4StartBotGame(difficulty) {
+  closeConnect4EntryModal();
+  connect4State = {
+    id: null,
+    player1_id: currentUserId,
+    player2_id: 'bot',
+    board: connect4EmptyBoard(),
+    turn: 1,
+    status: 'active',
+    winner: null,
+    isBot: true,
+    botDifficulty: difficulty
+  };
+  connect4Names = { 1: 'Tú', 2: '🤖 Bot (' + connect4DifficultyLabel(difficulty) + ')' };
+  connect4RivalId = null; // no se puede chatear con el bot
+
+  showPage('connect4Game');
+  document.getElementById('c4YouName').textContent = connect4Names[1];
+  document.getElementById('c4RivalName').textContent = connect4Names[2];
+  document.querySelector('#c4PlayerYou .c4-piece-icon').className = 'c4-piece-icon c4-red';
+  document.querySelector('#c4PlayerRival .c4-piece-icon').className = 'c4-piece-icon c4-yellow';
+  document.getElementById('c4ChatBtn').style.display = 'none';
+  connect4SetZoom(1);
+  connect4Render();
+}
+
+/* Elige la columna del bot. "Fácil" juega al azar; "Normal" y "Difícil"
+   primero comprueban una victoria inmediata propia o del rival (para
+   ganar o bloquear); "Difícil" además mira varias jugadas por delante
+   con minimax + poda alfa-beta. */
+function connect4BotChooseColumn(board, botNum, difficulty) {
+  const humanNum = botNum === 1 ? 2 : 1;
+  const validCols = [];
+  for (let c = 0; c < C4_COLS; c++) if (connect4DropRow(board, c) !== -1) validCols.push(c);
+  if (!validCols.length) return -1;
+
+  if (difficulty === 'easy') {
+    return validCols[randInt(0, validCols.length - 1)];
+  }
+
+  // ¿Puede ganar ya? ¿Tiene que bloquear al rival?
+  for (const c of validCols) {
+    const b = [...board]; const r = connect4DropRow(b, c); b[r * C4_COLS + c] = botNum;
+    if (connect4CheckWinner(b, r, c, botNum)) return c;
+  }
+  for (const c of validCols) {
+    const b = [...board]; const r = connect4DropRow(b, c); b[r * C4_COLS + c] = humanNum;
+    if (connect4CheckWinner(b, r, c, humanNum)) return c;
+  }
+
+  if (difficulty === 'normal') {
+    // Prioriza el centro, con algo de aleatoriedad para que no juegue perfecto.
+    const center = 3;
+    const sorted = [...validCols].sort((a, b) => Math.abs(a - center) - Math.abs(b - center));
+    if (Math.random() < 0.35) return validCols[randInt(0, validCols.length - 1)];
+    return sorted[0];
+  }
+
+  // Difícil: minimax con poda alfa-beta.
+  let bestScore = -Infinity, bestCol = validCols[0];
+  for (const c of validCols) {
+    const b = [...board]; const r = connect4DropRow(b, c); b[r * C4_COLS + c] = botNum;
+    const score = connect4Minimax(b, 4, -Infinity, Infinity, false, botNum, humanNum);
+    if (score > bestScore) { bestScore = score; bestCol = c; }
+  }
+  return bestCol;
+}
+
+function connect4AllWindows(board) {
+  const get = (r, c) => board[r * C4_COLS + c];
+  const windows = [];
+  for (let r = 0; r < C4_ROWS; r++) for (let c = 0; c <= C4_COLS - 4; c++) windows.push([get(r, c), get(r, c + 1), get(r, c + 2), get(r, c + 3)]);
+  for (let c = 0; c < C4_COLS; c++) for (let r = 0; r <= C4_ROWS - 4; r++) windows.push([get(r, c), get(r + 1, c), get(r + 2, c), get(r + 3, c)]);
+  for (let r = 0; r <= C4_ROWS - 4; r++) for (let c = 0; c <= C4_COLS - 4; c++) windows.push([get(r, c), get(r + 1, c + 1), get(r + 2, c + 2), get(r + 3, c + 3)]);
+  for (let r = 3; r < C4_ROWS; r++) for (let c = 0; c <= C4_COLS - 4; c++) windows.push([get(r, c), get(r - 1, c + 1), get(r - 2, c + 2), get(r - 3, c + 3)]);
+  return windows;
+}
+function connect4ScoreWindow(w, botNum, humanNum) {
+  const bot = w.filter(v => v === botNum).length;
+  const human = w.filter(v => v === humanNum).length;
+  const empty = w.filter(v => v === 0).length;
+  if (bot === 4) return 100000;
+  if (bot === 3 && empty === 1) return 50;
+  if (bot === 2 && empty === 2) return 10;
+  if (human === 3 && empty === 1) return -80;
+  return 0;
+}
+function connect4Evaluate(board, botNum, humanNum) {
+  let score = 0;
+  for (let r = 0; r < C4_ROWS; r++) if (board[r * C4_COLS + 3] === botNum) score += 3; // columna central
+  for (const w of connect4AllWindows(board)) score += connect4ScoreWindow(w, botNum, humanNum);
+  return score;
+}
+function connect4Minimax(board, depth, alpha, beta, maximizing, botNum, humanNum) {
+  const validCols = [];
+  for (let c = 0; c < C4_COLS; c++) if (connect4DropRow(board, c) !== -1) validCols.push(c);
+  if (depth === 0 || !validCols.length) return connect4Evaluate(board, botNum, humanNum);
+
+  if (maximizing) {
+    let value = -Infinity;
+    for (const c of validCols) {
+      const b = [...board]; const r = connect4DropRow(b, c); b[r * C4_COLS + c] = botNum;
+      if (connect4CheckWinner(b, r, c, botNum)) return 1000000 + depth;
+      value = Math.max(value, connect4Minimax(b, depth - 1, alpha, beta, false, botNum, humanNum));
+      alpha = Math.max(alpha, value);
+      if (alpha >= beta) break;
+    }
+    return value;
+  } else {
+    let value = Infinity;
+    for (const c of validCols) {
+      const b = [...board]; const r = connect4DropRow(b, c); b[r * C4_COLS + c] = humanNum;
+      if (connect4CheckWinner(b, r, c, humanNum)) return -1000000 - depth;
+      value = Math.min(value, connect4Minimax(b, depth - 1, alpha, beta, true, botNum, humanNum));
+      beta = Math.min(beta, value);
+      if (alpha >= beta) break;
+    }
+    return value;
+  }
+}
+
+function connect4PlayBotTurn() {
+  if (!connect4State || !connect4State.isBot || connect4State.status !== 'active') return;
+  const botNum = 2;
+  const col = connect4BotChooseColumn(connect4State.board, botNum, connect4State.botDifficulty);
+  if (col === -1) return;
+
+  const board = [...connect4State.board];
+  const row = connect4DropRow(board, col);
+  board[row * C4_COLS + col] = botNum;
+  const won = connect4CheckWinner(board, row, col, botNum);
+  const isDraw = !won && board.every(v => v !== 0);
+
+  connect4State = {
+    ...connect4State,
+    board,
+    turn: (won || isDraw) ? connect4State.turn : 1,
+    status: (won || isDraw) ? 'finished' : 'active',
+    winner: won ? botNum : (isDraw ? 0 : null)
+  };
+  connect4Render();
+}
+
+/* =========================
+   CONECTA 4 › MODAL DE ENTRADA (Bots o invitar a un amigo)
+========================= */
+function openConnect4EntryModal() {
+  showConnect4EntryChoices();
+  document.getElementById('connect4EntryModalBg').style.display = 'flex';
+}
+function closeConnect4EntryModal() {
+  document.getElementById('connect4EntryModalBg').style.display = 'none';
+}
+function showConnect4EntryChoices() {
+  document.getElementById('c4EntryChoices').style.display = 'block';
+  document.getElementById('c4EntryBotDifficulty').style.display = 'none';
+  document.getElementById('c4EntryFriendPicker').style.display = 'none';
+}
+function showConnect4BotDifficulty() {
+  document.getElementById('c4EntryChoices').style.display = 'none';
+  document.getElementById('c4EntryBotDifficulty').style.display = 'block';
+}
+async function showConnect4FriendPicker() {
+  document.getElementById('c4EntryChoices').style.display = 'none';
+  document.getElementById('c4EntryFriendPicker').style.display = 'block';
+  await loadConnect4FriendPicker();
+}
+async function loadConnect4FriendPicker() {
+  const listEl = document.getElementById('c4FriendPickerList');
+  listEl.innerHTML = '<p class="friend-empty">Cargando…</p>';
+  if (!currentUserId) { listEl.innerHTML = '<p class="friend-empty">Inicia sesión para invitar a un amigo.</p>'; return; }
+
+  const { data: rows, error } = await supabaseClient
+    .from('friendships')
+    .select('*')
+    .or(`user_id.eq.${currentUserId},friend_id.eq.${currentUserId}`)
+    .eq('status', 'accepted');
+  if (error || !rows || !rows.length) {
+    listEl.innerHTML = '<p class="friend-empty">Todavía no tienes amigos añadidos.</p>';
+    return;
+  }
+
+  const otherIds = rows.map(r => r.user_id === currentUserId ? r.friend_id : r.user_id);
+  const { data: profs } = await supabaseClient.from('profiles').select('id, username, avatar').in('id', otherIds);
+  listEl.innerHTML = (profs || []).map(p => `
+    <div class="friend-result-card">
+      <span>${p.avatar || '🧙'} ${p.username || '...'}</span>
+      <button class="btn btn-primary" onclick="connect4InviteFriend('${p.id}', '${(p.username || '...').replace(/'/g, "\\'")}')">Invitar</button>
+    </div>
+  `).join('');
+}
+function connect4InviteFriend(friendId, friendName) {
+  sendGameInvite(friendId, friendName, 'connect4');
+  closeConnect4EntryModal();
 }
 
 /* Chat con el rival de la partida, sin depender del panel de Amigos
@@ -2568,6 +2867,9 @@ document.getElementById('adminMagicModalBg').addEventListener('click', function 
 });
 document.getElementById('confirmModalBg').addEventListener('click', function (event) {
   if (event.target === this) closeConfirmModal();
+});
+document.getElementById('connect4EntryModalBg').addEventListener('click', function (event) {
+  if (event.target === this) closeConnect4EntryModal();
 });
 
 /* =========================
