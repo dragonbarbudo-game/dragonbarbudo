@@ -26,20 +26,24 @@ function json(body, status) {
 }
 
 export async function onRequestPost(context) {
+  // Importante: siempre respondemos con status 200 (el resultado real va en
+  // el campo "ok" del JSON). Cloudflare intercepta y sustituye por su propia
+  // página de error genérica cualquier respuesta 5xx de una Function, así
+  // que devolver 500/502 aquí ocultaba el motivo real del fallo.
   try {
     const { request, env } = context;
 
     if (!env.SUPABASE_WEBHOOK_SECRET || !env.RESEND_API_KEY) {
-      return json({ ok: false, error: 'missing_config' }, 500);
+      return json({ ok: false, error: 'missing_config' }, 200);
     }
 
     const authHeader = request.headers.get('Authorization') || '';
     if (authHeader !== `Bearer ${env.SUPABASE_WEBHOOK_SECRET}`) {
-      return json({ ok: false, error: 'forbidden' }, 403);
+      return json({ ok: false, error: 'forbidden' }, 200);
     }
 
     const payload = await request.json().catch(() => null);
-    if (!payload) return json({ ok: false, error: 'bad_payload' }, 400);
+    if (!payload) return json({ ok: false, error: 'bad_payload' }, 200);
 
     const oldRecord = payload.old_record || {};
     const record = payload.record || {};
@@ -68,9 +72,10 @@ export async function onRequestPost(context) {
       })
     });
 
-    return json({ ok: resp.ok }, resp.ok ? 200 : 502);
+    const resendBody = await resp.text().catch(() => '');
+    return json({ ok: resp.ok, resendStatus: resp.status, resendBody }, 200);
   } catch (e) {
-    return json({ ok: false }, 500);
+    return json({ ok: false, error: String(e) }, 200);
   }
 }
 

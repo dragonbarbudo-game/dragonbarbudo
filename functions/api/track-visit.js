@@ -44,13 +44,16 @@ export async function onRequestPost(context) {
       body: JSON.stringify({ p_ip_hash: ipHash })
     });
 
+    // Siempre 200 (el resultado real va en "ok"): Cloudflare sustituye
+    // cualquier respuesta 5xx de una Function por su propia página de
+    // error genérica, así que devolver 502 aquí ocultaba el motivo real.
     return new Response(JSON.stringify({ ok: resp.ok }), {
-      status: resp.ok ? 200 : 502,
+      status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (e) {
-    return new Response(JSON.stringify({ ok: false }), {
-      status: 500,
+    return new Response(JSON.stringify({ ok: false, error: String(e) }), {
+      status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
   }

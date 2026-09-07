@@ -17,23 +17,27 @@ function json(body, status) {
 }
 
 export async function onRequestPost(context) {
+  // Siempre respondemos con status 200 (el resultado real va en el campo
+  // "ok" del JSON): Cloudflare sustituye cualquier respuesta 5xx de una
+  // Function por su propia página de error genérica, ocultando el motivo
+  // real del fallo al código que llama a esta función.
   try {
     const { request, env } = context;
-    if (!env.SUPABASE_SERVICE_ROLE_KEY) return json({ ok: false, error: 'missing_config' }, 500);
+    if (!env.SUPABASE_SERVICE_ROLE_KEY) return json({ ok: false, error: 'missing_config' }, 200);
 
     const authHeader = request.headers.get('Authorization') || '';
     const { userId } = await request.json().catch(() => ({}));
-    if (!userId || !authHeader.startsWith('Bearer ')) return json({ ok: false, error: 'missing_params' }, 400);
+    if (!userId || !authHeader.startsWith('Bearer ')) return json({ ok: false, error: 'missing_params' }, 200);
 
     // 1) ¿Quién llama? Se comprueba con SU propio token, nunca con la
     //    service_role key, para saber de verdad quién es sin poder falsearlo.
     const meResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: authHeader }
     });
-    if (!meResp.ok) return json({ ok: false, error: 'invalid_session' }, 401);
+    if (!meResp.ok) return json({ ok: false, error: 'invalid_session' }, 200);
     const me = await meResp.json();
     const callerEmail = (me?.email || '').trim().toLowerCase();
-    if (!ADMIN_EMAILS.includes(callerEmail)) return json({ ok: false, error: 'forbidden' }, 403);
+    if (!ADMIN_EMAILS.includes(callerEmail)) return json({ ok: false, error: 'forbidden' }, 200);
 
     // 2) Ya sabemos que quien llama es admin: ahora sí, con la service_role
     //    key, se borra la cuenta indicada.
@@ -44,8 +48,8 @@ export async function onRequestPost(context) {
         Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`
       }
     });
-    return json({ ok: delResp.ok }, delResp.ok ? 200 : 502);
+    return json({ ok: delResp.ok }, 200);
   } catch (e) {
-    return json({ ok: false }, 500);
+    return json({ ok: false, error: String(e) }, 200);
   }
 }
