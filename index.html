@@ -762,15 +762,81 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 .entry-screen {
     display: flex;
     flex-direction: column;
+    background: #0d0e12;
+}
+.entry-hero {
+    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 40px;
     min-height: 100vh;
     min-height: 100dvh;
     padding: 20px;
-    background: #0d0e12;
+    position: relative;
     background-image: radial-gradient(circle at 50% 42%, rgba(217,164,65,.10), transparent 60%);
 }
+.entry-scroll-hint {
+    position: absolute;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #6b6558;
+    animation: entryScrollHintBounce 1.8s ease-in-out infinite;
+}
+.entry-scroll-hint svg { width: 22px; height: 22px; display: block; }
+@keyframes entryScrollHintBounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); opacity: .5; }
+    50% { transform: translateX(-50%) translateY(8px); opacity: 1; }
+}
+
+/* Secciones debajo del hero: feed, stories, accesos rápidos */
+.entry-section { width: 100%; max-width: 900px; margin: 0 auto; padding: 46px 24px; }
+.entry-section-title {
+    font-family: 'Cinzel', serif; color: #f0c975; font-size: 19px; font-weight: 700;
+    display: flex; align-items: center; gap: 8px; margin: 0 0 20px;
+}
+.entry-feed-list { display: flex; flex-direction: column; gap: 14px; }
+.entry-feed-card {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: #14161c; border: 1px solid #262a34; border-radius: 12px; padding: 16px 18px;
+}
+.entry-feed-icon { font-size: 26px; flex-shrink: 0; line-height: 1; }
+.entry-feed-card h3 { font-family: 'Cinzel', serif; font-size: 15px; color: #f1ede4; margin: 0 0 5px; }
+.entry-feed-card p { font-size: 13px; color: #9a9488; margin: 0; line-height: 1.5; }
+.entry-feed-date { display: block; font-size: 11px; color: #635e53; margin-top: 8px; }
+
+.entry-stories-row { display: flex; gap: 18px; overflow-x: auto; padding: 4px 4px 10px; }
+.entry-story { display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; width: 76px; cursor: default; }
+.entry-story-circle {
+    width: 62px; height: 62px; border-radius: 50%;
+    background: linear-gradient(135deg, #d9a441, #f0c975);
+    display: flex; align-items: center; justify-content: center; font-size: 24px;
+    box-shadow: 0 0 0 3px #0d0e12, 0 0 0 5px #d9a441;
+}
+.entry-story span { font-size: 11px; color: #b5ae9e; text-align: center; }
+
+.entry-quicklinks-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.entry-quicklink {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #14161c; border: 1px solid #262a34; border-radius: 24px; padding: 10px 20px;
+    color: #f1ede4; text-decoration: none; font-size: 14px; font-weight: 600;
+    transition: border-color .15s, color .15s;
+}
+.entry-quicklink:hover { border-color: #d9a441; color: #f0c975; }
+
+/* Botón flotante "volver arriba" (portada de entrada) */
+.back-to-top-btn {
+    position: fixed; bottom: 16px; left: 16px; z-index: 640;
+    width: 44px; height: 44px; border-radius: 50%;
+    background: #171a21; border: 1px solid #2c3140; color: #f0c975;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0,0,0,.3);
+    opacity: 0; pointer-events: none; transition: opacity .2s ease, border-color .15s;
+}
+.back-to-top-btn.show { opacity: 1; pointer-events: auto; }
+.back-to-top-btn:hover { border-color: #d9a441; }
+.back-to-top-btn svg { width: 20px; height: 20px; }
 .entry-coin-btn {
     width: min(50vw, 300px);
     background: none;
@@ -819,17 +885,82 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 </head>
 <body>
 
-<!-- PANTALLA DE ENTRADA -->
+<!-- PANTALLA DE ENTRADA (HOME) -->
 <div class="entry-screen" id="entryScreen">
-    <button type="button" class="entry-coin-btn" id="entryCoinBtn" onclick="handleEntryCoinClick()" aria-label="Continuar">
-        <img class="entry-coin" id="entryCoinImg" src="moneda-dragonbarbudo.png" alt="Dragonbarbudo">
-    </button>
-    <div class="entry-continue" id="entryContinueLabel">
-        <span id="entryContinueText" data-i18n="entry_continue">Continuar</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    <div class="entry-hero">
+        <button type="button" class="entry-coin-btn" id="entryCoinBtn" onclick="handleEntryCoinClick()" aria-label="Continuar">
+            <img class="entry-coin" id="entryCoinImg" src="moneda-dragonbarbudo.png" alt="Dragonbarbudo">
+        </button>
+        <div class="entry-continue" id="entryContinueLabel">
+            <span id="entryContinueText" data-i18n="entry_continue">Continuar</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+        <div class="entry-scroll-hint" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
     </div>
+
+    <!-- FEED -->
+    <div class="entry-section entry-feed">
+        <h2 class="entry-section-title" data-i18n="entry_feed_title">📰 Feed</h2>
+        <div class="entry-feed-list">
+            <div class="entry-feed-card">
+                <div class="entry-feed-icon">🐉</div>
+                <div>
+                    <h3>¡Bienvenidos a Dragonbarbudo!</h3>
+                    <p>Estamos construyendo la mejor taberna de juegos de mesa online. Muy pronto, más novedades.</p>
+                    <span class="entry-feed-date">Septiembre 2026</span>
+                </div>
+            </div>
+            <div class="entry-feed-card">
+                <div class="entry-feed-icon">🎲</div>
+                <div>
+                    <h3>Salón de Dados disponible</h3>
+                    <p>Ya puedes retar a otros jugadores en el Salón de Dados y ganar monedas y logros.</p>
+                    <span class="entry-feed-date">Septiembre 2026</span>
+                </div>
+            </div>
+            <div class="entry-feed-card">
+                <div class="entry-feed-icon">🏆</div>
+                <div>
+                    <h3>Nuevos logros y objetos</h3>
+                    <p>Se han añadido nuevos objetos de avatar desbloqueables jugando y en la tienda.</p>
+                    <span class="entry-feed-date">Septiembre 2026</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STORIES -->
+    <div class="entry-section entry-stories">
+        <h2 class="entry-section-title" data-i18n="entry_stories_title">✨ Stories</h2>
+        <div class="entry-stories-row">
+            <div class="entry-story"><div class="entry-story-circle">🆕</div><span>Novedades</span></div>
+            <div class="entry-story"><div class="entry-story-circle">🎉</div><span>Evento</span></div>
+            <div class="entry-story"><div class="entry-story-circle">🛠️</div><span>Parche</span></div>
+            <div class="entry-story"><div class="entry-story-circle">🏅</div><span>Torneo</span></div>
+            <div class="entry-story"><div class="entry-story-circle">💬</div><span>Comunidad</span></div>
+        </div>
+    </div>
+
+    <!-- ACCESOS RÁPIDOS -->
+    <div class="entry-section entry-quicklinks">
+        <h2 class="entry-section-title" data-i18n="entry_quicklinks_title">🔗 Accesos rápidos</h2>
+        <div class="entry-quicklinks-row">
+            <a href="#" class="entry-quicklink">💬 Discord</a>
+            <a href="#" class="entry-quicklink">📰 Novedades</a>
+            <a href="#" class="entry-quicklink">🛠️ Soporte</a>
+            <a href="#" class="entry-quicklink">🛒 Tienda</a>
+        </div>
+    </div>
+
     <audio id="coinDropAudio" src="sonido-moneda.mp3" preload="auto"></audio>
 </div>
+
+<!-- Volver arriba (solo visible en la portada de entrada) -->
+<button type="button" class="back-to-top-btn" id="backToTopBtn" onclick="scrollEntryToTop()" title="Volver arriba" data-i18n-title="title_back_to_top" aria-label="Volver arriba">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
 
 <!-- PANTALLA DE ACCESO -->
 <div class="auth-screen" id="authScreen" style="display:none">
@@ -1426,6 +1557,10 @@ const I18N = {
   // Portada de entrada
   entry_continue: { en:'Continue', fr:'Continuer', de:'Weiter', nl:'Doorgaan', ru:'Продолжить', ar:'متابعة', zh:'继续', ja:'続ける' },
   entry_loading: { en:'Loading', fr:'Chargement', de:'Lädt', nl:'Laden', ru:'Загрузка', ar:'جارٍ التحميل', zh:'加载中', ja:'読み込み中' },
+  entry_feed_title: { en:'📰 Feed', fr:'📰 Fil d\'actualité', de:'📰 Feed', nl:'📰 Feed', ru:'📰 Лента', ar:'📰 آخر الأخبار', zh:'📰 动态', ja:'📰 フィード' },
+  entry_stories_title: { en:'✨ Stories', fr:'✨ Stories', de:'✨ Stories', nl:'✨ Stories', ru:'✨ Истории', ar:'✨ ستوريز', zh:'✨ 快讯', ja:'✨ ストーリーズ' },
+  entry_quicklinks_title: { en:'🔗 Quick access', fr:'🔗 Accès rapide', de:'🔗 Schnellzugriff', nl:'🔗 Snelle toegang', ru:'🔗 Быстрый доступ', ar:'🔗 وصول سريع', zh:'🔗 快速访问', ja:'🔗 クイックアクセス' },
+  title_back_to_top: { en:'Back to top', fr:'Retour en haut', de:'Nach oben', nl:'Naar boven', ru:'Наверх', ar:'العودة للأعلى', zh:'返回顶部', ja:'トップに戻る' },
 };
 
 /* Traduce un texto que se genera dinámicamente desde JS (no vive en el
@@ -2875,7 +3010,21 @@ function goToEntryMenu() {
   document.getElementById('entryContinueLabel').classList.remove('loading');
   document.getElementById('entryContinueText').textContent = t('entry_continue', 'Continuar');
   entryCoinClicked = false;
+  window.scrollTo(0, 0); // siempre empieza por el hero (moneda), no por donde se dejó el scroll la última vez
 }
+
+/* Botón "volver arriba" de la portada: solo se muestra ahí (no en el
+   resto de pantallas) y solo tras bajar un poco. */
+function scrollEntryToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+window.addEventListener('scroll', () => {
+  const entry = document.getElementById('entryScreen');
+  const btn = document.getElementById('backToTopBtn');
+  if (!entry || !btn) return;
+  const entryVisible = getComputedStyle(entry).display !== 'none';
+  btn.classList.toggle('show', entryVisible && window.scrollY > 300);
+});
 
 /* Al pulsar la moneda: la hace girar y caer (manteniendo el vuelo que
    ya llevaba, sin cortarlo en seco), suena como una moneda cayendo al
