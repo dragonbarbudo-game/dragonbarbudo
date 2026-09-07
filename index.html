@@ -344,9 +344,10 @@ main { padding: 30px; overflow: hidden; }
 .friend-info { flex: 1; }
 .friend-name { font-size: 14px; font-weight: 600; }
 .friend-status { color: var(--muted); font-size: 12px; }
-.status { width: 9px; height: 9px; border-radius: 50%; }
+.status { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 .online { background: var(--felt-light); }
 .offline { background: #555; }
+.device-icon { font-size: 14px; flex-shrink: 0; opacity: .8; }
 .playing { background: #5ea8ff; }
 
 /* PROFILE */
@@ -3200,9 +3201,26 @@ function translateFriendError(error) {
   return 'No se pudo completar la acción: ' + msg;
 }
 
+/* Detecta si el dispositivo actual es un ordenador o un móvil/tablet,
+   por el user-agent (no por el ancho de la ventana, que un usuario de
+   escritorio podría redimensionar sin dejar de ser un ordenador). */
+function detectDeviceType() {
+  const ua = navigator.userAgent || '';
+  const isMobileOrTablet = /Mobi|Android|iPhone|iPad|iPod|Tablet/i.test(ua);
+  return isMobileOrTablet ? 'mobile' : 'desktop';
+}
+function deviceIconHtml(deviceType) {
+  if (deviceType === 'mobile') return '<span class="device-icon" title="Móvil/Tablet">📱</span>';
+  if (deviceType === 'desktop') return '<span class="device-icon" title="Ordenador">💻</span>';
+  return '';
+}
+
 async function updateLastSeen() {
   if (!currentUserId) return;
-  await supabaseClient.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', currentUserId);
+  await supabaseClient.from('profiles').update({
+    last_seen: new Date().toISOString(),
+    device_type: detectDeviceType()
+  }).eq('id', currentUserId);
 }
 
 function startFriendsSystem() {
@@ -3369,7 +3387,7 @@ async function loadFriendsPanel() {
   if (otherIds.length) {
     const { data: profs } = await supabaseClient
       .from('profiles')
-      .select('id, username, avatar, last_seen')
+      .select('id, username, avatar, last_seen, device_type')
       .in('id', otherIds);
     (profs || []).forEach(p => { profilesById[p.id] = p; });
   }
@@ -3414,6 +3432,7 @@ async function loadFriendsPanel() {
           <button onclick="removeFriend('${r.id}'); toggleFriendMenu('${menuId}')">🗑️ Eliminar amigo</button>
         </div>
       </div>
+      ${deviceIconHtml(p.device_type)}
       <div class="status ${online ? 'online' : 'offline'}"></div>
     </div>`;
   }).join('') : '<p class="friend-empty">Todavía no tienes amigos.</p>';
