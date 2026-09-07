@@ -1030,7 +1030,6 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             <div class="auth-error" id="loginError"></div>
             <button type="submit" class="btn btn-primary" data-i18n="btn_enter">Entrar</button>
             <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('forgot')" data-i18n="forgot_password">¿Has olvidado tu contraseña?</div>
-            <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('resend')" data-i18n="resend_confirmation">¿No te llegó el correo de confirmación?</div>
         </form>
 
         <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)">
@@ -1060,6 +1059,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             </div>
             <div class="auth-error" id="forgotError"></div>
             <button type="submit" class="btn btn-primary" data-i18n="btn_send_recovery">Enviar enlace de recuperación</button>
+            <div class="auth-note" id="forgotResendNote" style="display:none;cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('resend')" data-i18n="resend_confirmation">¿No te llegó el correo de confirmación?</div>
             <div class="auth-note" style="cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('login')" data-i18n="back_to_login">Volver a iniciar sesión</div>
         </form>
 
@@ -2352,6 +2352,7 @@ function switchAuthTab(tab) {
     el.textContent = '';
     el.style.color = 'var(--ember)';
   });
+  document.getElementById('forgotResendNote').style.display = 'none';
 }
 
 async function handleForgotPassword(event) {
@@ -2359,6 +2360,7 @@ async function handleForgotPassword(event) {
   const email = document.getElementById('forgotEmail').value.trim();
   const errorBox = document.getElementById('forgotError');
   errorBox.textContent = '';
+  document.getElementById('forgotResendNote').style.display = 'none';
 
   const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
     redirectTo: window.location.origin + window.location.pathname
@@ -2370,6 +2372,9 @@ async function handleForgotPassword(event) {
   }
   errorBox.style.color = 'var(--felt-light)';
   errorBox.textContent = 'Te hemos enviado un enlace a tu correo. Ábrelo para elegir una nueva contraseña.';
+  // Por si el correo enviado tampoco llega, dejamos aquí mismo la opción
+  // de reenviar el correo de confirmación (antes vivía en el login).
+  document.getElementById('forgotResendNote').style.display = 'block';
 }
 
 async function handleResetPassword(event) {
