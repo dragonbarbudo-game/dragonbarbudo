@@ -1206,7 +1206,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
         <a href="#" data-i18n="footer_contact">Contacto</a>
     </nav>
     <div class="site-footer-divider"><i></i></div>
-    <p class="site-footer-legal"><span data-i18n="footer_legal_pre">Todas las</span> <a href="#" data-i18n="footer_legal_link">marcas comerciales</a> <span data-i18n="footer_legal_post">a las que se hace referencia son propiedad de sus respectivos dueños.</span></p>
+    <p class="site-footer-legal" id="footerCopyright">DragonBarbudo © 2026</p>
     <nav class="site-footer-links">
         <a href="#" data-i18n="footer_privacy">Privacidad</a>
         <a href="#" data-i18n="footer_legal">Legal</a>
@@ -1405,9 +1405,6 @@ const I18N = {
   footer_info: { en:'Information', fr:'Informations', de:'Information', nl:'Informatie', ru:'Информация', ar:'معلومات', zh:'信息', ja:'情報' },
   footer_support: { en:'Support', fr:'Assistance', de:'Support', nl:'Ondersteuning', ru:'Поддержка', ar:'الدعم', zh:'支持', ja:'サポート' },
   footer_contact: { en:'Contact', fr:'Contact', de:'Kontakt', nl:'Contact', ru:'Контакты', ar:'اتصل بنا', zh:'联系我们', ja:'お問い合わせ' },
-  footer_legal_pre: { en:'All', fr:'Toutes les', de:'Alle', nl:'Alle', ru:'Все', ar:'جميع', zh:'本页提及的所有', ja:'記載されているすべての' },
-  footer_legal_link: { en:'trademarks', fr:'marques déposées', de:'Marken', nl:'handelsmerken', ru:'товарные знаки', ar:'العلامات التجارية', zh:'商标', ja:'商標' },
-  footer_legal_post: { en:'referenced belong to their respective owners.', fr:'mentionnées appartiennent à leurs propriétaires respectifs.', de:'genannten gehören ihren jeweiligen Eigentümern.', nl:'waarnaar wordt verwezen zijn eigendom van hun respectievelijke eigenaars.', ru:'упомянутые здесь, принадлежат их владельцам.', ar:'المذكورة هي ملك لأصحابها.', zh:'均归其各自所有者所有。', ja:'は、それぞれの所有者に帰属します。' },
   footer_privacy: { en:'Privacy', fr:'Confidentialité', de:'Datenschutz', nl:'Privacy', ru:'Конфиденциальность', ar:'الخصوصية', zh:'隐私', ja:'プライバシー' },
   footer_legal: { en:'Legal', fr:'Mentions légales', de:'Impressum', nl:'Juridisch', ru:'Юридическая информация', ar:'قانوني', zh:'法律信息', ja:'法的情報' },
   footer_terms: { en:'Terms', fr:'Conditions', de:'AGB', nl:'Voorwaarden', ru:'Условия', ar:'الشروط', zh:'条款', ja:'利用規約' },
@@ -1876,6 +1873,22 @@ const PAGE_TITLES = {
 function setPageTitle(name) {
   document.title = 'Dragonbarbudo - ' + name;
 }
+
+/* Aviso de copyright del pie de página: el año se calcula solo, así
+   que cada 1 de enero pasa a mostrar el año nuevo sin tocar el código.
+   Muestra "© 2026" mientras estemos en el año de lanzamiento, y
+   "© 2026-<año actual>" en adelante. */
+const DRAGONBARBUDO_LAUNCH_YEAR = 2026;
+function renderFooterCopyright() {
+  const el = document.getElementById('footerCopyright');
+  if (!el) return;
+  const currentYear = new Date().getFullYear();
+  const range = currentYear > DRAGONBARBUDO_LAUNCH_YEAR
+    ? `${DRAGONBARBUDO_LAUNCH_YEAR}-${currentYear}`
+    : `${DRAGONBARBUDO_LAUNCH_YEAR}`;
+  el.textContent = `DragonBarbudo © ${range}`;
+}
+renderFooterCopyright();
 function showPage(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(pageId).classList.add('active');
