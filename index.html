@@ -1253,6 +1253,8 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                 <div class="profile-info">
                     <h2 id="profileUsername">Jugador</h2>
                     <span class="admin-badge" id="adminBadgeProfile" style="display:none">👑 Admin</span>
+                    <span class="visit-counter" id="visitCounterProfile" style="display:none"></span>
+                    <span class="visit-counter" id="activePlayersCounterProfile" style="display:none"></span>
                     <p data-i18n="profile_desc">Aventurero, estratega y coleccionista de logros.</p>
                     <p id="profileLevel">⭐ Nivel 1</p>
                     <p><span id="profileAchievements">0</span> <span data-i18n="word_achievements">logros</span></p>
@@ -2288,14 +2290,19 @@ async function trackSiteVisit() {
   } catch (e) { /* si la función todavía no existe en Supabase, no pasa nada */ }
 }
 function renderVisitCounter() {
-  const el = document.getElementById('visitCounter');
-  if (!el) return;
-  if (isAdmin && siteVisitCount !== null) {
-    el.textContent = `👁️ ${siteVisitCount.toLocaleString('es-ES')} visitas`;
-    el.style.display = 'inline-flex';
-  } else {
-    el.style.display = 'none';
-  }
+  // Se repite en el cajón de menú (solo visible en tablet/móvil) y en la
+  // página "Mi perfil" (visible siempre), para que un admin lo vea en
+  // cualquier tamaño de pantalla.
+  ['visitCounter', 'visitCounterProfile'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (isAdmin && siteVisitCount !== null) {
+      el.textContent = `👁️ ${siteVisitCount.toLocaleString('es-ES')} visitas`;
+      el.style.display = 'inline-flex';
+    } else {
+      el.style.display = 'none';
+    }
+  });
 }
 trackSiteVisit();
 
@@ -2322,14 +2329,16 @@ presenceChannel
     }
   });
 function renderActivePlayersCounter() {
-  const el = document.getElementById('activePlayersCounter');
-  if (!el) return;
-  if (isAdmin) {
-    el.textContent = `🟢 ${activePlayersCount.toLocaleString('es-ES')} en línea`;
-    el.style.display = 'inline-flex';
-  } else {
-    el.style.display = 'none';
-  }
+  ['activePlayersCounter', 'activePlayersCounterProfile'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (isAdmin) {
+      el.textContent = `🟢 ${activePlayersCount.toLocaleString('es-ES')} en línea`;
+      el.style.display = 'inline-flex';
+    } else {
+      el.style.display = 'none';
+    }
+  });
 }
 
 /* Traduce los errores técnicos de Supabase a mensajes en español sencillo */
