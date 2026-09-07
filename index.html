@@ -1470,6 +1470,12 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             <button class="btn btn-primary" onclick="adminRenameUser()">Guardar</button>
         </div>
         <p class="friend-msg">🔧 Más acciones próximamente.</p>
+
+        <div style="border-top: 1px solid var(--border); margin-top: 18px; padding-top: 16px;">
+            <label style="display:block; font-size:12px; color:var(--muted); margin-bottom:6px;">Zona de peligro</label>
+            <button class="btn" style="background:#e05d5d; color:#fff; width:100%;" onclick="adminDeleteUserFromMagicPanel()">🗑️ Eliminar usuario</button>
+        </div>
+
         <div class="modal-actions">
             <button class="btn btn-dark" onclick="closeAdminMagicModal()">Cerrar</button>
         </div>
@@ -2573,7 +2579,6 @@ function renderAdminPlayersList() {
           <button class="icon-action-btn" data-tooltip="Ir a su perfil" onclick="adminOpenProfile('${p.id}')">👤</button>
           <button class="icon-action-btn" data-tooltip="Enviar mensaje" onclick="adminSendMessage('${p.id}')">✉️</button>
           <button class="icon-action-btn" data-tooltip="Abrir panel mágico" onclick="adminOpenMagicPanel('${p.id}')">🪄</button>
-          <button class="icon-action-btn danger" data-tooltip="Eliminar usuario" onclick="adminDeleteUser('${p.id}')">🗑️</button>
         </div>
       </div>`;
   }).join('');
@@ -2639,9 +2644,10 @@ async function adminRenameUser() {
   loadAdminPlayersList();
 }
 
-/* Eliminar usuario: pide confirmación y borra la cuenta de verdad (Auth +
-   perfil) a través de la Cloudflare Function /api/admin/delete-user, que
-   comprueba que quien llama es admin antes de tocar nada. */
+/* Eliminar usuario: vive dentro del Panel mágico ("zona de peligro"). Pide
+   confirmación y borra la cuenta de verdad (Auth + perfil) a través de la
+   Cloudflare Function /api/admin/delete-user, que comprueba que quien
+   llama es admin antes de tocar nada. */
 function adminDeleteUser(id) {
   const p = adminFindPlayer(id);
   if (!p) return;
@@ -2651,6 +2657,12 @@ function adminDeleteUser(id) {
     `Esto eliminará la cuenta de "${name}" de forma permanente. Esta acción no se puede deshacer. ¿Continuar?`,
     () => doAdminDeleteUser(id)
   );
+}
+function adminDeleteUserFromMagicPanel() {
+  if (!adminMagicTargetId) return;
+  const id = adminMagicTargetId;
+  closeAdminMagicModal();
+  adminDeleteUser(id);
 }
 async function doAdminDeleteUser(id) {
   try {
