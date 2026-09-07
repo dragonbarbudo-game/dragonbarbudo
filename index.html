@@ -136,6 +136,14 @@ body.drawer-open { overflow: hidden; }
 /* APP */
 .app { display: grid; grid-template-columns: 240px 1fr 280px; min-height: calc(100vh - 70px); }
 
+/* MODO PANTALLA COMPLETA DE JUEGO (Conecta 4, y futuros juegos online):
+   se ocultan el menú lateral y el panel de amigos para jugar sin
+   distracciones; el chat sigue disponible como ventana aparte. */
+body.game-focus .app { grid-template-columns: 1fr; }
+body.game-focus .sidebar,
+body.game-focus .friends-panel,
+body.game-focus .menu-toggle-btn { display: none; }
+
 /* SIDEBAR */
 .sidebar { background: var(--bg2); border-right: 1px solid var(--border); padding: 25px 15px; position: relative; }
 /* En escritorio el sidebar no repite el avatar (ya está en el header); solo se
@@ -409,15 +417,24 @@ main { padding: 30px; overflow: hidden; }
 .c4-player { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; }
 .c4-vs { font-family: 'Cinzel', serif; color: var(--gold); font-size: 14px; }
 .c4-piece-icon { display: inline-block; width: 18px; height: 18px; border-radius: 50%; }
-.c4-status { text-align: center; font-size: 16px; font-weight: 700; margin-bottom: 20px; min-height: 24px; }
-.c4-board { display: flex; gap: 6px; background: #1b3a6b; padding: 12px; border-radius: 14px; width: fit-content; margin: 0 auto; }
-.c4-col { display: flex; flex-direction: column; gap: 6px; cursor: pointer; border-radius: 8px; transition: background .12s; }
+.c4-status { text-align: center; font-size: 16px; font-weight: 700; margin-bottom: 16px; min-height: 24px; }
+.c4-board-wrap { overflow: auto; padding: 20px 0 60px; }
+.c4-board { display: flex; gap: 8px; background: #1b3a6b; padding: 16px; border-radius: 16px; width: fit-content; margin: 0 auto; transition: transform .12s; transform-origin: top center; }
+.c4-col { display: flex; flex-direction: column; gap: 8px; cursor: pointer; border-radius: 8px; transition: background .12s; }
 .c4-col:hover { background: rgba(255,255,255,.06); }
 .c4-col.c4-col-disabled { cursor: not-allowed; }
-.c4-cell { width: 44px; height: 44px; background: #12141a; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-.c4-piece { width: 36px; height: 36px; border-radius: 50%; }
+.c4-cell { width: 64px; height: 64px; background: #12141a; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.c4-piece { width: 54px; height: 54px; border-radius: 50%; }
 .c4-red { background: radial-gradient(circle at 35% 30%, #ff8a80, #d32f2f); }
 .c4-yellow { background: radial-gradient(circle at 35% 30%, #fff59d, #fbc02d); }
+.c4-actions { display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; }
+.c4-zoom-controls { display: flex; align-items: center; gap: 8px; }
+.c4-zoom-controls .btn { padding: 8px 13px; font-size: 15px; }
+#c4ZoomLabel { min-width: 42px; text-align: center; color: var(--muted); font-size: 13px; }
+@media (max-width: 700px) {
+    .c4-cell { width: 44px; height: 44px; }
+    .c4-piece { width: 36px; height: 36px; }
+}
 @media (max-width: 480px) {
     .c4-cell { width: 34px; height: 34px; }
     .c4-piece { width: 28px; height: 28px; }
@@ -1313,10 +1330,18 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 
             <div class="c4-status" id="connect4Status">Cargando partida…</div>
 
-            <div class="c4-board" id="connect4Board"></div>
+            <div class="c4-board-wrap">
+                <div class="c4-board" id="connect4Board"></div>
+            </div>
 
-            <div class="dice-actions">
+            <div class="c4-actions">
                 <button class="btn btn-dark" onclick="leaveConnect4Game()">← Salir de la partida</button>
+                <button class="btn btn-primary" onclick="connect4OpenChat()">💬 Chat</button>
+                <div class="c4-zoom-controls">
+                    <button class="btn btn-dark" onclick="connect4Zoom(-1)" aria-label="Alejar">➖</button>
+                    <span id="c4ZoomLabel">100%</span>
+                    <button class="btn btn-dark" onclick="connect4Zoom(1)" aria-label="Acercar">➕</button>
+                </div>
             </div>
         </div>
 
@@ -2188,6 +2213,10 @@ function showPage(pageId) {
   if (btn) btn.classList.add('active');
   closeSidebar();
   setPageTitle(PAGE_TITLES[pageId] || pageId);
+  // En Conecta 4 (y cualquier futuro juego online) se oculta el resto de
+  // la interfaz para jugar a pantalla completa; se reactiva sola al
+  // navegar a cualquier otra página, se salga como se salga.
+  document.body.classList.toggle('game-focus', pageId === 'connect4Game');
 }
 
 /* =========================
@@ -2289,6 +2318,8 @@ const C4_COLS = 7, C4_ROWS = 6;
 let connect4State = null;
 let connect4Channel = null;
 let connect4Names = { 1: 'Jugador 1', 2: 'Jugador 2' };
+let connect4RivalId = null;
+let connect4ZoomLevel = 1;
 
 function connect4EmptyBoard() {
   return new Array(C4_COLS * C4_ROWS).fill(0);
@@ -2339,10 +2370,15 @@ async function openConnect4Game(gameId) {
   connect4Names = { 1: name1, 2: name2 };
   const myNum = data.player1_id === currentUserId ? 1 : 2;
   const rivalNum = myNum === 1 ? 2 : 1;
+  connect4RivalId = myNum === 1 ? data.player2_id : data.player1_id;
   document.getElementById('c4YouName').textContent = connect4Names[myNum];
   document.getElementById('c4RivalName').textContent = connect4Names[rivalNum];
   document.querySelector('#c4PlayerYou .c4-piece-icon').className = 'c4-piece-icon ' + (myNum === 1 ? 'c4-red' : 'c4-yellow');
   document.querySelector('#c4PlayerRival .c4-piece-icon').className = 'c4-piece-icon ' + (rivalNum === 1 ? 'c4-red' : 'c4-yellow');
+
+  connect4ZoomLevel = 1;
+  document.getElementById('connect4Board').style.transform = 'scale(1)';
+  document.getElementById('c4ZoomLabel').textContent = '100%';
 
   connect4Render();
 
@@ -2411,7 +2447,23 @@ async function connect4MakeMove(col) {
 function leaveConnect4Game() {
   if (connect4Channel) { supabaseClient.removeChannel(connect4Channel); connect4Channel = null; }
   connect4State = null;
+  connect4RivalId = null;
   showPage('lobby');
+}
+
+/* Chat con el rival de la partida, sin depender del panel de Amigos
+   (oculto mientras se juega en pantalla completa): abre la misma
+   ventana de chat privado de siempre. */
+function connect4OpenChat() {
+  if (!connect4RivalId) return;
+  const rivalName = document.getElementById('c4RivalName').textContent;
+  openChat(connect4RivalId, rivalName);
+}
+
+function connect4Zoom(direction) {
+  connect4ZoomLevel = Math.min(1.6, Math.max(0.6, connect4ZoomLevel + direction * 0.15));
+  document.getElementById('connect4Board').style.transform = `scale(${connect4ZoomLevel.toFixed(2)})`;
+  document.getElementById('c4ZoomLabel').textContent = Math.round(connect4ZoomLevel * 100) + '%';
 }
 
 /* =========================
