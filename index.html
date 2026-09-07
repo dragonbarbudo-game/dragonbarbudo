@@ -103,8 +103,9 @@ body.light-mode .header-logo-img.logo-light { display: block; }
 
 /* MENÚ HAMBURGUESA (tablet / móvil) */
 .menu-toggle-btn { display: none; }
-.sidebar-close-btn, .friends-close-btn { display: none; background: none; border: none; font-size: 20px; color: var(--muted); cursor: pointer; line-height: 1; padding: 4px; }
+.sidebar-close-btn, .friends-close-btn { background: none; border: none; font-size: 20px; color: var(--muted); cursor: pointer; line-height: 1; padding: 4px; }
 .sidebar-close-btn:hover, .friends-close-btn:hover { color: var(--text); }
+.sidebar-close-btn { display: none; } /* el sidebar solo se cierra así en tablet/móvil */
 .menu-friends-btn { display: none; }
 .sidebar-extra-mobile { display: none; }
 .sidebar-extra-btn {
@@ -133,8 +134,10 @@ body.drawer-open { overflow: hidden; }
 .cheat-toggle.on .cheat-switch::after { left: 18px; background: white; }
 .item-card .lock-hint.cheat-hint { color: var(--ember); }
 
-/* APP */
-.app { display: grid; grid-template-columns: 240px 1fr 280px; min-height: calc(100vh - 70px); }
+/* APP — el panel de Amigos ya no reserva columna propia: es siempre un
+   cajón que se abre con el icono (ver .friends-panel más abajo), tanto
+   en escritorio como en tablet/móvil. */
+.app { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 70px); }
 
 /* MODO PANTALLA COMPLETA DE JUEGO (Conecta 4, y futuros juegos online):
    se ocultan el menú lateral y el panel de amigos para jugar sin
@@ -316,7 +319,18 @@ main { padding: 30px; overflow: hidden; }
 .room-info p { color: var(--muted); font-size: 13px; }
 
 /* FRIENDS */
-.friends-panel { background: var(--bg2); border-left: 1px solid var(--border); padding: 25px 15px; }
+/* Cajón de Amigos: oculto hasta pulsar el icono, en cualquier tamaño de
+   pantalla (antes era una columna fija siempre visible en escritorio;
+   ahora se abre/cierra igual en todas partes). */
+.friends-panel {
+    background: var(--bg2); padding: 25px 15px;
+    position: fixed; top: 70px; right: 0; bottom: 0;
+    width: 300px; max-width: 88vw; z-index: 500;
+    transform: translateX(100%); transition: transform .25s ease;
+    overflow-y: auto; box-shadow: -6px 0 24px rgba(0,0,0,.4);
+    border-left: 1px solid var(--border);
+}
+.friends-panel.open { transform: translateX(0); }
 .friend-title { margin-bottom: 20px; font-size: 16px; }
 .friend-search { display: flex; gap: 6px; margin-bottom: 10px; }
 .friend-search input { flex: 1; padding: 9px; background: var(--input-bg); border: 1px solid var(--border); color: var(--input-text); border-radius: 8px; font-family: inherit; font-size: 13px; }
@@ -505,7 +519,7 @@ main { padding: 30px; overflow: hidden; }
 
     .menu-toggle-btn { display: flex; }
     .menu-friends-btn { display: block; }
-    .sidebar-close-btn, .friends-close-btn { display: block; }
+    .sidebar-close-btn { display: block; }
     .sidebar-extra-mobile { display: block; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
     /* el tema se controla desde el cajón del menú; se oculta del header
        para no competir con él por espacio */
@@ -527,22 +541,6 @@ main { padding: 30px; overflow: hidden; }
     }
     .sidebar.open { transform: translateX(0); }
     .profile-mini { display: block; }
-
-    .friends-panel {
-        position: fixed;
-        top: 70px;
-        right: 0;
-        bottom: 0;
-        width: 300px;
-        max-width: 88vw;
-        z-index: 500;
-        transform: translateX(100%);
-        transition: transform .25s ease;
-        overflow-y: auto;
-        box-shadow: -6px 0 24px rgba(0,0,0,.4);
-        border-left: 1px solid var(--border);
-    }
-    .friends-panel.open { transform: translateX(0); }
 
     .avatar-editor { grid-template-columns: 1fr; }
 }
