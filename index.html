@@ -1144,6 +1144,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             <div class="username" id="sidebarUsername">Jugador</div>
             <span class="admin-badge" id="adminBadgeSidebar" style="display:none">👑 Admin</span>
             <span class="visit-counter" id="visitCounter" style="display:none"></span>
+            <span class="visit-counter" id="activePlayersCounter" style="display:none"></span>
             <div class="level" id="sidebarLevel">⭐ Nivel 1</div>
         </div>
 
@@ -2298,6 +2299,39 @@ function renderVisitCounter() {
 }
 trackSiteVisit();
 
+/* =========================
+   JUGADORES ACTIVOS EN TIEMPO REAL (solo visible para admins)
+   Usa un canal de Supabase Realtime (Presence) para saber cuántas
+   pestañas/visitantes hay conectados ahora mismo, sea cual sea la
+   página en la que estén (Home, login o dentro de la app). No hace
+   falta ninguna tabla: la presencia es efímera y vive solo mientras
+   dura la conexión websocket de cada visitante.
+========================= */
+let activePlayersCount = 0;
+const presenceChannel = supabaseClient.channel('site-presence', {
+  config: { presence: { key: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now() + '-' + Math.random()) } }
+});
+presenceChannel
+  .on('presence', { event: 'sync' }, () => {
+    activePlayersCount = Object.keys(presenceChannel.presenceState()).length;
+    renderActivePlayersCounter();
+  })
+  .subscribe(async (status) => {
+    if (status === 'SUBSCRIBED') {
+      await presenceChannel.track({ online_at: new Date().toISOString() });
+    }
+  });
+function renderActivePlayersCounter() {
+  const el = document.getElementById('activePlayersCounter');
+  if (!el) return;
+  if (isAdmin) {
+    el.textContent = `🟢 ${activePlayersCount.toLocaleString('es-ES')} en línea`;
+    el.style.display = 'inline-flex';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
 /* Traduce los errores técnicos de Supabase a mensajes en español sencillo */
 function translateAuthError(error) {
   if (!error) return '';
@@ -2585,6 +2619,7 @@ async function enterApp(user) {
   document.getElementById('cheatToggle').style.display = isAdmin ? 'flex' : 'none';
   document.getElementById('cheatToggleSidebar').style.display = isAdmin ? 'flex' : 'none';
   renderVisitCounter();
+  renderActivePlayersCounter();
 
   initGameUI();
   startFriendsSystem();
