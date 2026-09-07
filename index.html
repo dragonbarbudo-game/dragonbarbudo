@@ -2383,6 +2383,11 @@ function renderActivePlayersCounter() {
       el.style.display = 'none';
     }
   });
+  // La tarjeta del panel de Admin también se mantiene en vivo (antes solo
+  // se rellenaba una vez, al abrir la página, y se quedaba congelada si la
+  // sincronización de presencia todavía no había llegado en ese momento).
+  const adminEl = document.getElementById('adminStatOnline');
+  if (adminEl && isAdmin) adminEl.textContent = activePlayersCount.toLocaleString('es-ES');
 }
 
 /* =========================
