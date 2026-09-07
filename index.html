@@ -405,9 +405,9 @@ main { padding: 30px; overflow: hidden; }
     .menu-friends-btn { display: block; }
     .sidebar-close-btn, .friends-close-btn { display: block; }
     .sidebar-extra-mobile { display: block; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
-    /* el tema y el modo diseño se controlan desde el cajón del menú; se
-       ocultan del header para no competir con él por espacio */
-    #themeToggleBtnHeader, #cheatToggle { display: none; }
+    /* el tema se controla desde el cajón del menú; se oculta del header
+       para no competir con él por espacio */
+    #themeToggleBtnHeader { display: none; }
 
     .sidebar {
         position: fixed;
@@ -1116,7 +1116,6 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             <span id="coinDisplay">0</span>
         </div>
         <div class="avatar-stage size-sm frame-ring header-avatar-btn" id="headerAvatar" onclick="showPage('profile')" title="Ver mi perfil" data-i18n-title="title_view_profile"></div>
-        <button class="header-icon-btn" id="cheatToggle" onclick="toggleCheatMode()" title="Modo diseño" data-i18n-title="title_design_mode">🍺</button>
         <div class="bell-wrap">
             <button class="bell-btn" id="bellBtn" onclick="toggleNotifications()"><span class="bell-emoji" id="bellEmoji">🔔</span><span class="bell-badge" id="bellBadge" style="display:none;">0</span></button>
             <div class="bell-dropdown" id="bellDropdown">
@@ -1816,8 +1815,8 @@ function toggleCheatMode() {
 }
 
 function renderCheatToggle() {
-  const el = document.getElementById('cheatToggle');
-  el.classList.toggle('on', state.cheatMode);
+  // El botón vive solo dentro del grupo Admin del cajón de menú (ya no
+  // se repite en el header).
   const sidebarEl = document.getElementById('cheatToggleSidebar');
   if (sidebarEl) sidebarEl.classList.toggle('on', state.cheatMode);
 }
@@ -2718,7 +2717,6 @@ async function enterApp(user) {
   state.cheatMode = isAdmin; // el modo diseño es cosa de admins: se fuerza en ambos sentidos
   document.getElementById('adminBadgeSidebar').style.display = isAdmin ? 'inline-flex' : 'none';
   document.getElementById('adminBadgeProfile').style.display = isAdmin ? 'inline-flex' : 'none';
-  document.getElementById('cheatToggle').style.display = isAdmin ? 'flex' : 'none';
   document.getElementById('adminGroupSidebar').style.display = isAdmin ? 'block' : 'none';
   renderVisitCounter();
   renderActivePlayersCounter();
