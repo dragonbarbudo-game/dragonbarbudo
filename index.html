@@ -4126,8 +4126,23 @@ function subscribeGameInvites() {
 /* Al cargar la página, comprobamos si ya hay una sesión abierta */
 let entrySkipped = false; // true en cuanto se sabe que hay sesión: no hace falta pasar por "Continuar"
 
+/* Si venimos del enlace de confirmación de correo, Supabase crea una
+   sesión automáticamente al procesar el enlace (va como "type=signup" en
+   la URL) — pero no queremos meter a nadie directamente en el Lobby desde
+   ahí. Se descarta esa sesión y se deja en Home con un aviso, para que
+   confirmar el correo nunca sustituya al login manual normal. */
+const isSignupConfirmation = /type=signup/.test(window.location.hash) || /type=signup/.test(window.location.search);
+
 (async function checkSession() {
   const { data: { session } } = await supabaseClient.auth.getSession();
+
+  if (isSignupConfirmation) {
+    if (session) await supabaseClient.auth.signOut();
+    history.replaceState(null, '', window.location.pathname); // limpia el enlace de la barra de direcciones
+    toast('✅ ¡Tu cuenta ha sido confirmada! Ya puedes iniciar sesión.');
+    return; // nos quedamos en Home; entrySkipped sigue en false
+  }
+
   if (session) {
     entrySkipped = true;
     document.getElementById('entryScreen').style.display = 'none';
