@@ -994,6 +994,13 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 .entry-continue.loading svg { opacity: 0; }
 .entry-continue.loading #entryContinueText { animation: entryTextBlink 0.85s ease-in-out infinite; }
 @keyframes entryTextBlink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+.entry-confirm-banner {
+    display: flex; align-items: center; gap: 12px; max-width: 420px; margin: 26px auto 0;
+    background: rgba(217,164,65,.12); border: 1px solid #d9a441; border-radius: 12px;
+    padding: 14px 16px; color: #f1ede4; font-size: 14px; line-height: 1.5; text-align: left;
+}
+.entry-confirm-close { background: none; border: none; color: #98948a; font-size: 16px; cursor: pointer; flex-shrink: 0; padding: 2px; line-height: 1; }
+.entry-confirm-close:hover { color: #f1ede4; }
 </style>
 </head>
 <body class="home-active">
@@ -1008,6 +1015,15 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             <span id="entryContinueText" data-i18n="entry_continue">Continuar</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </div>
+
+        <!-- Aviso persistente tras confirmar el correo (ver checkSession):
+             se queda visible hasta que se cierra a mano o se navega fuera
+             de Home, no desaparece solo como un toast normal. -->
+        <div class="entry-confirm-banner" id="entryConfirmBanner" style="display:none;">
+            <span>✅ Tu cuenta ha sido confirmada. Pulsa «Continuar» e inicia sesión con tu correo y contraseña para entrar.</span>
+            <button type="button" class="entry-confirm-close" onclick="document.getElementById('entryConfirmBanner').style.display='none'" aria-label="Cerrar aviso">✕</button>
+        </div>
+
         <div class="entry-scroll-hint" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
@@ -4139,7 +4155,10 @@ const isSignupConfirmation = /type=signup/.test(window.location.hash) || /type=s
   if (isSignupConfirmation) {
     if (session) await supabaseClient.auth.signOut();
     history.replaceState(null, '', window.location.pathname); // limpia el enlace de la barra de direcciones
-    toast('✅ ¡Tu cuenta ha sido confirmada! Ya puedes iniciar sesión.');
+    // Aviso fijo (no un toast que desaparece solo): se queda ahí hasta que
+    // se cierra a mano o se navega fuera de Home, para que no pase
+    // desapercibido justo cuando más falta hace explicarlo.
+    document.getElementById('entryConfirmBanner').style.display = 'flex';
     return; // nos quedamos en Home; entrySkipped sigue en false
   }
 
