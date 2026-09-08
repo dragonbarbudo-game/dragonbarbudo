@@ -335,6 +335,12 @@ main { padding: 30px; overflow: hidden; }
 .friend-search { display: flex; gap: 6px; margin-bottom: 10px; }
 .friend-search input { flex: 1; padding: 9px; background: var(--input-bg); border: 1px solid var(--border); color: var(--input-text); border-radius: 8px; font-family: inherit; font-size: 13px; }
 .friend-search .btn { padding: 9px 12px; font-size: 13px; }
+/* Pestañas del panel de Amigos: Amigos / Solicitudes */
+.friend-tabs { display: flex; margin-bottom: 16px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+.friend-tab-btn { flex: 1; padding: 10px 6px; border: none; background: var(--input-bg); color: var(--muted); cursor: pointer; font-family: inherit; font-weight: 700; font-size: 13px; transition: .15s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.friend-tab-btn.active { background: var(--gold); color: #18130a; }
+.friend-tab-badge { background: #e05d5d; color: #fff; font-size: 10px; font-weight: 700; border-radius: 10px; padding: 1px 6px; min-width: 15px; text-align: center; line-height: 1.4; }
+.friend-tab-btn.active .friend-tab-badge { background: #18130a; }
 .friend-section { margin-top: 18px; }
 .friend-section h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 8px; }
 .friend-empty { color: var(--muted); font-size: 12px; }
@@ -1651,25 +1657,40 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             <button class="friends-close-btn" onclick="closeFriendsPanel()" aria-label="Cerrar amigos">✕</button>
         </div>
 
-        <div class="friend-search">
-            <input type="text" id="friendSearchInput" placeholder="Buscar usuario exacto..." data-i18n-placeholder="friends_search_ph">
-            <button class="btn btn-primary" onclick="searchUser()" data-i18n="btn_search">Buscar</button>
-        </div>
-        <div id="friendSearchResult"></div>
-
-        <div class="friend-section">
-            <h4 data-i18n="friends_incoming">Solicitudes recibidas</h4>
-            <div id="incomingRequests"><p class="friend-empty" data-i18n="friends_no_incoming">Sin solicitudes.</p></div>
+        <div class="friend-tabs">
+            <button class="friend-tab-btn active" id="friendTabBtnFriends" onclick="switchFriendTab('friends')" data-i18n="friends_yours">👥 Amigos</button>
+            <button class="friend-tab-btn" id="friendTabBtnRequests" onclick="switchFriendTab('requests')">
+                📨 <span data-i18n="friends_requests_tab">Solicitudes</span><span class="friend-tab-badge" id="friendRequestsBadge" style="display:none">0</span>
+            </button>
         </div>
 
-        <div class="friend-section">
-            <h4 data-i18n="friends_sent">Solicitudes enviadas</h4>
-            <div id="sentRequests"><p class="friend-empty" data-i18n="friends_no_sent">Ninguna pendiente.</p></div>
+        <div class="friend-tab-panel" id="friendTabFriends">
+            <div class="friend-search">
+                <input type="text" id="friendSearchInput" placeholder="Buscar usuario exacto..." data-i18n-placeholder="friends_search_ph">
+                <button class="btn btn-primary" onclick="searchUser()" data-i18n="btn_search">Buscar</button>
+            </div>
+            <div id="friendSearchResult"></div>
+
+            <div class="friend-section" id="friendsOnlineSection" style="display:none;">
+                <h4>🟢 Conectados</h4>
+                <div id="friendsOnlineList"></div>
+            </div>
+            <div class="friend-section">
+                <h4 id="friendsOfflineTitle">⚪ Desconectados</h4>
+                <div id="friendsOfflineList"><p class="friend-empty" data-i18n="friends_none">Todavía no tienes amigos.</p></div>
+            </div>
         </div>
 
-        <div class="friend-section">
-            <h4 data-i18n="friends_yours">Tus amigos</h4>
-            <div id="friendsList"><p class="friend-empty" data-i18n="friends_none">Todavía no tienes amigos.</p></div>
+        <div class="friend-tab-panel" id="friendTabRequests" style="display:none;">
+            <div class="friend-section">
+                <h4 data-i18n="friends_incoming">Solicitudes recibidas</h4>
+                <div id="incomingRequests"><p class="friend-empty" data-i18n="friends_no_incoming">Sin solicitudes.</p></div>
+            </div>
+
+            <div class="friend-section">
+                <h4 data-i18n="friends_sent">Solicitudes enviadas</h4>
+                <div id="sentRequests"><p class="friend-empty" data-i18n="friends_no_sent">Ninguna pendiente.</p></div>
+            </div>
         </div>
     </aside>
 </div>
@@ -4332,6 +4353,12 @@ async function loadFriendsPanel() {
     (profs || []).forEach(p => { profilesById[p.id] = p; });
   }
 
+  // Contador de solicitudes recibidas en la pestaña "Solicitudes" (las
+  // enviadas no cuentan: no requieren ninguna acción tuya).
+  const badge = document.getElementById('friendRequestsBadge');
+  if (incoming.length) { badge.textContent = incoming.length; badge.style.display = 'inline-flex'; }
+  else { badge.style.display = 'none'; }
+
   const incomingBox = document.getElementById('incomingRequests');
   incomingBox.innerHTML = incoming.length ? incoming.map(r => {
     const p = profilesById[r.user_id] || {};
@@ -4353,8 +4380,7 @@ async function loadFriendsPanel() {
     </div>`;
   }).join('') : '<p class="friend-empty">Ninguna pendiente.</p>';
 
-  const friendsBox = document.getElementById('friendsList');
-  friendsBox.innerHTML = accepted.length ? accepted.map(r => {
+  function friendCardHtml(r) {
     const otherId = r.user_id === currentUserId ? r.friend_id : r.user_id;
     const p = profilesById[otherId] || {};
     const online = isOnline(p.last_seen);
@@ -4374,7 +4400,28 @@ async function loadFriendsPanel() {
       ${deviceIconHtml(p.device_type)}
       <div class="status ${online ? 'online' : 'offline'}"></div>
     </div>`;
-  }).join('') : '<p class="friend-empty">Todavía no tienes amigos.</p>';
+  }
+
+  // "Tus amigos" se separa en dos grupos: conectados y desconectados.
+  const onlineFriends = accepted.filter(r => isOnline((profilesById[r.user_id === currentUserId ? r.friend_id : r.user_id] || {}).last_seen));
+  const offlineFriends = accepted.filter(r => !onlineFriends.includes(r));
+
+  document.getElementById('friendsOnlineSection').style.display = accepted.length ? 'block' : 'none';
+  document.getElementById('friendsOnlineList').innerHTML = onlineFriends.length
+    ? onlineFriends.map(friendCardHtml).join('')
+    : '<p class="friend-empty">Nadie conectado ahora mismo.</p>';
+
+  document.getElementById('friendsOfflineTitle').textContent = accepted.length ? '⚪ Desconectados' : '';
+  document.getElementById('friendsOfflineList').innerHTML = accepted.length
+    ? (offlineFriends.length ? offlineFriends.map(friendCardHtml).join('') : '<p class="friend-empty">Nadie desconectado.</p>')
+    : '<p class="friend-empty">Todavía no tienes amigos.</p>';
+}
+
+function switchFriendTab(tab) {
+  document.getElementById('friendTabFriends').style.display = tab === 'friends' ? 'block' : 'none';
+  document.getElementById('friendTabRequests').style.display = tab === 'requests' ? 'block' : 'none';
+  document.getElementById('friendTabBtnFriends').classList.toggle('active', tab === 'friends');
+  document.getElementById('friendTabBtnRequests').classList.toggle('active', tab === 'requests');
 }
 
 function toggleFriendMenu(menuId) {
