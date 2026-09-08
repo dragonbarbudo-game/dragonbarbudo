@@ -429,13 +429,97 @@ main { padding: 30px; overflow: hidden; }
 
 /* ACHIEVEMENTS */
 .achievements { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 15px; }
-.achievement { background: var(--panel); padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
-.achievement.locked { opacity: .55; }
-.achievement-icon { font-size: 32px; }
-.achievement h3 { margin: 10px 0 5px; font-size: 15px; }
-.achievement p { color: var(--muted); font-size: 13px; }
-.achievement .reward { color: var(--gold); font-weight: 700; margin-top: 8px; display: block; font-size: 13px; }
-.achievement .progress { color: var(--muted); font-size: 12px; margin-top: 6px; }
+
+/* Cabecera: contador + nivel/XP */
+.ach-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 20px; }
+.ach-header p { color: var(--gold); font-weight: 700; margin-top: 6px; }
+.ach-level-box { min-width: 240px; flex: 1; max-width: 340px; }
+.ach-level-label { font-family: 'Cinzel', serif; font-weight: 700; color: var(--gold); font-size: 15px; margin-bottom: 8px; }
+.ach-xp-label { color: var(--muted); font-size: 12px; margin-top: 4px; text-align: right; }
+.ach-progress-bar { background: var(--panel-2); border: 1px solid var(--border); border-radius: 20px; height: 12px; overflow: hidden; }
+.ach-progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 20px; transition: width .4s ease; }
+
+/* Próximo desafío: caja destacada */
+.ach-next-challenge { background: linear-gradient(135deg, rgba(217,164,65,.14), var(--panel)); border: 1px solid var(--gold); border-radius: 14px; padding: 20px; display: flex; align-items: center; gap: 18px; margin-bottom: 10px; flex-wrap: wrap; }
+.ach-next-icon { font-size: 40px; flex-shrink: 0; }
+.ach-next-body { flex: 1; min-width: 200px; }
+.ach-next-body h3 { font-family: 'Cinzel', serif; color: var(--gold); font-size: 16px; margin-bottom: 4px; letter-spacing: .5px; }
+.ach-next-body p { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+.ach-progress-row { display: flex; justify-content: flex-end; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+.ach-next-reward { color: var(--gold); font-weight: 700; font-size: 13px; margin-top: 8px; }
+
+/* Estadísticas por categoría */
+.ach-category-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 10px; }
+.ach-cat-stat { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.ach-cat-stat-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; }
+.ach-cat-stat-label span { color: var(--muted); }
+
+/* Camino del héroe */
+.ach-hero-path { display: flex; flex-direction: column; align-items: center; gap: 0; padding: 20px 0; margin-bottom: 10px; }
+.ach-path-node { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; }
+.ach-path-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; background: var(--panel); border: 2px solid var(--border); transition: border-color .2s, box-shadow .2s; }
+.ach-path-node.unlocked .ach-path-icon { border-color: var(--gold); box-shadow: 0 0 14px rgba(217,164,65,.5); background: rgba(217,164,65,.12); }
+.ach-path-node.locked .ach-path-icon { opacity: .45; filter: grayscale(1); }
+.ach-path-label { font-size: 12px; color: var(--muted); text-align: center; max-width: 100px; }
+.ach-path-node.unlocked .ach-path-label { color: var(--text); font-weight: 700; }
+.ach-path-connector { width: 2px; height: 26px; background: var(--border); }
+
+/* Filtros */
+.ach-filters { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-bottom: 20px; }
+.ach-filter-group { display: flex; gap: 6px; flex-wrap: wrap; overflow-x: auto; padding-bottom: 2px; }
+.ach-filter-btn { background: var(--panel); border: 1px solid var(--border); color: var(--muted); padding: 7px 14px; border-radius: 20px; font-size: 12px; font-family: inherit; cursor: pointer; white-space: nowrap; transition: border-color .15s, color .15s; }
+.ach-filter-btn:hover { color: var(--text); }
+.ach-filter-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(217,164,65,.1); }
+.ach-filter-btn:focus-visible, .ach-path-node:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* Tarjetas de logro */
+.ach-card { position: relative; background: var(--panel); padding: 20px; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
+.ach-card.locked { opacity: .6; }
+.ach-card.locked.secret { opacity: .8; }
+.ach-card-rarity { position: absolute; top: 10px; right: 12px; font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+.ach-card.rarity-rare .ach-card-rarity { color: #7fa8e8; }
+.ach-card.rarity-epic .ach-card-rarity { color: #c48bec; }
+.ach-card.rarity-legendary .ach-card-rarity { color: var(--gold); }
+.ach-card.unlocked.rarity-rare { border-color: #4d6fa8; }
+.ach-card.unlocked.rarity-epic { border-color: #8a5bb0; }
+.ach-card.unlocked.rarity-legendary { border-color: var(--gold); box-shadow: 0 0 16px rgba(217,164,65,.25); }
+.ach-card-icon { font-size: 34px; margin-bottom: 8px; }
+.ach-card h3 { margin: 6px 0; font-size: 15px; }
+.ach-card p { color: var(--muted); font-size: 13px; min-height: 34px; }
+.ach-card-status { display: inline-block; color: var(--felt-light, #6bbf7a); font-weight: 700; font-size: 12px; margin-top: 8px; }
+.ach-card-xp { color: var(--gold); font-weight: 700; margin-top: 10px; font-size: 13px; }
+.ach-card .ach-progress-row { justify-content: center; margin-top: 10px; }
+.ach-card .ach-progress-bar { margin-top: 2px; }
+
+@media (max-width: 700px) {
+    .ach-header { flex-direction: column; align-items: stretch; }
+    .ach-level-box { max-width: none; }
+    .ach-filter-group { flex-wrap: nowrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .ach-progress-fill, .achievement-toast { transition: none !important; }
+}
+
+/* Notificación de logro desbloqueado */
+#achievementToastHost { position: fixed; top: 90px; right: 20px; z-index: 700; display: flex; flex-direction: column; gap: 10px; max-width: 320px; }
+.achievement-toast {
+    display: flex; align-items: center; gap: 14px; background: var(--panel-2); border: 1px solid var(--gold);
+    border-radius: 12px; padding: 14px 16px; box-shadow: 0 8px 26px rgba(0,0,0,.45);
+    transform: translateX(120%); opacity: 0; transition: transform .3s ease, opacity .3s ease;
+    position: relative;
+}
+.achievement-toast.show { transform: translateX(0); opacity: 1; }
+.achievement-toast.hide { transform: translateX(120%); opacity: 0; }
+.achievement-toast-icon { font-size: 30px; flex-shrink: 0; }
+.achievement-toast-title { color: var(--gold); font-family: 'Cinzel', serif; font-weight: 700; font-size: 12px; letter-spacing: .5px; }
+.achievement-toast-name { font-weight: 700; font-size: 14px; margin-top: 2px; }
+.achievement-toast-desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.achievement-toast-xp { color: var(--gold); font-weight: 700; font-size: 12px; margin-top: 4px; }
+.achievement-toast-close { position: absolute; top: 6px; right: 8px; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 2px; }
+.achievement-toast-close:hover { color: var(--text); }
+@media (max-width: 480px) {
+    #achievementToastHost { left: 12px; right: 12px; max-width: none; top: 80px; }
+}
 
 /* SHOP */
 .shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 15px; }
@@ -1470,10 +1554,42 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 
         <!-- ACHIEVEMENTS -->
         <div class="page" id="achievements">
-            <div class="welcome">
-                <h1 data-i18n="achievements_title">🏆 Tus logros</h1>
-                <p data-i18n="achievements_subtitle">Completa desafíos jugando para desbloquear monedas y objetos de avatar.</p>
+            <div class="welcome ach-header">
+                <div>
+                    <h1 data-i18n="achievements_title">🏆 Tus logros</h1>
+                    <p id="achHeaderCount">0 / 0 desbloqueados</p>
+                </div>
+                <div class="ach-level-box">
+                    <div class="ach-level-label" id="achLevelLabel">Nivel 0 — Recién llegado</div>
+                    <div class="ach-progress-bar"><div class="ach-progress-fill" id="achXpBarFill" style="width:0%"></div></div>
+                    <div class="ach-xp-label" id="achXpLabel">0 / 200 XP</div>
+                </div>
             </div>
+
+            <!-- PRÓXIMO DESAFÍO -->
+            <div class="section-title"><h2>🔥 Tu próximo desafío</h2></div>
+            <div class="ach-next-challenge" id="achNextChallenge"></div>
+
+            <!-- ESTADÍSTICAS POR CATEGORÍA -->
+            <div class="section-title"><h2>📊 Progreso por categoría</h2></div>
+            <div class="ach-category-stats" id="achCategoryStats"></div>
+
+            <!-- CAMINO DEL HÉROE -->
+            <div class="section-title"><h2>🗺️ Camino del Héroe</h2></div>
+            <div class="ach-hero-path" id="achHeroPath"></div>
+
+            <!-- FILTROS -->
+            <div class="section-title"><h2>🏆 Todos los logros</h2></div>
+            <div class="ach-filters">
+                <div class="ach-filter-group">
+                    <button class="ach-filter-btn active" data-filter-type="status" data-filter-value="all" onclick="setAchievementFilter('status','all')">Todos</button>
+                    <button class="ach-filter-btn" data-filter-type="status" data-filter-value="unlocked" onclick="setAchievementFilter('status','unlocked')">Desbloqueados</button>
+                    <button class="ach-filter-btn" data-filter-type="status" data-filter-value="locked" onclick="setAchievementFilter('status','locked')">Bloqueados</button>
+                    <button class="ach-filter-btn" data-filter-type="status" data-filter-value="secret" onclick="setAchievementFilter('status','secret')">Secretos</button>
+                </div>
+                <div class="ach-filter-group" id="achCategoryFilters"></div>
+            </div>
+
             <div class="achievements" id="achievementList"></div>
         </div>
 
@@ -1694,6 +1810,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 </div>
 
 <div id="toastHost"></div>
+<div id="achievementToastHost"></div>
 
 <!-- INVITACIÓN A JUGAR -->
 <div class="invite-banner" id="inviteBanner">
@@ -1927,7 +2044,7 @@ function applyTranslations(lang) {
   });
   document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
 }
-function setLanguage(lang) {
+function setLanguage(lang, isUserAction = true) {
   localStorage.setItem('dragonbarbudo_lang', lang);
   const info = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
   document.getElementById('langSwitcherFlag').innerHTML = LANG_FLAGS[lang];
@@ -1935,6 +2052,14 @@ function setLanguage(lang) {
   buildLangMenu();
   applyTranslations(lang);
   document.getElementById('langSwitcher').classList.remove('open');
+  // Logro secreto "Políglota": solo cuenta si la persona elige un idioma a
+  // mano (el cambio automático al detectar el navegador, al cargar la
+  // página, no cuenta — por eso el parámetro isUserAction).
+  if (isUserAction && currentUserId && state.flags && !state.flags.changedLanguage) {
+    state.flags.changedLanguage = true;
+    save();
+    checkAchievements();
+  }
 }
 (function initLangSwitcher() {
   // Guardamos el texto/placeholder original en español antes de tocar nada,
@@ -1955,7 +2080,7 @@ function setLanguage(lang) {
       initial = 'en';
     }
   }
-  setLanguage(initial);
+  setLanguage(initial, false);
 })();
 
 /* =========================
@@ -2021,13 +2146,55 @@ const ITEMS = {
 };
 const SLOT_LABELS = { base:'Personaje', hat:'Sombrero', weapon:'Arma', pet:'Mascota', aura:'Aura' };
 
+/* =========================
+   LOGROS — definición centralizada
+   Cada logro es solo datos + 2 funciones puras (progress/check) sobre el
+   "state" del jugador: así añadir un logro nuevo es añadir una entrada
+   aquí, sin tocar el motor (checkAchievements) ni la interfaz. Los ids
+   'primera', 'racha', 'veterano', 'campeon', 'coleccionista' y 'bolsillo'
+   son los 6 logros que ya existían: se mantienen tal cual porque ITEMS[]
+   los referencia para desbloquear objetos de avatar (ver más abajo).
+========================= */
+const ACHIEVEMENT_CATEGORIES = {
+  combate:   { label: 'Combate',     icon: '⚔️' },
+  exploracion: { label: 'Exploración', icon: '🧭' },
+  habilidad: { label: 'Habilidad',   icon: '🧠' },
+  desafios:  { label: 'Desafíos',    icon: '🎯' },
+  secretos:  { label: 'Secretos',    icon: '🔒' }
+};
+const RARITY_LABELS = { common: 'Común', rare: 'Raro', epic: 'Épico', legendary: 'Legendario' };
+
 const ACHIEVEMENTS = [
-  { id:'primera', name:'Primera tirada', desc:'Juega tu primera partida en el Salón de Dados.', coins:50, check:s=>s.gamesPlayed>=1, progress:s=>`${Math.min(s.gamesPlayed,1)}/1 partidas` },
-  { id:'racha', name:'Racha ganadora', desc:'Gana 3 tiradas seguidas.', coins:0, check:s=>s.bestStreak>=3, progress:s=>`${Math.min(s.bestStreak,3)}/3 victorias seguidas` },
-  { id:'veterano', name:'Veterano de la mesa', desc:'Juega 10 partidas.', coins:0, check:s=>s.gamesPlayed>=10, progress:s=>`${Math.min(s.gamesPlayed,10)}/10 partidas` },
-  { id:'campeon', name:'Campeón de la mesa', desc:'Gana 10 partidas.', coins:200, check:s=>s.wins>=10, progress:s=>`${Math.min(s.wins,10)}/10 victorias` },
-  { id:'coleccionista', name:'Coleccionista', desc:'Desbloquea 4 objetos de avatar.', coins:0, check:s=>countUnlockedExtras(s)>=4, progress:s=>`${Math.min(countUnlockedExtras(s),4)}/4 objetos` },
-  { id:'bolsillo', name:'Bolsillo lleno', desc:'Consigue 1000 monedas en total.', coins:0, check:s=>s.totalCoinsEarned>=1000, progress:s=>`${Math.min(s.totalCoinsEarned,1000)}/1000 monedas` }
+  // ⚔️ Combate
+  { id:'primera', name:'Primer Paso', desc:'Juega tu primera partida (Dados o Conecta 4).', category:'combate', rarity:'common', icon:'👣', xp:50, coins:50, requirement:1, progress:s=>s.gamesPlayed, check:s=>s.gamesPlayed>=1 },
+  { id:'primeravictoria', name:'Primera Victoria', desc:'Gana tu primera partida.', category:'combate', rarity:'common', icon:'🏅', xp:100, requirement:1, progress:s=>s.wins, check:s=>s.wins>=1 },
+  { id:'racha', name:'Imparable', desc:'Consigue una racha de 3 victorias seguidas.', category:'combate', rarity:'rare', icon:'🔥', xp:250, requirement:3, progress:s=>s.bestStreak, check:s=>s.bestStreak>=3 },
+  { id:'rachalarga', name:'Racha Legendaria', desc:'Consigue una racha de 7 victorias seguidas.', category:'combate', rarity:'epic', icon:'💥', xp:600, requirement:7, progress:s=>s.bestStreak, check:s=>s.bestStreak>=7 },
+  { id:'veterano', name:'Veterano de la Mesa', desc:'Juega 25 partidas.', category:'combate', rarity:'rare', icon:'🎖️', xp:300, requirement:25, progress:s=>s.gamesPlayed, check:s=>s.gamesPlayed>=25 },
+  { id:'campeon', name:'Campeón de la Mesa', desc:'Gana 25 partidas.', category:'combate', rarity:'epic', icon:'🏆', xp:600, coins:200, requirement:25, progress:s=>s.wins, check:s=>s.wins>=25 },
+  { id:'leyenda', name:'Leyenda Viviente', desc:'Gana 50 partidas.', category:'combate', rarity:'legendary', icon:'👑', xp:1500, requirement:50, progress:s=>s.wins, check:s=>s.wins>=50 },
+
+  // 🧭 Exploración
+  { id:'explorador', name:'Explorador', desc:'Juega al menos una vez al Salón de Dados y a Conecta 4.', category:'exploracion', rarity:'common', icon:'🧭', xp:100, requirement:2, progress:s=>(s.flags.playedDice?1:0)+(s.flags.playedConnect4?1:0), check:s=>s.flags.playedDice&&s.flags.playedConnect4 },
+  { id:'retobot', name:'Contra la Máquina', desc:'Gana una partida de Conecta 4 contra el bot.', category:'exploracion', rarity:'common', icon:'🤖', xp:100, requirement:1, progress:s=>s.flags.botDifficultiesWon.length, check:s=>s.flags.botDifficultiesWon.length>=1 },
+  { id:'tripleamenaza', name:'Triple Amenaza', desc:'Gana al bot de Conecta 4 en sus 3 dificultades.', category:'exploracion', rarity:'rare', icon:'🎭', xp:300, requirement:3, progress:s=>s.flags.botDifficultiesWon.length, check:s=>s.flags.botDifficultiesWon.length>=3 },
+  { id:'sociable', name:'Sociable', desc:'Añade a un amigo.', category:'exploracion', rarity:'common', icon:'🤝', xp:75, requirement:1, progress:s=>s.flags.addedFriend?1:0, check:s=>!!s.flags.addedFriend },
+  { id:'retoamigo', name:'Reto Aceptado', desc:'Juega una partida de Conecta 4 online con un amigo.', category:'exploracion', rarity:'rare', icon:'⚡', xp:250, requirement:1, progress:s=>s.flags.playedConnect4Online?1:0, check:s=>!!s.flags.playedConnect4Online },
+  { id:'estilopropio', name:'Estilo Propio', desc:'Equipa un objeto de avatar.', category:'exploracion', rarity:'common', icon:'🎭', xp:50, requirement:1, progress:s=>(Object.values(s.equipped).some(v=>v&&v!=='none'&&v!=='mago')?1:0), check:s=>Object.values(s.equipped).some(v=>v&&v!=='none'&&v!=='mago') },
+
+  // 🧠 Habilidad
+  { id:'mentefria', name:'Mente Fría', desc:'Gana al bot de Conecta 4 en dificultad Difícil.', category:'habilidad', rarity:'epic', icon:'🧊', xp:400, requirement:1, progress:s=>s.flags.botDifficultiesWon.includes('hard')?1:0, check:s=>s.flags.botDifficultiesWon.includes('hard') },
+  { id:'coleccionista', name:'Coleccionista', desc:'Desbloquea 4 objetos de avatar.', category:'habilidad', rarity:'rare', icon:'🧰', xp:250, requirement:4, progress:s=>countUnlockedExtras(s), check:s=>countUnlockedExtras(s)>=4 },
+  { id:'bolsillo', name:'Bolsillo Lleno', desc:'Consigue 1000 monedas en total.', category:'habilidad', rarity:'rare', icon:'💰', xp:250, requirement:1000, progress:s=>s.totalCoinsEarned, check:s=>s.totalCoinsEarned>=1000 },
+  { id:'arsenal', name:'Arsenal Completo', desc:'Equipa a la vez sombrero, arma, mascota y aura.', category:'habilidad', rarity:'epic', icon:'🛡️', xp:400, requirement:4, progress:s=>['hat','weapon','pet','aura'].filter(slot=>s.equipped[slot]&&s.equipped[slot]!=='none').length, check:s=>['hat','weapon','pet','aura'].every(slot=>s.equipped[slot]&&s.equipped[slot]!=='none') },
+
+  // 🎯 Desafíos
+  { id:'ahorrador', name:'Ahorrador', desc:'Consigue 2000 monedas en total.', category:'desafios', rarity:'epic', icon:'🪙', xp:500, requirement:2000, progress:s=>s.totalCoinsEarned, check:s=>s.totalCoinsEarned>=2000 },
+  { id:'constante', name:'Jugador Constante', desc:'Juega en 3 días distintos.', category:'desafios', rarity:'rare', icon:'📅', xp:300, requirement:3, progress:s=>s.flags.playedDates.length, check:s=>s.flags.playedDates.length>=3 },
+
+  // 🔒 Secretos (no revelan la condición hasta desbloquearse)
+  { id:'poliglota', name:'Políglota', desc:'Cambia el idioma de la web.', category:'secretos', rarity:'rare', icon:'🌍', xp:200, secret:true, requirement:1, progress:s=>s.flags.changedLanguage?1:0, check:s=>!!s.flags.changedLanguage },
+  { id:'ojohalcon', name:'Ojo de Halcón', desc:'Usa el zoom del tablero en una partida de Conecta 4.', category:'secretos', rarity:'rare', icon:'🦅', xp:200, secret:true, requirement:1, progress:s=>s.flags.usedConnect4Zoom?1:0, check:s=>!!s.flags.usedConnect4Zoom }
 ];
 
 /* =========================
@@ -2052,7 +2219,7 @@ let isAdmin = false;
 // guardado con una versión distinta se descarta y se sustituye por
 // defaultState() la próxima vez que esa persona entre. Subir este número
 // otra vez en el futuro vuelve a reiniciar a todo el mundo.
-const STATE_VERSION = 2;
+const STATE_VERSION = 3;
 
 function defaultState() {
   return {
@@ -2065,7 +2232,19 @@ function defaultState() {
     bestStreak: 0,
     unlocked: { base:[], hat:[], weapon:[], pet:[], aura:[] },
     equipped: { base:'mago', hat:'none', weapon:'none', pet:'none', aura:'none' },
-    achievementsUnlocked: [],
+    // Logros: id -> { unlockedAt } (solo existe la clave si está desbloqueado).
+    // Sustituye al antiguo array achievementsUnlocked (más simple, pero no
+    // guardaba cuándo se desbloqueó ni permitía progreso por logro).
+    achievements: {},
+    xp: 0, // XP total ganada por logros: de aquí sale el nivel (ver getPlayerProgress)
+    // Pequeñas "banderas" que alimentan logros que no se pueden calcular
+    // solo con contadores (días distintos jugados, dificultades de bot
+    // ganadas, y un par de logros secretos).
+    flags: {
+      playedDice: false, playedConnect4: false, playedConnect4Online: false,
+      botDifficultiesWon: [], playedDates: [], addedFriend: false,
+      changedLanguage: false, usedConnect4Zoom: false
+    },
     cheatMode: false
   };
 }
@@ -2146,20 +2325,20 @@ function renderAvatarsEverywhere() {
 /* =========================
    STATS Y NIVEL
 ========================= */
-function getLevel() {
-  // Una cuenta nueva (0 monedas, 0 partidas) empieza en nivel 0.
-  return Math.floor(state.totalCoinsEarned / 300) + Math.floor(state.gamesPlayed / 5);
-}
 function renderStats() {
-  const level = getLevel();
+  // El nivel del jugador (aquí, en el sidebar y en el perfil) sale de la
+  // XP ganada con logros — un único sistema de nivel en toda la web (ver
+  // getPlayerProgress, centralizado junto a los logros).
+  const level = getPlayerProgress().level;
+  const achievementsCount = Object.keys(state.achievements || {}).length;
   document.getElementById('coinDisplay').textContent = state.coins;
   document.getElementById('profileCoins').textContent = state.coins;
   document.getElementById('sidebarLevel').textContent = `⭐ Nivel ${level}`;
   document.getElementById('profileLevel').textContent = `⭐ Nivel ${level}`;
   document.getElementById('statLevel').textContent = level;
-  document.getElementById('statAchievements').textContent = state.achievementsUnlocked.length;
+  document.getElementById('statAchievements').textContent = achievementsCount;
   document.getElementById('statGames').textContent = state.gamesPlayed;
-  document.getElementById('profileAchievements').textContent = state.achievementsUnlocked.length;
+  document.getElementById('profileAchievements').textContent = achievementsCount;
   document.getElementById('profileGames').textContent = state.gamesPlayed;
 
   const equipList = document.getElementById('profileEquipList');
@@ -2264,42 +2443,242 @@ function buyItem(slot, id) {
 /* =========================
    LOGROS
 ========================= */
+/* =========================
+   LOGROS — motor (desacoplado de la interfaz)
+========================= */
+function isAchievementUnlocked(id) {
+  return !!(state.achievements && state.achievements[id]);
+}
+
+/* Desbloquea un logro concreto. Segura frente a llamadas repetidas: si ya
+   estaba desbloqueado, no hace nada (no vuelve a dar XP ni recompensa). */
+function unlockAchievement(ach) {
+  if (isAchievementUnlocked(ach.id)) return false;
+  state.achievements[ach.id] = { unlockedAt: Date.now() };
+  state.xp += ach.xp || 0;
+  if (ach.coins) {
+    state.coins += ach.coins;
+    state.totalCoinsEarned += ach.coins;
+  }
+  Object.keys(ITEMS).forEach(slot => {
+    ITEMS[slot].forEach(it => {
+      if (it.source === 'achievement' && it.achievement === ach.id) ensureUnlocked(slot, it.id);
+    });
+  });
+  return true;
+}
+
+/* Recorre todos los logros y desbloquea los que ya se cumplan. Se puede
+   (y se debe) llamar tantas veces como se quiera tras cualquier evento
+   del juego: los ya desbloqueados se ignoran solos. */
 function checkAchievements() {
-  let unlockedSomething = false;
+  const newlyUnlocked = [];
   ACHIEVEMENTS.forEach(ach => {
-    if (state.achievementsUnlocked.includes(ach.id)) return;
+    if (isAchievementUnlocked(ach.id)) return;
     if (ach.check(state)) {
-      state.achievementsUnlocked.push(ach.id);
-      if (ach.coins) {
-        state.coins += ach.coins;
-        state.totalCoinsEarned += ach.coins;
-      }
-      Object.keys(ITEMS).forEach(slot => {
-        ITEMS[slot].forEach(it => {
-          if (it.source === 'achievement' && it.achievement === ach.id) ensureUnlocked(slot, it.id);
-        });
-      });
-      toast(`🏆 Logro desbloqueado: ${ach.name}`);
-      unlockedSomething = true;
+      if (unlockAchievement(ach)) newlyUnlocked.push(ach);
     }
   });
-  if (unlockedSomething) save();
+  if (newlyUnlocked.length) {
+    save();
+    renderAchievements();
+    renderStats(); // el nivel (por XP) puede haber cambiado
+    newlyUnlocked.forEach(queueAchievementToast);
+  }
+}
+
+/* =========================
+   XP Y NIVEL
+   Curva centralizada en un único sitio (xpForNextLevel): cambiarla aquí
+   cambia el ritmo de subida de nivel en toda la web, sin tocar nada más.
+========================= */
+function xpForNextLevel(level) {
+  return 200 + level * 150; // nivel 0→1: 200xp, 1→2: 350xp, 2→3: 500xp...
+}
+function levelTitle(level) {
+  if (level >= 25) return 'Leyenda';
+  if (level >= 15) return 'Campeón';
+  if (level >= 8) return 'Guerrero Élite';
+  if (level >= 4) return 'Aventurero';
+  if (level >= 1) return 'Novato';
+  return 'Recién llegado';
+}
+function getPlayerProgress() {
+  let level = 0, xpLeft = state.xp, xpNeeded = xpForNextLevel(0);
+  while (xpLeft >= xpNeeded) { xpLeft -= xpNeeded; level++; xpNeeded = xpForNextLevel(level); }
+  return { level, title: levelTitle(level), xpIntoLevel: xpLeft, xpForNext: xpNeeded, totalXp: state.xp };
+}
+
+/* =========================
+   LOGROS — interfaz (página "Logros")
+========================= */
+let achievementFilter = { status: 'all', category: 'all' };
+
+function setAchievementFilter(type, value) {
+  achievementFilter[type] = value;
   renderAchievements();
 }
 
+/* Elige el logro no secreto más cerca de completarse (mayor % de avance)
+   entre los que aún no se han desbloqueado, para que "tu próximo
+   desafío" cambie solo según lo que de verdad esté a punto de lograrse. */
+function getNextChallenge() {
+  const candidates = ACHIEVEMENTS.filter(a => !a.secret && !isAchievementUnlocked(a.id));
+  if (!candidates.length) return null;
+  const withPct = candidates.map(a => ({ a, pct: Math.min(1, a.progress(state) / a.requirement) }));
+  withPct.sort((x, y) => y.pct - x.pct);
+  return withPct[0].a;
+}
+
 function renderAchievements() {
-  const list = document.getElementById('achievementList');
-  list.innerHTML = ACHIEVEMENTS.map(ach => {
-    const unlocked = state.achievementsUnlocked.includes(ach.id);
+  const progress = getPlayerProgress();
+  const unlockedCount = ACHIEVEMENTS.filter(a => isAchievementUnlocked(a.id)).length;
+  const total = ACHIEVEMENTS.length;
+
+  const countEl = document.getElementById('achHeaderCount');
+  if (!countEl) return; // la página de logros aún no está en el DOM (no debería pasar, pero por seguridad)
+  countEl.textContent = `${unlockedCount} / ${total} desbloqueados`;
+  document.getElementById('achLevelLabel').textContent = `Nivel ${progress.level} — ${progress.title}`;
+  document.getElementById('achXpLabel').textContent = `${progress.xpIntoLevel} / ${progress.xpForNext} XP`;
+  document.getElementById('achXpBarFill').style.width = Math.round((progress.xpIntoLevel / progress.xpForNext) * 100) + '%';
+
+  // Próximo desafío
+  const nextEl = document.getElementById('achNextChallenge');
+  const next = getNextChallenge();
+  if (!next) {
+    nextEl.innerHTML = '<p class="friend-empty">¡Has desbloqueado todos los logros disponibles! 🎉</p>';
+  } else {
+    const cur = Math.min(next.progress(state), next.requirement);
+    const pct = Math.round((cur / next.requirement) * 100);
+    nextEl.innerHTML = `
+      <div class="ach-next-icon">${next.icon}</div>
+      <div class="ach-next-body">
+        <h3>${next.name.toUpperCase()}</h3>
+        <p>${next.desc}</p>
+        <div class="ach-progress-row"><span>${cur} / ${next.requirement}</span></div>
+        <div class="ach-progress-bar"><div class="ach-progress-fill" style="width:${pct}%"></div></div>
+        <div class="ach-next-reward">+${next.xp} XP</div>
+      </div>`;
+  }
+
+  // Progreso por categoría
+  document.getElementById('achCategoryStats').innerHTML = Object.keys(ACHIEVEMENT_CATEGORIES).map(catId => {
+    const cat = ACHIEVEMENT_CATEGORIES[catId];
+    const inCat = ACHIEVEMENTS.filter(a => a.category === catId);
+    const unlockedInCat = inCat.filter(a => isAchievementUnlocked(a.id)).length;
+    const pct = inCat.length ? Math.round((unlockedInCat / inCat.length) * 100) : 0;
     return `
-      <div class="achievement ${unlocked ? '' : 'locked'}">
-        <div class="achievement-icon">${unlocked ? '🏆' : '🔒'}</div>
-        <h3>${ach.name}</h3>
-        <p>${ach.desc}</p>
-        <span class="reward">${ach.coins ? '+' + ach.coins + ' 🪙' : 'Objeto de avatar'}</span>
-        <div class="progress">${unlocked ? 'Completado' : ach.progress(state)}</div>
+      <div class="ach-cat-stat">
+        <div class="ach-cat-stat-label"><span>${cat.icon} ${cat.label}</span><span>${unlockedInCat} / ${inCat.length}</span></div>
+        <div class="ach-progress-bar"><div class="ach-progress-fill" style="width:${pct}%"></div></div>
       </div>`;
   }).join('');
+
+  // Camino del héroe: una selección curada de logros "hito", en orden
+  const pathIds = ['primera', 'primeravictoria', 'racha', 'veterano', 'campeon', 'rachalarga', 'leyenda'];
+  document.getElementById('achHeroPath').innerHTML = pathIds.map(id => {
+    const a = ACHIEVEMENTS.find(x => x.id === id);
+    const unlocked = isAchievementUnlocked(id);
+    return `<div class="ach-path-node ${unlocked ? 'unlocked' : 'locked'}" tabindex="0" role="img" aria-label="${a.name}: ${unlocked ? 'desbloqueado' : 'bloqueado'}">
+      <div class="ach-path-icon">${unlocked ? a.icon : '🔒'}</div>
+      <div class="ach-path-label">${a.name}</div>
+    </div>`;
+  }).join('<div class="ach-path-connector" aria-hidden="true"></div>');
+
+  // Filtros de categoría (se generan solos a partir de ACHIEVEMENT_CATEGORIES)
+  const catFiltersEl = document.getElementById('achCategoryFilters');
+  catFiltersEl.innerHTML = `<button class="ach-filter-btn" data-filter-type="category" data-filter-value="all" onclick="setAchievementFilter('category','all')">Todas las categorías</button>` +
+    Object.keys(ACHIEVEMENT_CATEGORIES).map(catId => {
+      const cat = ACHIEVEMENT_CATEGORIES[catId];
+      return `<button class="ach-filter-btn" data-filter-type="category" data-filter-value="${catId}" onclick="setAchievementFilter('category','${catId}')">${cat.icon} ${cat.label}</button>`;
+    }).join('');
+
+  document.querySelectorAll('.ach-filter-btn').forEach(btn => {
+    const type = btn.dataset.filterType, value = btn.dataset.filterValue;
+    btn.classList.toggle('active', achievementFilter[type] === value);
+  });
+
+  // Tarjetas de logro, según los filtros activos
+  const filtered = ACHIEVEMENTS.filter(a => {
+    const unlocked = isAchievementUnlocked(a.id);
+    if (achievementFilter.status === 'unlocked' && !unlocked) return false;
+    if (achievementFilter.status === 'locked' && unlocked) return false;
+    if (achievementFilter.status === 'secret' && !a.secret) return false;
+    if (achievementFilter.category !== 'all' && a.category !== achievementFilter.category) return false;
+    return true;
+  });
+  document.getElementById('achievementList').innerHTML = filtered.length
+    ? filtered.map(achievementCardHtml).join('')
+    : '<p class="friend-empty">No hay logros que coincidan con este filtro.</p>';
+}
+
+function achievementCardHtml(a) {
+  const unlocked = isAchievementUnlocked(a.id);
+  if (a.secret && !unlocked) {
+    return `
+      <div class="ach-card locked secret">
+        <div class="ach-card-icon">🔒</div>
+        <h3>LOGRO SECRETO</h3>
+        <p>Descubre cómo desbloquear este logro.</p>
+      </div>`;
+  }
+  const cur = Math.min(a.progress(state), a.requirement);
+  const pct = Math.round((cur / a.requirement) * 100);
+  return `
+    <div class="ach-card ${unlocked ? 'unlocked' : 'locked'} rarity-${a.rarity}">
+      <div class="ach-card-rarity">${RARITY_LABELS[a.rarity]}</div>
+      <div class="ach-card-icon">${unlocked ? a.icon : '🔒'}</div>
+      <h3>${a.name}</h3>
+      <p>${a.desc}</p>
+      ${unlocked
+        ? '<span class="ach-card-status">✓ Desbloqueado</span>'
+        : `<div class="ach-progress-row"><span>${cur} / ${a.requirement}</span></div><div class="ach-progress-bar"><div class="ach-progress-fill" style="width:${pct}%"></div></div>`
+      }
+      <div class="ach-card-xp">+${a.xp} XP${a.coins ? ' · +' + a.coins + ' 🪙' : ''}</div>
+    </div>`;
+}
+
+/* =========================
+   LOGROS — notificación de desbloqueo (una detrás de otra, nunca superpuestas)
+========================= */
+let achievementToastQueue = [];
+let achievementToastShowing = false;
+function queueAchievementToast(ach) {
+  achievementToastQueue.push(ach);
+  processAchievementToastQueue();
+}
+function processAchievementToastQueue() {
+  if (achievementToastShowing || !achievementToastQueue.length) return;
+  achievementToastShowing = true;
+  showAchievementToast(achievementToastQueue.shift());
+}
+function showAchievementToast(ach) {
+  const host = document.getElementById('achievementToastHost');
+  const el = document.createElement('div');
+  el.className = 'achievement-toast';
+  el.innerHTML = `
+    <button class="achievement-toast-close" onclick="dismissAchievementToast(this.closest('.achievement-toast'))" aria-label="Cerrar aviso">✕</button>
+    <div class="achievement-toast-icon">${ach.icon}</div>
+    <div class="achievement-toast-body">
+      <div class="achievement-toast-title">🏆 ¡LOGRO DESBLOQUEADO!</div>
+      <div class="achievement-toast-name">${ach.name}</div>
+      <div class="achievement-toast-desc">${ach.desc}</div>
+      <div class="achievement-toast-xp">+${ach.xp} XP</div>
+    </div>`;
+  host.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  el._dismissTimer = setTimeout(() => dismissAchievementToast(el), 4500);
+}
+function dismissAchievementToast(el) {
+  if (!el || !el.parentElement) return;
+  clearTimeout(el._dismissTimer);
+  el.classList.remove('show');
+  el.classList.add('hide');
+  setTimeout(() => {
+    el.remove();
+    achievementToastShowing = false;
+    processAchievementToastQueue();
+  }, 300);
 }
 
 /* =========================
@@ -2401,6 +2780,35 @@ function toggleFriendsPanel() {
 ========================= */
 function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
+/* Bookkeeping común a CUALQUIER partida (Dados o Conecta 4, contra bot u
+   online): partidas jugadas, victorias/rachas, y las "banderas" que
+   alimentan varios logros. Centralizado aquí para no repetir esta lógica
+   en cada juego. Guarda y comprueba logros por su cuenta. */
+function recordGameResult({ game, outcome, online, botDifficulty }) {
+  state.gamesPlayed++;
+  if (game === 'dice') state.flags.playedDice = true;
+  if (game === 'connect4') {
+    state.flags.playedConnect4 = true;
+    if (online) state.flags.playedConnect4Online = true;
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  if (!state.flags.playedDates.includes(today)) state.flags.playedDates.push(today);
+
+  if (outcome === 'win') {
+    state.wins++;
+    state.currentStreak++;
+    state.bestStreak = Math.max(state.bestStreak, state.currentStreak);
+    if (botDifficulty && !state.flags.botDifficultiesWon.includes(botDifficulty)) {
+      state.flags.botDifficultiesWon.push(botDifficulty);
+    }
+  } else if (outcome === 'loss') {
+    state.currentStreak = 0;
+  }
+  // 'draw': no toca la racha, igual que ha hecho siempre el Salón de Dados.
+  save();
+  checkAchievements();
+}
+
 function rollDice() {
   const p1 = randInt(1, 6), p2 = randInt(1, 6);
   const r1 = randInt(1, 6), r2 = randInt(1, 6);
@@ -2411,26 +2819,24 @@ function rollDice() {
   document.querySelectorAll('#diceRowRival .die')[0].textContent = r1;
   document.querySelectorAll('#diceRowRival .die')[1].textContent = r2;
 
-  state.gamesPlayed++;
   let resultText;
   if (playerTotal > rivalTotal) {
-    state.wins++;
-    state.currentStreak++;
-    state.bestStreak = Math.max(state.bestStreak, state.currentStreak);
+    recordGameResult({ game: 'dice', outcome: 'win' });
     const reward = 30 + state.currentStreak * 5;
     state.coins += reward;
     state.totalCoinsEarned += reward;
     resultText = `¡Ganaste! ${playerTotal} vs ${rivalTotal} · +${reward} 🪙`;
   } else if (playerTotal < rivalTotal) {
-    state.currentStreak = 0;
+    recordGameResult({ game: 'dice', outcome: 'loss' });
     resultText = `Perdiste esta tirada. ${playerTotal} vs ${rivalTotal}`;
   } else {
+    recordGameResult({ game: 'dice', outcome: 'draw' });
     resultText = `Empate. ${playerTotal} vs ${rivalTotal}`;
   }
 
   document.getElementById('diceResult').textContent = resultText;
-  save();
-  checkAchievements();
+  save(); // guarda también la recompensa en monedas de la victoria (arriba)
+  checkAchievements(); // por si la recompensa en monedas acaba de completar un logro
   renderStats();
   renderAvatarPage();
   renderShop();
@@ -2519,8 +2925,17 @@ async function openConnect4Game(gameId) {
     .on('postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'connect4_games', filter: `id=eq.${gameId}` },
       (payload) => {
+        const wasActive = connect4State && connect4State.status === 'active';
         connect4State = payload.new;
         connect4Render();
+        // Cada jugador registra SU PROPIO resultado en su navegador (el
+        // progreso es local, no compartido) justo cuando la partida pasa
+        // de activa a terminada — una sola vez, gracias a "wasActive".
+        if (wasActive && connect4State.status === 'finished') {
+          const myNum = connect4State.player1_id === currentUserId ? 1 : 2;
+          const outcome = connect4State.winner === 0 ? 'draw' : (connect4State.winner === myNum ? 'win' : 'loss');
+          recordGameResult({ game: 'connect4', outcome, online: true });
+        }
       }
     )
     .subscribe();
@@ -2578,7 +2993,11 @@ async function connect4MakeMove(col) {
       winner: won ? myNum : (isDraw ? 0 : null)
     };
     connect4Render();
-    if (!finished) setTimeout(connect4PlayBotTurn, 550); // pequeña pausa para que no parezca instantáneo
+    if (finished) {
+      recordGameResult({ game: 'connect4', outcome: won ? 'win' : 'draw', botDifficulty: connect4State.botDifficulty });
+    } else {
+      setTimeout(connect4PlayBotTurn, 550); // pequeña pausa para que no parezca instantáneo
+    }
     return;
   }
 
@@ -2767,6 +3186,11 @@ function connect4PlayBotTurn() {
     winner: won ? botNum : (isDraw ? 0 : null)
   };
   connect4Render();
+  if (won || isDraw) {
+    // Si gana el bot, es una derrota para la persona; no se apunta la
+    // dificultad como "ganada" (solo se apunta cuando la gana la persona).
+    recordGameResult({ game: 'connect4', outcome: won ? 'loss' : 'draw' });
+  }
 }
 
 /* =========================
@@ -2840,6 +3264,11 @@ function connect4SetZoom(level) {
 }
 function connect4Zoom(direction) {
   connect4SetZoom(connect4ZoomLevel + direction * 0.15);
+  if (currentUserId && state.flags && !state.flags.usedConnect4Zoom) {
+    state.flags.usedConnect4Zoom = true;
+    save();
+    checkAchievements();
+  }
 }
 
 /* Además del menú ➖/➕, se puede hacer zoom con Ctrl + rueda del ratón
@@ -3876,6 +4305,15 @@ async function loadFriendsPanel() {
   const incoming = rows.filter(r => r.status === 'pending' && r.friend_id === currentUserId);
   const sent = rows.filter(r => r.status === 'pending' && r.user_id === currentUserId);
   const accepted = rows.filter(r => r.status === 'accepted');
+
+  // Logro "Sociable": en cuanto se detecta al menos un amigo aceptado
+  // (para quien acepta y, en su próxima comprobación, para quien envió
+  // la solicitud), se marca y no se vuelve a comprobar.
+  if (accepted.length && state.flags && !state.flags.addedFriend) {
+    state.flags.addedFriend = true;
+    save();
+    checkAchievements();
+  }
 
   const otherIds = [...new Set(
     [...incoming, ...sent, ...accepted].map(r => r.user_id === currentUserId ? r.friend_id : r.user_id)
