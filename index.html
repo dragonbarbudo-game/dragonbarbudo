@@ -1001,6 +1001,10 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 }
 .entry-confirm-close { background: none; border: none; color: #98948a; font-size: 16px; cursor: pointer; flex-shrink: 0; padding: 2px; line-height: 1; }
 .entry-confirm-close:hover { color: #f1ede4; }
+.auth-confirm-banner {
+    background: rgba(217,164,65,.12); border: 1px solid #d9a441; border-radius: 12px;
+    padding: 14px 16px; color: #f1ede4; font-size: 14px; line-height: 1.5; margin-bottom: 15px;
+}
 </style>
 </head>
 <body class="home-active">
@@ -1170,6 +1174,9 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                 </button>
             </div>
             <div class="auth-error" id="registerError"></div>
+            <div class="auth-confirm-banner" id="registerConfirmBanner" style="display:none;">
+                📧 Cuenta creada. Revisa tu correo electrónico y pulsa el enlace de confirmación para poder iniciar sesión.
+            </div>
             <button type="submit" class="btn btn-primary" data-i18n="tab_register">Crear cuenta</button>
         </form>
 
@@ -3407,6 +3414,7 @@ function switchAuthTab(tab) {
     el.style.color = 'var(--ember)';
   });
   document.getElementById('forgotResendNote').style.display = 'none';
+  document.getElementById('registerConfirmBanner').style.display = 'none';
 }
 
 async function handleForgotPassword(event) {
@@ -3454,7 +3462,9 @@ async function handleRegister(event) {
   const email = document.getElementById('registerEmail').value.trim();
   const password = document.getElementById('registerPassword').value;
   const errorBox = document.getElementById('registerError');
+  const confirmBanner = document.getElementById('registerConfirmBanner');
   errorBox.textContent = '';
+  confirmBanner.style.display = 'none';
 
   const { data, error } = await supabaseClient.auth.signUp({
     email,
@@ -3471,8 +3481,10 @@ async function handleRegister(event) {
   if (data.session) {
     await enterApp(data.user);
   } else {
-    errorBox.style.color = 'var(--felt-light)';
-    errorBox.textContent = 'Cuenta creada. Revisa tu correo para confirmarla y luego inicia sesión.';
+    // Aviso grande y difícil de pasar por alto: registrarse NO te deja
+    // entrar todavía, hace falta confirmar el correo primero (Supabase
+    // rechaza el login hasta entonces).
+    confirmBanner.style.display = 'block';
   }
 }
 
