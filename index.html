@@ -107,13 +107,15 @@ body.light-mode .header-logo-img.logo-light { display: block; }
 .sidebar-close-btn:hover, .friends-close-btn:hover { color: var(--text); }
 .sidebar-close-btn { display: none; } /* el sidebar solo se cierra así en tablet/móvil */
 .menu-friends-btn { display: none; }
-.sidebar-extra-mobile { display: none; }
+/* Sección de abajo del menú lateral (Admin + Configuración): siempre
+   visible, tanto en escritorio como en el cajón de tablet/móvil. */
+.sidebar-bottom { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
 .sidebar-extra-btn {
     width: 100%; display: flex; align-items: center; gap: 10px;
     background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
     padding: 11px 12px; color: var(--text); font-family: inherit; font-size: 14px; cursor: pointer; margin-bottom: 8px;
 }
-.sidebar-extra-btn.on { border-color: var(--ember); color: var(--gold-light); }
+.sidebar-extra-btn.on, .sidebar-extra-btn.active { border-color: var(--ember); color: var(--gold-light); }
 /* Botón "Modo diseño" dentro del propio Panel de Admin (arriba a la derecha) */
 .admin-welcome { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
 #cheatToggleAdmin.on { background: var(--ember); color: #fff; }
@@ -133,6 +135,21 @@ body.drawer-open { overflow: hidden; }
 .cheat-toggle.on .cheat-switch { background: var(--ember); }
 .cheat-toggle.on .cheat-switch::after { left: 18px; background: white; }
 .item-card .lock-hint.cheat-hint { color: var(--ember); }
+
+/* MODAL DE CONFIGURACIÓN (tema, sonido, notificaciones, privacidad, cerrar
+   sesión y volver a Home). Los interruptores reutilizan el mismo círculo
+   deslizante de .cheat-switch (arriba), solo cambia qué elemento lleva .on. */
+.settings-list { display: flex; flex-direction: column; margin: 16px 0 4px; }
+.settings-row {
+    width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: none; border: none; border-bottom: 1px solid var(--border);
+    padding: 13px 2px; font-family: inherit; font-size: 14.5px; color: var(--text); text-align: left; cursor: pointer;
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-row-chevron { color: var(--muted); font-size: 16px; }
+.settings-row.danger { color: #e05d5d; }
+.settings-row.on .cheat-switch { background: var(--ember); }
+.settings-row.on .cheat-switch::after { left: 18px; background: white; }
 
 /* APP — el panel de Amigos ya no reserva columna propia: es siempre un
    cajón que se abre con el icono (ver .friends-panel más abajo), tanto
@@ -603,9 +620,8 @@ main { padding: 30px; overflow: hidden; }
     .menu-toggle-btn { display: flex; }
     .menu-friends-btn { display: block; }
     .sidebar-close-btn { display: block; }
-    .sidebar-extra-mobile { display: block; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
-    /* el tema se controla desde el cajón del menú; se oculta del header
-       para no competir con él por espacio */
+    /* el tema (y el resto de ajustes) se controla desde Configuración, dentro
+       del cajón del menú; se oculta del header para no competir con él por espacio */
     #themeToggleBtnHeader { display: none; }
 
     .sidebar {
@@ -1350,20 +1366,20 @@ body.light-mode .auth-tabs button.active { color: #fff; }
         </div>
 
         <div class="menu">
-            <button class="active" data-page="lobby" onclick="showPage('lobby')" data-i18n="menu_lobby">🏠 Lobby</button>
+            <button class="active" data-page="lobby" onclick="showPage('lobby')" data-i18n="menu_lobby">🎮 Juegos</button>
             <button data-page="profile" onclick="showPage('profile')" data-i18n="menu_profile">👤 Mi perfil</button>
             <button data-page="avatarPage" onclick="showPage('avatarPage')" data-i18n="menu_avatar">🎭 Avatar</button>
             <button data-page="achievements" onclick="showPage('achievements')" data-i18n="menu_achievements">🏆 Logros</button>
             <button data-page="shop" onclick="showPage('shop')" data-i18n="menu_shop">🛒 Tienda</button>
-            <!-- Solo visible para cuentas admin (ver enterApp). Va en el menú
-                 principal, no en el cajón "solo tablet/móvil", para que también
-                 se vea en escritorio. -->
-            <button data-page="adminPage" id="adminMenuBtn" onclick="showPage('adminPage'); loadAdminStats();" style="display:none">📊 Admin</button>
             <button class="menu-friends-btn" onclick="toggleFriendsPanel()" data-i18n="menu_friends">👥 Amigos</button>
         </div>
 
-        <div class="sidebar-extra-mobile">
-            <button class="sidebar-extra-btn" id="themeToggleBtnSidebar" onclick="toggleTheme()" data-i18n="sidebar_theme">🌙 Cambiar tema</button>
+        <!-- Sección de abajo: siempre visible (escritorio y móvil), separada
+             del resto por una línea. Admin solo se ve para cuentas admin
+             (ver enterApp); Configuración abre el modal de ajustes. -->
+        <div class="sidebar-bottom">
+            <button class="sidebar-extra-btn" data-page="adminPage" id="adminMenuBtn" onclick="showPage('adminPage'); loadAdminStats();" style="display:none">📊 Admin</button>
+            <button class="sidebar-extra-btn" onclick="openSettingsModal()" data-i18n="sidebar_settings">⚙️ Configuración</button>
         </div>
     </aside>
 
@@ -1727,6 +1743,42 @@ body.light-mode .auth-tabs button.active { color: #fff; }
     </div>
 </div>
 
+<!-- CONFIGURACIÓN: tema, sonido, notificaciones, privacidad, cerrar sesión
+     y volver a Home. Se abre desde el botón ⚙️ de la sección de abajo del
+     menú lateral (ver aside.sidebar). -->
+<div class="modal-bg" id="settingsModalBg">
+    <div class="modal">
+        <h2>⚙️ Configuración</h2>
+        <div class="settings-list">
+            <button type="button" class="settings-row" id="settingsThemeRow" onclick="settingsToggleTheme()">
+                <span>🌙 Tema oscuro</span>
+                <span class="cheat-switch"></span>
+            </button>
+            <button type="button" class="settings-row" id="settingsSoundRow" onclick="settingsToggleSound()">
+                <span>🔊 Sonido</span>
+                <span class="cheat-switch"></span>
+            </button>
+            <button type="button" class="settings-row" id="settingsNotifRow" onclick="settingsToggleNotifications()">
+                <span>🔔 Notificaciones</span>
+                <span class="cheat-switch"></span>
+            </button>
+            <button type="button" class="settings-row" onclick="window.open('privacy.html', '_blank')">
+                <span>🔒 Privacidad</span>
+                <span class="settings-row-chevron">↗</span>
+            </button>
+            <button type="button" class="settings-row" onclick="settingsExitToHome()">
+                <span>🏠 Salir al menú Home</span>
+            </button>
+            <button type="button" class="settings-row danger" onclick="settingsConfirmLogout()">
+                <span>🚪 Cerrar sesión</span>
+            </button>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-dark" onclick="closeSettingsModal()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
 <div id="toastHost"></div>
 <div id="achievementToastHost"></div>
 
@@ -1749,12 +1801,13 @@ function applyTheme(theme) {
   const emoji = theme === 'light' ? '☀️' : '🌙';
   const floating = document.getElementById('themeToggleBtn');
   const header = document.getElementById('themeToggleBtnHeader');
-  const sidebarBtn = document.getElementById('themeToggleBtnSidebar');
   // El botón flotante de la pantalla de login usa los iconos SVG del pack visual;
-  // el resto de la app (header/sidebar, fuera del alcance de este rediseño) sigue con emoji.
+  // el resto de la app (header, fuera del alcance de este rediseño) sigue con emoji.
   if (floating) floating.innerHTML = theme === 'light' ? SUN_ICON : MOON_ICON;
   if (header) header.textContent = emoji;
-  if (sidebarBtn) sidebarBtn.textContent = emoji + ' Cambiar tema';
+  // El interruptor de Tema dentro del modal de Configuración (si está abierto)
+  const settingsRow = document.getElementById('settingsThemeRow');
+  if (settingsRow) settingsRow.classList.toggle('on', theme !== 'light');
 }
 function toggleTheme() {
   const isLight = document.body.classList.contains('light-mode');
@@ -1824,13 +1877,14 @@ const I18N = {
   title_main_menu: { en:'Main menu', fr:'Menu principal', de:'Hauptmenü', nl:'Hoofdmenu', ru:'Главное меню', ar:'القائمة الرئيسية', zh:'主菜单', ja:'メインメニュー' },
   header_notifications: { en:'Notifications', fr:'Notifications', de:'Benachrichtigungen', nl:'Meldingen', ru:'Уведомления', ar:'الإشعارات', zh:'通知', ja:'通知' },
   header_no_notifications: { en:"You have no notifications.", fr:"Vous n'avez aucune notification.", de:'Du hast keine Benachrichtigungen.', nl:'Je hebt geen meldingen.', ru:'У вас нет уведомлений.', ar:'ليس لديك إشعارات.', zh:'您没有任何通知。', ja:'通知はありません。' },
-  menu_lobby: { en:'🏠 Lobby', fr:'🏠 Hall', de:'🏠 Lobby', nl:'🏠 Lobby', ru:'🏠 Лобби', ar:'🏠 الردهة', zh:'🏠 大厅', ja:'🏠 ロビー' },
+  menu_lobby: { en:'🎮 Games', fr:'🎮 Jeux', de:'🎮 Spiele', nl:'🎮 Spellen', ru:'🎮 Игры', ar:'🎮 الألعاب', zh:'🎮 游戏', ja:'🎮 ゲーム' },
   menu_profile: { en:'👤 My profile', fr:'👤 Mon profil', de:'👤 Mein Profil', nl:'👤 Mijn profiel', ru:'👤 Мой профиль', ar:'👤 ملفي الشخصي', zh:'👤 我的资料', ja:'👤 マイプロフィール' },
   menu_avatar: { en:'🎭 Avatar', fr:'🎭 Avatar', de:'🎭 Avatar', nl:'🎭 Avatar', ru:'🎭 Аватар', ar:'🎭 الصورة الرمزية', zh:'🎭 头像', ja:'🎭 アバター' },
   menu_achievements: { en:'🏆 Achievements', fr:'🏆 Succès', de:'🏆 Erfolge', nl:'🏆 Prestaties', ru:'🏆 Достижения', ar:'🏆 الإنجازات', zh:'🏆 成就', ja:'🏆 実績' },
   menu_shop: { en:'🛒 Shop', fr:'🛒 Boutique', de:'🛒 Shop', nl:'🛒 Winkel', ru:'🛒 Магазин', ar:'🛒 المتجر', zh:'🛒 商店', ja:'🛒 ショップ' },
   menu_friends: { en:'👥 Friends', fr:'👥 Amis', de:'👥 Freunde', nl:'👥 Vrienden', ru:'👥 Друзья', ar:'👥 الأصدقاء', zh:'👥 好友', ja:'👥 フレンド' },
   sidebar_theme: { en:'🌙 Switch theme', fr:'🌙 Changer de thème', de:'🌙 Thema wechseln', nl:'🌙 Thema wisselen', ru:'🌙 Сменить тему', ar:'🌙 تبديل المظهر', zh:'🌙 切换主题', ja:'🌙 テーマを切り替え' },
+  sidebar_settings: { en:'⚙️ Settings', fr:'⚙️ Paramètres', de:'⚙️ Einstellungen', nl:'⚙️ Instellingen', ru:'⚙️ Настройки', ar:'⚙️ الإعدادات', zh:'⚙️ 设置', ja:'⚙️ 設定' },
   sidebar_design_mode: { en:'🍺 Design mode', fr:'🍺 Mode design', de:'🍺 Design-Modus', nl:'🍺 Ontwerpmodus', ru:'🍺 Режим дизайна', ar:'🍺 وضع التصميم', zh:'🍺 设计模式', ja:'🍺 デザインモード' },
 
   // Lobby
@@ -2631,8 +2685,8 @@ renderFooterCopyright();
 function showPage(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(pageId).classList.add('active');
-  document.querySelectorAll('.menu button').forEach(b => b.classList.remove('active'));
-  const btn = document.querySelector(`.menu button[data-page="${pageId}"]`);
+  document.querySelectorAll('.sidebar button[data-page]').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector(`.sidebar button[data-page="${pageId}"]`);
   if (btn) btn.classList.add('active');
   closeSidebar();
   setPageTitle(PAGE_TITLES[pageId] || pageId);
@@ -3200,6 +3254,9 @@ document.getElementById('confirmModalBg').addEventListener('click', function (ev
 document.getElementById('connect4EntryModalBg').addEventListener('click', function (event) {
   if (event.target === this) closeConnect4EntryModal();
 });
+document.getElementById('settingsModalBg').addEventListener('click', function (event) {
+  if (event.target === this) closeSettingsModal();
+});
 
 /* =========================
    TOASTS
@@ -3210,6 +3267,7 @@ document.getElementById('connect4EntryModalBg').addEventListener('click', functi
 let notifications = [];
 
 function playNotificationSound() {
+  if (!isSoundEnabled()) return;
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
@@ -3239,6 +3297,7 @@ function saveNotifications() {
 }
 
 function pushNotification(text) {
+  if (!areNotificationsEnabled()) return; // el toast en sí se sigue viendo; esto solo controla la campanita
   notifications.unshift({ text, time: Date.now(), read: false });
   notifications = notifications.slice(0, 30);
   saveNotifications();
@@ -3299,6 +3358,59 @@ function toast(message) {
 
   pushNotification(message);
   playNotificationSound();
+}
+
+/* =========================
+   CONFIGURACIÓN (modal de ajustes: tema, sonido, notificaciones,
+   privacidad, cerrar sesión y volver a Home). Se abre desde el botón ⚙️
+   de la sección de abajo del menú lateral.
+========================= */
+function isSoundEnabled() {
+  return localStorage.getItem('tablehost_sound') !== 'off';
+}
+function areNotificationsEnabled() {
+  return localStorage.getItem('tablehost_notifications') !== 'off';
+}
+
+function renderSettingsModal() {
+  document.getElementById('settingsThemeRow').classList.toggle('on', !document.body.classList.contains('light-mode'));
+  document.getElementById('settingsSoundRow').classList.toggle('on', isSoundEnabled());
+  document.getElementById('settingsNotifRow').classList.toggle('on', areNotificationsEnabled());
+}
+
+function openSettingsModal() {
+  closeSidebar();
+  renderSettingsModal();
+  document.getElementById('settingsModalBg').style.display = 'flex';
+}
+function closeSettingsModal() {
+  document.getElementById('settingsModalBg').style.display = 'none';
+}
+
+function settingsToggleTheme() {
+  toggleTheme(); // ya actualiza el interruptor (ver applyTheme)
+}
+function settingsToggleSound() {
+  const next = !isSoundEnabled();
+  localStorage.setItem('tablehost_sound', next ? 'on' : 'off');
+  renderSettingsModal();
+  toast(next ? '🔊 Sonido activado.' : '🔇 Sonido desactivado.');
+}
+function settingsToggleNotifications() {
+  const next = !areNotificationsEnabled();
+  localStorage.setItem('tablehost_notifications', next ? 'on' : 'off');
+  renderSettingsModal();
+  toast(next ? '🔔 Notificaciones activadas.' : '🔕 Notificaciones desactivadas.');
+}
+function settingsConfirmLogout() {
+  closeSettingsModal();
+  showConfirmModal('¿Cerrar sesión?', 'Volverás a la pantalla de acceso.', () => {
+    handleLogout();
+  });
+}
+function settingsExitToHome() {
+  closeSettingsModal();
+  goToEntryMenu();
 }
 
 /* =========================
@@ -3858,6 +3970,7 @@ function handleDoorClick() {
 }
 
 function playDoorCreakSound() {
+  if (!isSoundEnabled()) return;
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const now = ctx.currentTime;
@@ -3940,7 +4053,7 @@ async function enterApp(user) {
   state.cheatMode = isAdmin; // el modo diseño es cosa de admins: se fuerza en ambos sentidos
   document.getElementById('adminBadgeSidebar').style.display = isAdmin ? 'inline-flex' : 'none';
   document.getElementById('adminBadgeProfile').style.display = isAdmin ? 'inline-flex' : 'none';
-  document.getElementById('adminMenuBtn').style.display = isAdmin ? 'block' : 'none';
+  document.getElementById('adminMenuBtn').style.display = isAdmin ? 'flex' : 'none';
   renderVisitCounter();
   renderActivePlayersCounter();
   joinPresence(user.id); // cuenta como "jugador en línea" solo a partir de aquí (cuenta registrada)
@@ -4583,6 +4696,7 @@ let coinAudioCtx = null;
    llegó a cargar a tiempo, recurre al <audio> normal (con el mismo
    desfase); si nada de eso funciona, al sonido sintetizado. */
 function playCoinAudio() {
+  if (!isSoundEnabled()) return;
   try {
     if (coinAudioBuffer && coinAudioCtx) {
       if (coinAudioCtx.state === 'suspended') coinAudioCtx.resume();
@@ -4610,6 +4724,7 @@ function playCoinAudio() {
    tonos desafinados (como una campana pequeña) pasados por un filtro
    paso-bajo, para un timbre cálido de metal y no un pitido electrónico. */
 function playCoinDropSound() {
+  if (!isSoundEnabled()) return;
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const now = ctx.currentTime;
