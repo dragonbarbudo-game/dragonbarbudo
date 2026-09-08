@@ -295,6 +295,7 @@ main { padding: 30px; overflow: hidden; }
 .game-card:hover { transform: translateY(-3px); border-color: var(--gold); }
 .game-card-art { height: 130px; display: flex; align-items: center; justify-content: center; gap: 10px; }
 .game-card-art-c4 { background: linear-gradient(135deg, #1b3a6b, #12244a); }
+.game-card-art-pc { background: linear-gradient(135deg, #2f6d4f, #1c4531); }
 .game-card-art .game-card-piece { width: 34px; height: 34px; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,.35); }
 .game-card-art .game-card-piece:nth-child(2) { transform: translateY(10px); }
 .game-card-art .game-card-piece:nth-child(3) { transform: translateY(-6px); }
@@ -587,6 +588,75 @@ main { padding: 30px; overflow: hidden; }
 @media (max-width: 480px) {
     .c4-board { --c4-cell-base: 34px; padding: 8px; gap: 4px; }
     .c4-col { gap: 4px; }
+}
+
+/* PARCHÍS (4 jugadores, online y/o con bots). Reutiliza a propósito las
+   clases "genéricas" ya creadas para Conecta 4 (.c4-header, .c4-players,
+   .c4-status, .c4-postgame*, .c4-board-wrap, .c4-zoom-controls,
+   .c4-entry-option, .c4-difficulty-options, .friend-*): son el mismo
+   "formato" de partida, solo cambia el tablero. Aquí solo se define lo
+   que es exclusivo del Parchís: el tablero en cruz (rejilla 15x15), las
+   fichas, el dado y la sala de espera mientras se completan 4 jugadores. */
+.pc-board {
+    --pc-cell: 26px; --pc-zoom: 1;
+    display: grid;
+    grid-template-columns: repeat(15, calc(var(--pc-cell) * var(--pc-zoom)));
+    grid-template-rows: repeat(15, calc(var(--pc-cell) * var(--pc-zoom)));
+    gap: 1px; background: #0b0d12; padding: 10px; border-radius: 12px; width: fit-content; margin: 0 auto;
+}
+.pc-cell { background: var(--panel-2); position: relative; display: flex; align-items: center; justify-content: center; }
+.pc-cell.pc-track { background: #f1ede4; }
+.pc-cell.pc-safe::before {
+    content: '★'; position: absolute; color: #b8901a; opacity: .55;
+    font-size: calc(var(--pc-cell) * var(--pc-zoom) * 0.5); pointer-events: none;
+}
+.pc-cell.pc-corral-red, .pc-cell.pc-home-red { background: rgba(224,63,63,.3); }
+.pc-cell.pc-corral-green, .pc-cell.pc-home-green { background: rgba(67,160,71,.3); }
+.pc-cell.pc-corral-yellow, .pc-cell.pc-home-yellow { background: rgba(253,216,53,.35); }
+.pc-cell.pc-corral-blue, .pc-cell.pc-home-blue { background: rgba(66,133,244,.3); }
+.pc-cell.pc-center { background: linear-gradient(135deg, var(--gold), var(--gold-light)); }
+.pc-corral-slot { width: 60%; height: 60%; border-radius: 50%; border: 2px dashed rgba(0,0,0,.18); }
+.pc-piece {
+    width: 78%; height: 78%; border-radius: 50%; border: 2px solid rgba(0,0,0,.35);
+    box-shadow: 0 2px 3px rgba(0,0,0,.4); position: relative; z-index: 2;
+}
+.pc-piece.pc-movable { cursor: pointer; box-shadow: 0 0 0 3px rgba(255,255,255,.85), 0 2px 4px rgba(0,0,0,.5); animation: pcPulse 1s ease-in-out infinite; }
+.pc-piece.pc-piece-mini { width: 46%; height: 46%; }
+@keyframes pcPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+.pc-piece-red { background: radial-gradient(circle at 35% 30%, #ff8a80, #d32f2f); }
+.pc-piece-green { background: radial-gradient(circle at 35% 30%, #a5d6a7, #388e3c); }
+.pc-piece-yellow { background: radial-gradient(circle at 35% 30%, #fff59d, #fbc02d); }
+.pc-piece-blue { background: radial-gradient(circle at 35% 30%, #90caf9, #1565c0); }
+.pc-piece-count {
+    position: absolute; bottom: -3px; right: -3px; background: #171817; color: #fff;
+    font-size: 9px; font-weight: 700; border-radius: 50%; width: 14px; height: 14px;
+    display: flex; align-items: center; justify-content: center; z-index: 3;
+}
+.pc-dice-wrap { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 6px 0 4px; flex-wrap: wrap; }
+.pc-dice-face {
+    width: 46px; height: 46px; border-radius: 10px; background: var(--panel); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: var(--gold);
+}
+.pc-turn-badge { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 4px; flex-shrink: 0; }
+.pc-turn-red { background: #d32f2f; } .pc-turn-green { background: #388e3c; }
+.pc-turn-yellow { background: #fbc02d; } .pc-turn-blue { background: #1565c0; }
+
+/* Sala de espera: se ve mientras falten amigos invitados por aceptar */
+.pc-waiting-list { display: flex; flex-direction: column; gap: 8px; margin: 18px auto; max-width: 380px; }
+.pc-waiting-slot { display: flex; align-items: center; gap: 10px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+.pc-waiting-slot-name { flex: 1; font-weight: 600; }
+.pc-waiting-slot-status { font-size: 12px; color: var(--muted); }
+
+/* Selector múltiple de amigos (hasta 3) para completar los 4 jugadores */
+.pc-friend-check { display: flex; align-items: center; gap: 10px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; cursor: pointer; }
+.pc-friend-check.checked { border-color: var(--gold); }
+.pc-friend-check input { width: 16px; height: 16px; accent-color: var(--gold); }
+
+@media (max-width: 700px) {
+    .pc-board { --pc-cell: 20px; }
+}
+@media (max-width: 480px) {
+    .pc-board { --pc-cell: 16px; padding: 6px; }
 }
 
 /* MODAL */
@@ -1390,6 +1460,19 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                         <span class="btn btn-primary game-card-cta">▶ Jugar</span>
                     </div>
                 </div>
+                <div class="game-card" onclick="openParchisEntryModal()">
+                    <div class="game-card-art game-card-art-pc">
+                        <span class="game-card-piece pc-piece-red"></span>
+                        <span class="game-card-piece pc-piece-green"></span>
+                        <span class="game-card-piece pc-piece-yellow"></span>
+                        <span class="game-card-piece pc-piece-blue"></span>
+                    </div>
+                    <div class="game-card-body">
+                        <h3>🎲 Parchís</h3>
+                        <p>Hasta 4 jugadores: con amigos, con bots o mezclando ambos.</p>
+                        <span class="btn btn-primary game-card-cta">▶ Jugar</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1427,6 +1510,49 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                     <button class="btn btn-dark" onclick="connect4Zoom(-1)" aria-label="Alejar">➖</button>
                     <span id="c4ZoomLabel">100%</span>
                     <button class="btn btn-dark" onclick="connect4Zoom(1)" aria-label="Acercar">➕</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PARCHÍS (4 jugadores: con amigos, con bots, o mezclando ambos) -->
+        <div class="page" id="parchisGame">
+            <div class="c4-header">
+                <h1>🎲 Parchís</h1>
+                <div class="c4-players" id="pcPlayersRow"></div>
+                <div class="c4-status" id="parchisStatus">Cargando partida…</div>
+            </div>
+
+            <!-- Sala de espera: se ve mientras haya amigos invitados sin responder -->
+            <div id="pcWaitingRoom" style="display:none;">
+                <div class="pc-waiting-list" id="pcWaitingList"></div>
+                <div class="c4-actions">
+                    <button class="btn btn-dark" onclick="leaveParchisGame()">← Salir</button>
+                    <button class="btn btn-primary" id="pcStartNowBtn" onclick="parchisStartNow()">🚀 Rellenar con bots y empezar</button>
+                </div>
+            </div>
+
+            <div id="pcGameBoard" style="display:none;">
+                <div class="c4-postgame" id="pcPostGameActions" style="display:none;">
+                    <button class="btn btn-primary c4-postgame-btn" onclick="parchisRematch()" title="Revancha">🔁 Revancha</button>
+                    <button class="btn btn-dark c4-postgame-btn" onclick="leaveParchisGame()" title="Salir">🚪 Salir</button>
+                </div>
+
+                <div class="pc-dice-wrap">
+                    <div class="pc-dice-face" id="pcDiceFace">🎲</div>
+                    <button class="btn btn-primary" id="pcRollBtn" onclick="parchisRoll()">Tirar dado</button>
+                </div>
+
+                <div class="c4-board-wrap" id="pcBoardWrap">
+                    <div class="pc-board" id="parchisBoard"></div>
+                </div>
+
+                <div class="c4-actions">
+                    <button class="btn btn-dark" onclick="leaveParchisGame()">← Salir de la partida</button>
+                    <div class="c4-zoom-controls">
+                        <button class="btn btn-dark" onclick="parchisZoom(-1)" aria-label="Alejar">➖</button>
+                        <span id="pcZoomLabel">100%</span>
+                        <button class="btn btn-dark" onclick="parchisZoom(1)" aria-label="Acercar">➕</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1711,6 +1837,35 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 
         <div class="modal-actions">
             <button class="btn btn-dark" onclick="closeConnect4EntryModal()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<!-- PARCHÍS › MODAL DE ENTRADA (Bots, o invitar hasta a 3 amigos) -->
+<div class="modal-bg" id="parchisEntryModalBg">
+    <div class="modal">
+        <h2>🎲 Parchís</h2>
+
+        <div id="pcEntryChoices">
+            <button class="c4-entry-option" onclick="parchisStartBotGame()">
+                <span class="c4-entry-icon">🤖</span>
+                <span><strong>Jugar con Bots</strong><br><small>Tú contra 3 bots</small></span>
+            </button>
+            <button class="c4-entry-option" onclick="showParchisFriendPicker()">
+                <span class="c4-entry-icon">👥</span>
+                <span><strong>Jugar con amigos</strong><br><small>Invita hasta a 3; el resto se rellena con bots</small></span>
+            </button>
+        </div>
+
+        <div id="pcEntryFriendPicker" style="display:none;">
+            <p class="friend-msg" style="margin-bottom:10px;">Elige a quién invitar (hasta 3):</p>
+            <div id="pcFriendPickerList"><p class="friend-empty">Cargando…</p></div>
+            <button class="btn btn-primary" id="pcCreateGameBtn" onclick="parchisCreateFriendGame()" style="margin-top:12px; width:100%;" disabled>Elige al menos a un amigo</button>
+            <button class="page-back-btn" onclick="showParchisEntryChoices()" style="margin-top:16px;">← Volver</button>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn btn-dark" onclick="closeParchisEntryModal()">Cancelar</button>
         </div>
     </div>
 </div>
@@ -2640,6 +2795,7 @@ function dismissAchievementToast(el) {
 const PAGE_TITLES = {
   lobby: 'Lobby',
   connect4Game: 'Conecta 4',
+  parchisGame: 'Parchís',
   profile: 'Perfil',
   avatarPage: 'Avatar',
   achievements: 'Logros',
@@ -3241,6 +3397,605 @@ document.getElementById('connect4EntryModalBg').addEventListener('click', functi
 document.getElementById('settingsModalBg').addEventListener('click', function (event) {
   if (event.target === this) closeSettingsModal();
 });
+document.getElementById('parchisEntryModalBg').addEventListener('click', function (event) {
+  if (event.target === this) closeParchisEntryModal();
+});
+
+/* =========================
+   PARCHÍS (4 jugadores: con amigos —hasta 3—, con bots, o mezclando
+   ambos). Mismo formato que Conecta 4: modal de entrada, página de
+   partida a pantalla completa con cabecera/zoom/revancha, y en el modo
+   online la fila se guarda en Supabase (tabla parchis_games) y cada
+   cambio llega al instante a todos vía Realtime.
+
+   Reglas "esenciales": un dado; hace falta un 5 para sacar una ficha
+   del corral; capturar a un rival (fuera de una casilla segura) lo
+   manda de vuelta a su corral; las 4 casillas de salida son siempre
+   seguras; sacar un 6 da turno extra; hay que llegar a la meta con el
+   número justo; gana quien primero lleva sus 4 fichas a la meta. No
+   hay barreras ni penalización por seises seguidos.
+
+   TABLERO: rejilla lógica de 15x15. Cada ficha recorre, en relativo:
+   0-48 = las 49 casillas compartidas de su vuelta, 49-54 = su pasillo
+   privado (6 casillas), 55 = meta. -1 = todavía en el corral.
+========================= */
+const PARCHIS_COLORS = ['red', 'green', 'yellow', 'blue'];
+const PARCHIS_COLOR_LABEL = { red: 'Rojo', green: 'Verde', yellow: 'Amarillo', blue: 'Azul' };
+const PARCHIS_START_INDEX = { red: 0, green: 13, yellow: 26, blue: 39 };
+
+// Las 52 casillas compartidas de la vuelta exterior, en orden de recorrido.
+const PARCHIS_LOOP = (() => {
+  const cells = [];
+  for (let c = 1; c <= 5; c++) cells.push([6, c]);
+  for (let r = 5; r >= 0; r--) cells.push([r, 6]);
+  cells.push([0, 7]); cells.push([0, 8]);
+  for (let r = 1; r <= 5; r++) cells.push([r, 8]);
+  for (let c = 9; c <= 14; c++) cells.push([6, c]);
+  cells.push([7, 14]); cells.push([8, 14]);
+  for (let c = 13; c >= 9; c--) cells.push([8, c]);
+  for (let r = 9; r <= 14; r++) cells.push([r, 8]);
+  cells.push([14, 7]); cells.push([14, 6]);
+  for (let r = 13; r >= 9; r--) cells.push([r, 6]);
+  for (let c = 5; c >= 0; c--) cells.push([8, c]);
+  cells.push([7, 0]); cells.push([6, 0]);
+  return cells;
+})();
+
+// Pasillo final privado de cada color (6 casillas, ya en orden de avance
+// hacia el centro).
+const PARCHIS_HOME = {
+  red: [[7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6]],
+  green: [[1, 7], [2, 7], [3, 7], [4, 7], [5, 7], [6, 7]],
+  yellow: [[7, 13], [7, 12], [7, 11], [7, 10], [7, 9], [7, 8]],
+  blue: [[13, 7], [12, 7], [11, 7], [10, 7], [9, 7], [8, 7]]
+};
+
+// Las 4 casillas del corral (fichas sin salir) de cada color.
+const PARCHIS_CORRAL = {
+  red: [[2, 2], [2, 3], [3, 2], [3, 3]],
+  green: [[2, 11], [2, 12], [3, 11], [3, 12]],
+  yellow: [[11, 11], [11, 12], [12, 11], [12, 12]],
+  blue: [[11, 2], [11, 3], [12, 2], [12, 3]]
+};
+
+const PARCHIS_SAFE_GLOBAL = new Set(Object.values(PARCHIS_START_INDEX));
+
+let parchisState = null;         // partida actual (local o reflejo de la fila de Supabase)
+let parchisChannel = null;
+let parchisZoomLevel = 1;
+let parchisSelectedFriends = []; // [{id,name}] elegidos en el selector de amigos
+let parchisRolling = false;      // evita disparar dos veces la misma tirada/pase automático
+let parchisWasActive = false;    // para detectar el instante justo en que termina la partida
+
+function parchisEmptyPieces() {
+  const pieces = {};
+  PARCHIS_COLORS.forEach(c => { pieces[c] = [-1, -1, -1, -1]; });
+  return pieces;
+}
+
+/* Casilla real (fila, columna) que ocupa una ficha según su posición
+   relativa. corralSlot (0-3) solo se usa mientras la ficha sigue en el
+   corral, para repartir las 4 fichas por sus 4 huecos. */
+function parchisCoord(color, relPos, corralSlot) {
+  if (relPos === -1) return PARCHIS_CORRAL[color][corralSlot];
+  if (relPos <= 48) return PARCHIS_LOOP[(PARCHIS_START_INDEX[color] + relPos) % 52];
+  if (relPos <= 54) return PARCHIS_HOME[color][relPos - 49];
+  return [7, 7]; // meta
+}
+
+/* Movimientos legales para "color" con el dado ya tirado: una entrada
+   por ficha que sí puede moverse, {pieceIdx, from, to}. */
+function parchisLegalMoves(pieces, color, dice) {
+  const moves = [];
+  pieces[color].forEach((pos, idx) => {
+    if (pos === -1) {
+      if (dice === 5) moves.push({ pieceIdx: idx, from: -1, to: 0 });
+      return;
+    }
+    if (pos === 55) return; // ya en meta
+    const to = pos + dice;
+    if (to > 55) return; // hace falta el número justo, no vale pasarse
+    moves.push({ pieceIdx: idx, from: pos, to });
+  });
+  return moves;
+}
+
+/* Aplica un movimiento y devuelve {pieces, captured}: "captured" son las
+   fichas rivales que, por caer en su misma casilla (fuera de una
+   casilla segura), vuelven a su corral. Solo se captura en la vuelta
+   compartida (0-48): en el pasillo privado de cada color no entra
+   nadie más. */
+function parchisApplyMove(pieces, color, pieceIdx, to) {
+  const next = {}; PARCHIS_COLORS.forEach(c => { next[c] = [...pieces[c]]; });
+  next[color][pieceIdx] = to;
+  const captured = [];
+
+  if (to >= 0 && to <= 48) {
+    const globalIdx = (PARCHIS_START_INDEX[color] + to) % 52;
+    if (!PARCHIS_SAFE_GLOBAL.has(globalIdx)) {
+      PARCHIS_COLORS.forEach(rival => {
+        if (rival === color) return;
+        next[rival].forEach((rPos, rIdx) => {
+          if (rPos < 0 || rPos > 48) return;
+          if ((PARCHIS_START_INDEX[rival] + rPos) % 52 === globalIdx) {
+            next[rival][rIdx] = -1;
+            captured.push({ color: rival, pieceIdx: rIdx });
+          }
+        });
+      });
+    }
+  }
+  return { pieces: next, captured };
+}
+
+function parchisHasWon(pieces, color) {
+  return pieces[color].every(p => p === 55);
+}
+
+/* Bot: prioriza sacar ficha del corral con un 5, luego capturar si
+   puede, y si no, adelanta la ficha más avanzada (suele ser lo más
+   razonable sin mirar más jugadas por delante). */
+function parchisBotChooseMove(pieces, color, legal) {
+  const fromCorral = legal.find(m => m.from === -1);
+  if (fromCorral) return fromCorral;
+  for (const move of legal) {
+    const { captured } = parchisApplyMove(pieces, color, move.pieceIdx, move.to);
+    if (captured.length) return move;
+  }
+  return legal.reduce((best, m) => (m.from > best.from ? m : best), legal[0]);
+}
+
+/* =========================
+   PARCHÍS › TABLERO (clasificación de casillas y render)
+========================= */
+let parchisCellRoleCache = null;
+function parchisCellRoleMap() {
+  if (parchisCellRoleCache) return parchisCellRoleCache;
+  const map = {};
+  const set = (r, c, role) => { map[r + ',' + c] = role; };
+  for (let r = 0; r < 15; r++) {
+    for (let c = 0; c < 15; c++) {
+      if (r <= 5 && c <= 5) set(r, c, 'corral-red');
+      else if (r <= 5 && c >= 9) set(r, c, 'corral-green');
+      else if (r >= 9 && c >= 9) set(r, c, 'corral-yellow');
+      else if (r >= 9 && c <= 5) set(r, c, 'corral-blue');
+      else set(r, c, 'blank');
+    }
+  }
+  set(7, 7, 'center');
+  PARCHIS_LOOP.forEach(([r, c]) => set(r, c, 'track'));
+  Object.entries(PARCHIS_HOME).forEach(([color, cells]) => cells.forEach(([r, c]) => set(r, c, 'home-' + color)));
+  parchisCellRoleCache = map;
+  return map;
+}
+
+function parchisMyIndex() {
+  if (!parchisState) return -1;
+  if (parchisState.isBot) return 0;
+  return parchisState.players.findIndex(p => p.type === 'human' && p.user_id === currentUserId);
+}
+
+function parchisRender() {
+  if (!parchisState) return;
+  const justFinished = parchisWasActive && parchisState.status === 'finished';
+  parchisWasActive = parchisState.status === 'active';
+
+  const { players, pieces, turn, dice, status, winner_color } = parchisState;
+  const myIdx = parchisMyIndex();
+  const myTurn = status === 'active' && myIdx === turn;
+  const turnPlayer = players[turn];
+
+  document.getElementById('pcPlayersRow').innerHTML = players.map((p, i) => `
+    <div class="c4-player">
+      <span class="c4-piece-icon pc-piece-${p.color}"></span>
+      <span>${p.name}${status === 'active' && i === turn ? ' 🎲' : ''}</span>
+    </div>
+  `).join('');
+
+  const statusEl = document.getElementById('parchisStatus');
+  if (status === 'finished') {
+    const winner = players.find(p => p.color === winner_color);
+    statusEl.textContent = (winner && myIdx === players.indexOf(winner))
+      ? '🏆 ¡Has ganado!'
+      : `😔 Ha ganado ${winner ? winner.name : PARCHIS_COLOR_LABEL[winner_color]}.`;
+  } else {
+    statusEl.textContent = myTurn ? '🟢 Tu turno' : `⏳ Turno de ${turnPlayer.name}`;
+  }
+  document.getElementById('pcPostGameActions').style.display = status === 'finished' ? 'flex' : 'none';
+
+  document.getElementById('pcDiceFace').textContent = dice ? dice : '🎲';
+  const canRoll = status === 'active' && myTurn && !dice;
+  const rollBtn = document.getElementById('pcRollBtn');
+  rollBtn.style.display = (status === 'active' && myTurn) ? 'inline-flex' : 'none';
+  rollBtn.disabled = !canRoll;
+  rollBtn.textContent = dice ? `Tirado: ${dice}` : '🎲 Tirar dado';
+
+  const legal = (status === 'active' && myTurn && dice) ? parchisLegalMoves(pieces, turnPlayer.color, dice) : [];
+  const legalPieceIdxs = new Set(legal.map(m => m.pieceIdx));
+
+  const byCell = {};
+  PARCHIS_COLORS.forEach(color => {
+    let corralSlot = 0;
+    pieces[color].forEach((pos, idx) => {
+      const slot = pos === -1 ? corralSlot++ : 0;
+      const [r, c] = parchisCoord(color, pos, slot);
+      const key = r + ',' + c;
+      (byCell[key] = byCell[key] || []).push({ color, idx, movable: color === turnPlayer.color && legalPieceIdxs.has(idx) });
+    });
+  });
+
+  const roles = parchisCellRoleMap();
+  let html = '';
+  for (let r = 0; r < 15; r++) {
+    for (let c = 0; c < 15; c++) {
+      const role = roles[r + ',' + c] || 'blank';
+      if (role === 'blank') continue;
+      const classes = ['pc-cell'];
+      if (role === 'track') {
+        classes.push('pc-track');
+        const globalIdx = (PARCHIS_LOOP.findIndex(([lr, lc]) => lr === r && lc === c));
+        if (PARCHIS_SAFE_GLOBAL.has(globalIdx)) classes.push('pc-safe');
+      } else if (role === 'center') classes.push('pc-center');
+      else classes.push('pc-' + role); // corral-<color> / home-<color>
+
+      const cellPieces = byCell[r + ',' + c] || [];
+      let inner = '';
+      if (role.indexOf('corral-') === 0 && !cellPieces.length) inner = '<span class="pc-corral-slot"></span>';
+      if (cellPieces.length) {
+        const groups = {};
+        cellPieces.forEach(p => { (groups[p.color] = groups[p.color] || []).push(p); });
+        const colorKeys = Object.keys(groups);
+        inner = colorKeys.map(color => {
+          const group = groups[color];
+          const movable = group.find(p => p.movable);
+          const attr = movable ? ` onclick="parchisPlayerMove(${movable.idx})"` : '';
+          const mini = colorKeys.length > 1 ? ' pc-piece-mini' : '';
+          const badge = group.length > 1 ? `<span class="pc-piece-count">${group.length}</span>` : '';
+          return `<div class="pc-piece pc-piece-${color}${movable ? ' pc-movable' : ''}${mini}"${attr}>${badge}</div>`;
+        }).join('');
+      }
+      html += `<div class="${classes.join(' ')}" style="grid-row:${r + 1};grid-column:${c + 1};">${inner}</div>`;
+    }
+  }
+  document.getElementById('parchisBoard').innerHTML = html;
+
+  if (justFinished) {
+    const myColor = myIdx >= 0 ? players[myIdx].color : null;
+    recordGameResult({ game: 'parchis', outcome: myColor === winner_color ? 'win' : 'loss', online: !parchisState.isBot });
+  }
+  parchisMaybeAutoAdvance();
+}
+
+/* Escribe un cambio de estado. En partida local (contra bots, sin fila
+   en Supabase) se aplica al momento; en partida online se guarda en la
+   fila de "parchis_games" y es el eco de Realtime (ver openParchisGame)
+   el que de verdad actualiza parchisState y vuelve a pintar, igual que
+   en Conecta 4. */
+async function parchisWriteState(patch) {
+  if (!parchisState) return;
+  if (parchisState.isBot) {
+    parchisState = { ...parchisState, ...patch };
+    parchisRender();
+    return;
+  }
+  const { error } = await supabaseClient.from('parchis_games')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('id', parchisState.id);
+  if (error) toast('❌ No se pudo actualizar la partida.');
+}
+
+function parchisNextTurnIndex() {
+  return (parchisState.turn + 1) % parchisState.players.length;
+}
+
+/* El "motor" reactivo: se llama tras cada render (venga de un cambio
+   local o de un eco de Realtime) y decide si hay que actuar sola: pasar
+   turno cuando nadie puede mover, o tirar/mover por un bot. En online,
+   solo la plaza 0 (quien creó la partida) conduce a los bots, para que
+   dos personas conectadas a la vez no intenten mover el mismo bot. */
+function parchisMaybeAutoAdvance() {
+  if (!parchisState || parchisState.status !== 'active' || parchisRolling) return;
+  const myIdx = parchisMyIndex();
+  const iAmHost = parchisState.isBot || myIdx === 0;
+  const { turn, dice, players, pieces } = parchisState;
+  const turnPlayer = players[turn];
+
+  if (dice) {
+    const legal = parchisLegalMoves(pieces, turnPlayer.color, dice);
+    if (!legal.length) {
+      const iShouldAct = turnPlayer.type === 'bot' ? iAmHost : myIdx === turn;
+      if (!iShouldAct) return;
+      parchisRolling = true;
+      setTimeout(() => { parchisRolling = false; parchisWriteState({ dice: null, turn: parchisNextTurnIndex() }); }, 900);
+      return;
+    }
+    if (turnPlayer.type === 'bot' && iAmHost) {
+      parchisRolling = true;
+      setTimeout(() => {
+        parchisRolling = false;
+        const choice = parchisBotChooseMove(pieces, turnPlayer.color, legal);
+        parchisResolveMove(choice, turnPlayer.color);
+      }, 700);
+    }
+    return;
+  }
+
+  if (turnPlayer.type === 'bot' && iAmHost) {
+    parchisRolling = true;
+    setTimeout(() => { parchisRolling = false; parchisWriteState({ dice: randInt(1, 6) }); }, 600);
+  }
+}
+
+/* =========================
+   PARCHÍS › ACCIONES DEL JUGADOR (tirar dado y mover ficha)
+========================= */
+function parchisRoll() {
+  if (!parchisState || parchisState.status !== 'active') return;
+  if (parchisMyIndex() !== parchisState.turn || parchisState.dice) return;
+  parchisWriteState({ dice: randInt(1, 6) });
+}
+
+function parchisPlayerMove(pieceIdx) {
+  if (!parchisState || parchisState.status !== 'active' || !parchisState.dice) return;
+  if (parchisMyIndex() !== parchisState.turn) { toast('⏳ No es tu turno.'); return; }
+  const { players, turn, pieces, dice } = parchisState;
+  const color = players[turn].color;
+  const move = parchisLegalMoves(pieces, color, dice).find(m => m.pieceIdx === pieceIdx);
+  if (!move) return;
+  parchisResolveMove(move, color);
+}
+
+function parchisResolveMove(move, color) {
+  const { pieces: nextPieces, captured } = parchisApplyMove(parchisState.pieces, color, move.pieceIdx, move.to);
+  const dice = parchisState.dice;
+  const won = parchisHasWon(nextPieces, color);
+  captured.forEach(cap => toast(`🎯 Ficha ${PARCHIS_COLOR_LABEL[cap.color].toLowerCase()} capturada: vuelve al corral.`));
+
+  const patch = { pieces: nextPieces, dice: null };
+  if (won) { patch.status = 'finished'; patch.winner_color = color; }
+  else patch.turn = dice === 6 ? parchisState.turn : parchisNextTurnIndex();
+  parchisWriteState(patch);
+}
+
+/* =========================
+   PARCHÍS › MODO BOTS (un jugador contra 3 bots, 100% local)
+========================= */
+function parchisStartBotGame() {
+  closeParchisEntryModal();
+  parchisWasActive = false;
+  parchisState = {
+    id: null,
+    isBot: true,
+    players: [
+      { color: 'red', type: 'human', user_id: currentUserId, name: 'Tú' },
+      { color: 'green', type: 'bot', user_id: null, name: '🤖 Bot verde' },
+      { color: 'yellow', type: 'bot', user_id: null, name: '🤖 Bot amarillo' },
+      { color: 'blue', type: 'bot', user_id: null, name: '🤖 Bot azul' }
+    ],
+    pieces: parchisEmptyPieces(),
+    turn: 0,
+    dice: null,
+    status: 'active',
+    winner_color: null
+  };
+  showPage('parchisGame');
+  document.getElementById('pcWaitingRoom').style.display = 'none';
+  document.getElementById('pcGameBoard').style.display = 'block';
+  parchisSetZoom(1);
+  parchisRender();
+}
+
+/* =========================
+   PARCHÍS › ONLINE (con amigos, completando con bots lo que falte)
+========================= */
+async function openParchisGame(gameId) {
+  showPage('parchisGame');
+  document.getElementById('parchisStatus').textContent = 'Cargando partida…';
+  parchisWasActive = false;
+
+  const { data, error } = await supabaseClient.from('parchis_games').select('*').eq('id', gameId).single();
+  if (error || !data) { toast('❌ No se pudo cargar la partida.'); return; }
+  parchisState = data;
+  parchisSetZoom(1);
+  parchisRenderWaitingOrBoard();
+
+  if (parchisChannel) supabaseClient.removeChannel(parchisChannel);
+  parchisChannel = supabaseClient
+    .channel('parchis-' + gameId)
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'parchis_games', filter: `id=eq.${gameId}` },
+      (payload) => {
+        const wasWaiting = parchisState && parchisState.status === 'waiting';
+        parchisState = payload.new;
+        parchisRenderWaitingOrBoard();
+        if (wasWaiting && parchisState.status === 'active') toast('🎲 ¡Ya estáis los 4! Empieza la partida.');
+      }
+    )
+    .subscribe();
+}
+
+function parchisRenderWaitingOrBoard() {
+  if (!parchisState) return;
+  if (parchisState.status === 'waiting') {
+    document.getElementById('pcWaitingRoom').style.display = 'block';
+    document.getElementById('pcGameBoard').style.display = 'none';
+    document.getElementById('pcPlayersRow').innerHTML = parchisState.players.map(p => `
+      <div class="c4-player"><span class="c4-piece-icon pc-piece-${p.color}"></span><span>${p.name}</span></div>
+    `).join('');
+    parchisRenderWaitingRoom();
+  } else {
+    document.getElementById('pcWaitingRoom').style.display = 'none';
+    document.getElementById('pcGameBoard').style.display = 'block';
+    parchisRender();
+  }
+}
+
+function parchisRenderWaitingRoom() {
+  document.getElementById('parchisStatus').textContent = 'Esperando a que se completen los 4 jugadores…';
+  document.getElementById('pcWaitingList').innerHTML = parchisState.players.map(p => {
+    const statusText = p.type === 'bot' ? '🤖 Bot'
+      : p.type === 'pending' ? '⏳ Invitado, esperando…'
+      : (p.user_id === currentUserId ? '✅ Tú' : '✅ Se ha unido');
+    return `<div class="pc-waiting-slot">
+      <span class="pc-turn-badge pc-turn-${p.color}"></span>
+      <span class="pc-waiting-slot-name">${p.name}</span>
+      <span class="pc-waiting-slot-status">${statusText}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('pcStartNowBtn').style.display = (parchisState.created_by === currentUserId) ? 'inline-flex' : 'none';
+}
+
+/* El anfitrión puede rellenar con bots las plazas todavía pendientes y
+   empezar ya, sin esperar más a que alguien acepte. */
+async function parchisStartNow() {
+  if (!parchisState || parchisState.created_by !== currentUserId) return;
+  const players = parchisState.players.map(p => p.type === 'pending' ? { color: p.color, type: 'bot', user_id: null, name: '🤖 Bot' } : p);
+  const { error } = await supabaseClient.from('parchis_games').update({ players, status: 'active' }).eq('id', parchisState.id);
+  if (error) toast('❌ No se pudo empezar la partida.');
+}
+
+/* Actualiza, dentro de "players", la plaza que corresponde a userId
+   (localizada por el user_id que se guardó ahí desde que se invitó) con
+   los campos de "patch". Si ya no queda ninguna plaza "pending", la
+   partida pasa sola a "active". La usan tanto aceptar como rechazar una
+   invitación (ver respondGameInvite). */
+async function parchisResolveInviteSlot(gameId, userId, patch) {
+  const { data, error } = await supabaseClient.from('parchis_games').select('players').eq('id', gameId).single();
+  if (error || !data) return;
+  const players = data.players.map(p => (p.user_id === userId && p.type === 'pending') ? { ...p, ...patch } : p);
+  const allResolved = players.every(p => p.type !== 'pending');
+  await supabaseClient.from('parchis_games').update({ players, status: allResolved ? 'active' : 'waiting' }).eq('id', gameId);
+}
+
+async function parchisRematch() {
+  if (!parchisState) return;
+  if (parchisState.isBot) { parchisStartBotGame(); return; }
+  const { error } = await supabaseClient.from('parchis_games').update({
+    pieces: parchisEmptyPieces(), turn: 0, dice: null, status: 'active', winner_color: null, updated_at: new Date().toISOString()
+  }).eq('id', parchisState.id);
+  if (error) toast('❌ No se pudo iniciar la revancha.');
+}
+
+function leaveParchisGame() {
+  if (parchisChannel) { supabaseClient.removeChannel(parchisChannel); parchisChannel = null; }
+  parchisState = null;
+  showPage('lobby');
+}
+
+/* =========================
+   PARCHÍS › MODAL DE ENTRADA (Bots, o invitar hasta a 3 amigos)
+========================= */
+function openParchisEntryModal() {
+  showParchisEntryChoices();
+  document.getElementById('parchisEntryModalBg').style.display = 'flex';
+}
+function closeParchisEntryModal() {
+  document.getElementById('parchisEntryModalBg').style.display = 'none';
+}
+function showParchisEntryChoices() {
+  parchisSelectedFriends = [];
+  document.getElementById('pcEntryChoices').style.display = 'block';
+  document.getElementById('pcEntryFriendPicker').style.display = 'none';
+}
+async function showParchisFriendPicker() {
+  document.getElementById('pcEntryChoices').style.display = 'none';
+  document.getElementById('pcEntryFriendPicker').style.display = 'block';
+  await loadParchisFriendPicker();
+}
+async function loadParchisFriendPicker() {
+  const listEl = document.getElementById('pcFriendPickerList');
+  listEl.innerHTML = '<p class="friend-empty">Cargando…</p>';
+  if (!currentUserId) { listEl.innerHTML = '<p class="friend-empty">Inicia sesión para invitar a un amigo.</p>'; return; }
+
+  const { data: rows, error } = await supabaseClient
+    .from('friendships')
+    .select('*')
+    .or(`user_id.eq.${currentUserId},friend_id.eq.${currentUserId}`)
+    .eq('status', 'accepted');
+  if (error || !rows || !rows.length) {
+    listEl.innerHTML = '<p class="friend-empty">Todavía no tienes amigos añadidos.</p>';
+    return;
+  }
+  const otherIds = rows.map(r => r.user_id === currentUserId ? r.friend_id : r.user_id);
+  const { data: profs } = await supabaseClient.from('profiles').select('id, username, avatar').in('id', otherIds);
+  listEl.innerHTML = (profs || []).map(p => {
+    const safeName = (p.username || '...').replace(/'/g, "\\'");
+    return `
+    <label class="pc-friend-check" id="pcFriendCheck-${p.id}">
+      <input type="checkbox" onchange="parchisToggleFriend('${p.id}', '${safeName}', this.checked)">
+      <span>${p.avatar || '🧙'} ${p.username || '...'}</span>
+    </label>`;
+  }).join('');
+}
+function parchisToggleFriend(id, name, checked) {
+  const row = document.getElementById('pcFriendCheck-' + id);
+  if (checked) {
+    if (parchisSelectedFriends.length >= 3) {
+      toast('Solo puedes invitar hasta a 3 amigos.');
+      row.querySelector('input').checked = false;
+      return;
+    }
+    parchisSelectedFriends.push({ id, name });
+  } else {
+    parchisSelectedFriends = parchisSelectedFriends.filter(f => f.id !== id);
+  }
+  row.classList.toggle('checked', checked);
+  const btn = document.getElementById('pcCreateGameBtn');
+  btn.disabled = parchisSelectedFriends.length === 0;
+  btn.textContent = parchisSelectedFriends.length ? `Crear partida (${parchisSelectedFriends.length}/3 invitados)` : 'Elige al menos a un amigo';
+}
+async function parchisCreateFriendGame() {
+  if (!parchisSelectedFriends.length || !currentUserId) return;
+  const myName = document.getElementById('sidebarUsername').textContent || 'Jugador';
+  const players = [{ color: PARCHIS_COLORS[0], type: 'human', user_id: currentUserId, name: myName }];
+  parchisSelectedFriends.forEach(f => players.push({ color: PARCHIS_COLORS[players.length], type: 'pending', user_id: f.id, name: f.name }));
+  while (players.length < 4) players.push({ color: PARCHIS_COLORS[players.length], type: 'bot', user_id: null, name: '🤖 Bot' });
+
+  const { data, error } = await supabaseClient.from('parchis_games').insert({
+    created_by: currentUserId,
+    players,
+    pieces: parchisEmptyPieces(),
+    turn: 0,
+    dice: null,
+    status: 'waiting'
+  }).select().single();
+  if (error || !data) { toast('❌ No se pudo crear la partida.'); return; }
+
+  await Promise.all(parchisSelectedFriends.map(f => sendGameInvite(f.id, f.name, 'parchis', data.id)));
+  closeParchisEntryModal();
+  openParchisGame(data.id);
+}
+
+/* =========================
+   PARCHÍS › ZOOM (mismo mecanismo que Conecta 4: cambia el tamaño real
+   de las casillas vía --pc-zoom, con menú, Ctrl+rueda y pellizco)
+========================= */
+function parchisSetZoom(level) {
+  parchisZoomLevel = Math.min(1.6, Math.max(0.5, level));
+  document.getElementById('parchisBoard').style.setProperty('--pc-zoom', parchisZoomLevel.toFixed(2));
+  document.getElementById('pcZoomLabel').textContent = Math.round(parchisZoomLevel * 100) + '%';
+}
+function parchisZoom(direction) {
+  parchisSetZoom(parchisZoomLevel + direction * 0.15);
+}
+(function initParchisZoomGestures() {
+  const wrap = document.getElementById('pcBoardWrap');
+  if (!wrap) return;
+  wrap.addEventListener('wheel', (e) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    parchisZoom(e.deltaY < 0 ? 1 : -1);
+  }, { passive: false });
+  let pinchStartDist = null, pinchStartZoom = 1;
+  function touchDist(touches) { return Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY); }
+  wrap.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) { pinchStartDist = touchDist(e.touches); pinchStartZoom = parchisZoomLevel; }
+  }, { passive: true });
+  wrap.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2 && pinchStartDist) { e.preventDefault(); parchisSetZoom(pinchStartZoom * (touchDist(e.touches) / pinchStartDist)); }
+  }, { passive: false });
+  wrap.addEventListener('touchend', (e) => { if (e.touches.length < 2) pinchStartDist = null; });
+})();
 
 /* =========================
    TOASTS
@@ -4373,7 +5128,7 @@ document.getElementById('chatModalBg').addEventListener('click', function (event
 /* =========================
    INVITAR A JUGAR (tiempo real)
 ========================= */
-const GAME_NAMES = { connect4: 'Conecta 4' };
+const GAME_NAMES = { connect4: 'Conecta 4', parchis: 'Parchís' };
 let inviteChannel = null;
 
 async function getUsername(id) {
@@ -4381,11 +5136,14 @@ async function getUsername(id) {
   return data ? data.username : 'Alguien';
 }
 
-async function sendGameInvite(friendId, friendName, game) {
+async function sendGameInvite(friendId, friendName, game, gameId) {
   game = game || 'connect4';
+  // gameId: solo lo usan partidas que ya existen antes de invitar (como
+  // Parchís, donde la fila la crea quien invita); Conecta 4 sigue sin
+  // pasarlo, porque ahí es quien ACEPTA quien crea la partida.
   const { error } = await supabaseClient
     .from('game_invites')
-    .insert({ sender_id: currentUserId, receiver_id: friendId, game, status: 'pending' });
+    .insert({ sender_id: currentUserId, receiver_id: friendId, game, status: 'pending', game_id: gameId || null });
   if (error) {
     toast('❌ No se pudo enviar la invitación.');
     return;
@@ -4450,6 +5208,11 @@ async function respondGameInvite(invite, accept) {
   if (!accept) {
     const { error } = await supabaseClient.from('game_invites').update({ status: 'declined' }).eq('id', invite.id);
     if (error) toast('❌ No se pudo responder a la invitación.');
+    // En Parchís, rechazar libera esa plaza como bot al momento: quien
+    // creó la partida no se queda esperando a alguien que no va a venir.
+    if (invite.game === 'parchis' && invite.game_id) {
+      await parchisResolveInviteSlot(invite.game_id, currentUserId, { type: 'bot', user_id: null, name: '🤖 Bot' });
+    }
     return;
   }
 
@@ -4466,9 +5229,15 @@ async function respondGameInvite(invite, accept) {
     // entera de qué partida abrir sin tener que preguntar de nuevo.
     await supabaseClient.from('game_invites').update({ status: 'accepted', game_id: game.id }).eq('id', invite.id);
     openConnect4Game(game.id);
+  } else if (invite.game === 'parchis') {
+    // Aquí la partida ya existía (la creó quien invitó): solo hace
+    // falta ocupar la plaza que nos tenían reservada.
+    const myName = document.getElementById('sidebarUsername').textContent || 'Jugador';
+    await supabaseClient.from('game_invites').update({ status: 'accepted' }).eq('id', invite.id);
+    await parchisResolveInviteSlot(invite.game_id, currentUserId, { type: 'human', user_id: currentUserId, name: myName });
+    openParchisGame(invite.game_id);
   } else {
-    // Solo queda Conecta 4 como invitación real; esto es un resguardo por
-    // si llegara una invitación vieja de un juego ya retirado.
+    // Resguardo por si llegara una invitación vieja de un juego ya retirado.
     toast('❌ Ese juego ya no está disponible.');
   }
 }
