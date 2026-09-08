@@ -2045,10 +2045,20 @@ let isAdmin = false;
 /* =========================
    ESTADO
 ========================= */
+// El progreso (monedas, nivel, logros...) vive en el propio navegador de
+// cada jugador (localStorage), no en Supabase — no hay una tabla central
+// donde "poner todo a 0". Para reiniciar el progreso de TODAS las cuentas
+// ya registradas a la vez, se sube este número: cualquier progreso
+// guardado con una versión distinta se descarta y se sustituye por
+// defaultState() la próxima vez que esa persona entre. Subir este número
+// otra vez en el futuro vuelve a reiniciar a todo el mundo.
+const STATE_VERSION = 2;
+
 function defaultState() {
   return {
-    coins: 300,
-    totalCoinsEarned: 300,
+    version: STATE_VERSION,
+    coins: 0,
+    totalCoinsEarned: 0,
     gamesPlayed: 0,
     wins: 0,
     currentStreak: 0,
@@ -2066,6 +2076,7 @@ function loadState(userId) {
     const raw = localStorage.getItem('tablehostState_' + userId);
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw);
+    if (parsed.version !== STATE_VERSION) return defaultState(); // progreso de antes de un reinicio general
     return Object.assign(defaultState(), parsed);
   } catch (e) {
     return defaultState();
@@ -2136,7 +2147,8 @@ function renderAvatarsEverywhere() {
    STATS Y NIVEL
 ========================= */
 function getLevel() {
-  return 1 + Math.floor(state.totalCoinsEarned / 300) + Math.floor(state.gamesPlayed / 5);
+  // Una cuenta nueva (0 monedas, 0 partidas) empieza en nivel 0.
+  return Math.floor(state.totalCoinsEarned / 300) + Math.floor(state.gamesPlayed / 5);
 }
 function renderStats() {
   const level = getLevel();
