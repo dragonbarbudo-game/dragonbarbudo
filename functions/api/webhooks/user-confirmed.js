@@ -90,17 +90,12 @@ function welcomeEmailHtml(name) {
       <tr><td align="center" style="background:#14161c;padding:28px 20px;border-bottom:2px solid #d9a441;">
         <img src="https://dragonbarbudo.net/logo-dragonbarbudo-oscuro.png" alt="DragonBarbudo" width="200" style="display:block;max-width:200px;height:auto;">
       </td></tr>
-      <tr><td style="padding:36px 34px 10px;">
+      <tr><td style="padding:36px 34px 34px;">
         <p style="margin:0 0 4px;font-family:Georgia,'Times New Roman',serif;color:#d9a441;font-size:13px;letter-spacing:1px;text-transform:uppercase;">¡Ya eres uno de los nuestros!</p>
         <h1 style="margin:0 0 18px;font-family:Georgia,'Times New Roman',serif;color:#f4f1e8;font-size:24px;line-height:1.3;">${escapeHtml(name)}, tu cuenta está activa 🎉</h1>
-        <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;color:#c9c3b4;font-size:15px;line-height:1.6;">
-          Tu correo ha quedado confirmado y tu cuenta de DragonBarbudo ya funciona por completo. Entra cuando quieras, reúne a tus amigos y que empiece la partida.
+        <p style="margin:0;font-family:Arial,Helvetica,sans-serif;color:#c9c3b4;font-size:15px;line-height:1.6;">
+          Tu correo ha quedado confirmado y tu cuenta de DragonBarbudo ya funciona por completo.
         </p>
-      </td></tr>
-      <tr><td align="center" style="padding:0 34px 34px;">
-        <a href="https://dragonbarbudo.net" style="display:inline-block;background:#d9a441;color:#171817;font-family:Arial,Helvetica,sans-serif;font-weight:bold;font-size:15px;text-decoration:none;padding:14px 34px;border-radius:8px;">
-          Entrar a DragonBarbudo
-        </a>
       </td></tr>
       <tr><td style="padding:18px 34px;background:#0f1116;border-top:1px solid #2a2c33;">
         <p style="margin:0;font-family:Arial,Helvetica,sans-serif;color:#6b6656;font-size:11px;text-align:center;">
