@@ -602,20 +602,27 @@ main { padding: 30px; overflow: hidden; }
     display: grid;
     grid-template-columns: repeat(15, calc(var(--pc-cell) * var(--pc-zoom)));
     grid-template-rows: repeat(15, calc(var(--pc-cell) * var(--pc-zoom)));
-    gap: 1px; background: #0b0d12; padding: 10px; border-radius: 12px; width: fit-content; margin: 0 auto;
+    gap: 1px; background: #4a3527; padding: 10px; border-radius: 12px; width: fit-content; margin: 0 auto;
 }
-.pc-cell { background: var(--panel-2); position: relative; display: flex; align-items: center; justify-content: center; }
-.pc-cell.pc-track { background: #f1ede4; }
+.pc-cell { background: var(--parchment); position: relative; display: flex; align-items: center; justify-content: center; }
 .pc-cell.pc-safe::before {
     content: '★'; position: absolute; color: #b8901a; opacity: .55;
     font-size: calc(var(--pc-cell) * var(--pc-zoom) * 0.5); pointer-events: none;
 }
-.pc-cell.pc-corral-red, .pc-cell.pc-home-red { background: rgba(224,63,63,.3); }
-.pc-cell.pc-corral-green, .pc-cell.pc-home-green { background: rgba(67,160,71,.3); }
-.pc-cell.pc-corral-yellow, .pc-cell.pc-home-yellow { background: rgba(253,216,53,.35); }
-.pc-cell.pc-corral-blue, .pc-cell.pc-home-blue { background: rgba(66,133,244,.3); }
+/* Solo el bloque interior de cada rincón lleva el color de esa casa (como
+   el cuadro ilustrado de un tablero real); el borde de esa esquina se
+   queda del mismo tono neutro que el resto del tablero, para que no
+   parezca que el color de cada jugador ocupa todo el rincón. */
+.pc-cell.pc-corral-red { background: #c0392b; }
+.pc-cell.pc-corral-green { background: #219653; }
+.pc-cell.pc-corral-yellow { background: #e8b923; }
+.pc-cell.pc-corral-blue { background: #2874a6; }
+.pc-cell.pc-home-red { background: rgba(224,63,63,.3); }
+.pc-cell.pc-home-green { background: rgba(67,160,71,.3); }
+.pc-cell.pc-home-yellow { background: rgba(253,216,53,.35); }
+.pc-cell.pc-home-blue { background: rgba(66,133,244,.3); }
 .pc-cell.pc-center { background: linear-gradient(135deg, var(--gold), var(--gold-light)); }
-.pc-corral-slot { width: 60%; height: 60%; border-radius: 50%; border: 2px dashed rgba(0,0,0,.18); }
+.pc-corral-slot { width: 60%; height: 60%; border-radius: 50%; border: 2px dashed rgba(255,255,255,.4); }
 .pc-piece {
     width: 78%; height: 78%; border-radius: 50%; border: 2px solid rgba(0,0,0,.35);
     box-shadow: 0 2px 3px rgba(0,0,0,.4); position: relative; z-index: 2;
@@ -640,6 +647,26 @@ main { padding: 30px; overflow: hidden; }
 .pc-turn-badge { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 4px; flex-shrink: 0; }
 .pc-turn-red { background: #d32f2f; } .pc-turn-green { background: #388e3c; }
 .pc-turn-yellow { background: #fbc02d; } .pc-turn-blue { background: #1565c0; }
+
+/* Dado cayendo sobre el tablero, una vez por cada tirada (ver
+   parchisAnimateDiceDrop). #pcBoardWrap es el que ancla la posición. */
+#pcBoardWrap { position: relative; }
+.pc-dice-drop {
+    display: none; position: absolute; top: 50%; left: 50%; width: 52px; height: 52px;
+    margin: -26px 0 0 -26px; background: #fdfaf3; border-radius: 10px; border: 1px solid rgba(0,0,0,.25);
+    box-shadow: 0 12px 26px rgba(0,0,0,.55); padding: 7px; z-index: 20;
+    grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+}
+.pc-dice-drop.falling { display: grid; animation: pcDiceFall .85s cubic-bezier(.34,1.56,.64,1) forwards; }
+@keyframes pcDiceFall {
+    0% { transform: translateY(-160px) rotate(-50deg) scale(.8); opacity: 0; }
+    18% { opacity: 1; }
+    68% { transform: translateY(8px) rotate(20deg) scale(1.04); opacity: 1; }
+    84% { transform: translateY(-12px) rotate(-8deg) scale(1); }
+    100% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+}
+.pc-pip { border-radius: 50%; align-self: center; justify-self: center; width: 58%; height: 58%; }
+.pc-pip.on { background: #26221b; }
 
 /* Sala de espera: se ve mientras falten amigos invitados por aceptar */
 .pc-waiting-list { display: flex; flex-direction: column; gap: 8px; margin: 18px auto; max-width: 380px; }
@@ -1544,6 +1571,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 
                 <div class="c4-board-wrap" id="pcBoardWrap">
                     <div class="pc-board" id="parchisBoard"></div>
+                    <div class="pc-dice-drop" id="pcDiceDrop"></div>
                 </div>
 
                 <div class="c4-actions">
@@ -3466,6 +3494,7 @@ let parchisZoomLevel = 1;
 let parchisSelectedFriends = []; // [{id,name}] elegidos en el selector de amigos
 let parchisRolling = false;      // evita disparar dos veces la misma tirada/pase automático
 let parchisWasActive = false;    // para detectar el instante justo en que termina la partida
+let parchisDiceRollShown = false; // evita repetir la animación de caída en cada repintado de la misma tirada
 
 function parchisEmptyPieces() {
   const pieces = {};
@@ -3553,12 +3582,17 @@ function parchisCellRoleMap() {
   if (parchisCellRoleCache) return parchisCellRoleCache;
   const map = {};
   const set = (r, c, role) => { map[r + ',' + c] = role; };
+  // Solo el bloque interior 4x4 de cada rincón (con un margen de 1 casilla
+  // alrededor, del mismo tono neutro que el resto del tablero) lleva el
+  // color de esa casa: así el "territorio" de cada jugador se ve como un
+  // cuadro enmarcado, no como todo el rincón pintado de su color.
+  const corralInner = (localR, localC) => localR >= 1 && localR <= 4 && localC >= 1 && localC <= 4;
   for (let r = 0; r < 15; r++) {
     for (let c = 0; c < 15; c++) {
-      if (r <= 5 && c <= 5) set(r, c, 'corral-red');
-      else if (r <= 5 && c >= 9) set(r, c, 'corral-green');
-      else if (r >= 9 && c >= 9) set(r, c, 'corral-yellow');
-      else if (r >= 9 && c <= 5) set(r, c, 'corral-blue');
+      if (r <= 5 && c <= 5) set(r, c, corralInner(r, c) ? 'corral-red' : 'margin');
+      else if (r <= 5 && c >= 9) set(r, c, corralInner(r, c - 9) ? 'corral-green' : 'margin');
+      else if (r >= 9 && c >= 9) set(r, c, corralInner(r - 9, c - 9) ? 'corral-yellow' : 'margin');
+      else if (r >= 9 && c <= 5) set(r, c, corralInner(r - 9, c) ? 'corral-blue' : 'margin');
       else set(r, c, 'blank');
     }
   }
@@ -3575,6 +3609,37 @@ function parchisMyIndex() {
   return parchisState.players.findIndex(p => p.type === 'human' && p.user_id === currentUserId);
 }
 
+/* Puntos (1-6) de una cara de dado, en la disposición clásica sobre una
+   rejilla de 3x3. */
+function parchisDicePipsHtml(n) {
+  const layouts = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+  const on = new Set(layouts[n] || []);
+  let dots = '';
+  for (let i = 0; i < 9; i++) dots += `<span class="pc-pip${on.has(i) ? ' on' : ''}"></span>`;
+  return dots;
+}
+
+/* Dado cayendo sobre el tablero: cae girando mostrando caras al azar
+   ("rebotando") y se detiene ya mostrando el número que ha tocado de
+   verdad. Es solo un efecto visual: no bloquea ni retrasa la partida
+   (las fichas ya se pueden mover mientras el dado termina de caer). */
+function parchisAnimateDiceDrop(value) {
+  const el = document.getElementById('pcDiceDrop');
+  if (!el) return;
+  el.classList.remove('falling');
+  void el.offsetWidth; // fuerza a reiniciar la animación aunque salga la misma cara dos veces seguidas
+  el.innerHTML = parchisDicePipsHtml(randInt(1, 6));
+  el.classList.add('falling');
+
+  let ticks = 0;
+  const spin = setInterval(() => {
+    ticks++;
+    el.innerHTML = parchisDicePipsHtml(ticks >= 5 ? value : randInt(1, 6));
+    if (ticks >= 5) clearInterval(spin);
+  }, 90);
+  setTimeout(() => { el.classList.remove('falling'); }, 1200);
+}
+
 function parchisRender() {
   if (!parchisState) return;
   const justFinished = parchisWasActive && parchisState.status === 'finished';
@@ -3584,6 +3649,11 @@ function parchisRender() {
   const myIdx = parchisMyIndex();
   const myTurn = status === 'active' && myIdx === turn;
   const turnPlayer = players[turn];
+
+  // El dado cayendo: se anima una sola vez por tirada (no en cada
+  // repintado), y se resetea en cuanto "dice" vuelve a null.
+  if (dice && !parchisDiceRollShown) { parchisDiceRollShown = true; parchisAnimateDiceDrop(dice); }
+  else if (!dice) { parchisDiceRollShown = false; }
 
   document.getElementById('pcPlayersRow').innerHTML = players.map((p, i) => `
     <div class="c4-player">
@@ -3763,6 +3833,7 @@ function parchisResolveMove(move, color) {
 function parchisStartBotGame() {
   closeParchisEntryModal();
   parchisWasActive = false;
+  parchisDiceRollShown = false;
   parchisState = {
     id: null,
     isBot: true,
@@ -3792,6 +3863,7 @@ async function openParchisGame(gameId) {
   showPage('parchisGame');
   document.getElementById('parchisStatus').textContent = 'Cargando partida…';
   parchisWasActive = false;
+  parchisDiceRollShown = false;
 
   const { data, error } = await supabaseClient.from('parchis_games').select('*').eq('id', gameId).single();
   if (error || !data) { toast('❌ No se pudo cargar la partida.'); return; }
