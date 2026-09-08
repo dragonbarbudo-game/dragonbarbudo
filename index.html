@@ -1363,7 +1363,9 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 
         <div class="menu">
             <button class="active" data-page="lobby" onclick="showPage('lobby')" data-i18n="menu_lobby">🏠 Lobby</button>
-            <button data-page="diceGame" onclick="showPage('diceGame')" data-i18n="dice_title">🎲 Salón de Dados</button>
+            <!-- Salón de Dados retirado por ahora (a petición): quita el
+                 "display:none" de este botón para volver a activarlo. -->
+            <button data-page="diceGame" onclick="showPage('diceGame')" data-i18n="dice_title" style="display:none">🎲 Salón de Dados</button>
             <button data-page="profile" onclick="showPage('profile')" data-i18n="menu_profile">👤 Mi perfil</button>
             <button data-page="avatarPage" onclick="showPage('avatarPage')" data-i18n="menu_avatar">🎭 Avatar</button>
             <button data-page="achievements" onclick="showPage('achievements')" data-i18n="menu_achievements">🏆 Logros</button>
@@ -2166,7 +2168,7 @@ const RARITY_LABELS = { common: 'Común', rare: 'Raro', epic: 'Épico', legendar
 
 const ACHIEVEMENTS = [
   // ⚔️ Combate
-  { id:'primera', name:'Primer Paso', desc:'Juega tu primera partida (Dados o Conecta 4).', category:'combate', rarity:'common', icon:'👣', xp:50, coins:50, requirement:1, progress:s=>s.gamesPlayed, check:s=>s.gamesPlayed>=1 },
+  { id:'primera', name:'Primer Paso', desc:'Juega tu primera partida.', category:'combate', rarity:'common', icon:'👣', xp:50, coins:50, requirement:1, progress:s=>s.gamesPlayed, check:s=>s.gamesPlayed>=1 },
   { id:'primeravictoria', name:'Primera Victoria', desc:'Gana tu primera partida.', category:'combate', rarity:'common', icon:'🏅', xp:100, requirement:1, progress:s=>s.wins, check:s=>s.wins>=1 },
   { id:'racha', name:'Imparable', desc:'Consigue una racha de 3 victorias seguidas.', category:'combate', rarity:'rare', icon:'🔥', xp:250, requirement:3, progress:s=>s.bestStreak, check:s=>s.bestStreak>=3 },
   { id:'rachalarga', name:'Racha Legendaria', desc:'Consigue una racha de 7 victorias seguidas.', category:'combate', rarity:'epic', icon:'💥', xp:600, requirement:7, progress:s=>s.bestStreak, check:s=>s.bestStreak>=7 },
@@ -2175,7 +2177,7 @@ const ACHIEVEMENTS = [
   { id:'leyenda', name:'Leyenda Viviente', desc:'Gana 50 partidas.', category:'combate', rarity:'legendary', icon:'👑', xp:1500, requirement:50, progress:s=>s.wins, check:s=>s.wins>=50 },
 
   // 🧭 Exploración
-  { id:'explorador', name:'Explorador', desc:'Juega al menos una vez al Salón de Dados y a Conecta 4.', category:'exploracion', rarity:'common', icon:'🧭', xp:100, requirement:2, progress:s=>(s.flags.playedDice?1:0)+(s.flags.playedConnect4?1:0), check:s=>s.flags.playedDice&&s.flags.playedConnect4 },
+  { id:'explorador', name:'Explorador', desc:'Juega a Conecta 4 tanto contra el bot como online con un amigo.', category:'exploracion', rarity:'common', icon:'🧭', xp:100, requirement:2, progress:s=>(s.flags.playedConnect4?1:0)+(s.flags.playedConnect4Online?1:0), check:s=>s.flags.playedConnect4&&s.flags.playedConnect4Online },
   { id:'retobot', name:'Contra la Máquina', desc:'Gana una partida de Conecta 4 contra el bot.', category:'exploracion', rarity:'common', icon:'🤖', xp:100, requirement:1, progress:s=>s.flags.botDifficultiesWon.length, check:s=>s.flags.botDifficultiesWon.length>=1 },
   { id:'tripleamenaza', name:'Triple Amenaza', desc:'Gana al bot de Conecta 4 en sus 3 dificultades.', category:'exploracion', rarity:'rare', icon:'🎭', xp:300, requirement:3, progress:s=>s.flags.botDifficultiesWon.length, check:s=>s.flags.botDifficultiesWon.length>=3 },
   { id:'sociable', name:'Sociable', desc:'Añade a un amigo.', category:'exploracion', rarity:'common', icon:'🤝', xp:75, requirement:1, progress:s=>s.flags.addedFriend?1:0, check:s=>!!s.flags.addedFriend },
@@ -3343,8 +3345,10 @@ function createRoom() {
 }
 
 function joinRoom(roomName) {
+  // Las salas de "Salas disponibles" son contenido de ejemplo (a la espera
+  // de contenido real): antes llevaban al Salón de Dados, pero ese juego
+  // está retirado por ahora, así que de momento solo se queda en el aviso.
   toast(`🎮 Te unes a "${roomName}". ¡A jugar!`);
-  showPage('diceGame');
 }
 
 document.getElementById('modalBg').addEventListener('click', function (event) {
@@ -4363,7 +4367,6 @@ async function loadFriendsPanel() {
         <div class="friend-status">${online ? 'En línea' : 'Desconectado'}</div>
         <div class="friend-dropdown" id="${menuId}">
           <button onclick="openChat('${otherId}', '${safeName}'); toggleFriendMenu('${menuId}')">💬 Chatear</button>
-          <button onclick="sendGameInvite('${otherId}', '${safeName}', 'dice'); toggleFriendMenu('${menuId}')">🎲 Invitar a Dados</button>
           <button onclick="sendGameInvite('${otherId}', '${safeName}', 'connect4'); toggleFriendMenu('${menuId}')">🔴 Invitar a Conecta 4</button>
           <button onclick="removeFriend('${r.id}'); toggleFriendMenu('${menuId}')">🗑️ Eliminar amigo</button>
         </div>
