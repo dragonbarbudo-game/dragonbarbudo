@@ -48,7 +48,14 @@ export async function onRequestPost(context) {
         Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`
       }
     });
-    return json({ ok: delResp.ok }, 200);
+    // Si falla, devolvemos el motivo real (p.ej. una fila en otra tabla
+    // que todavía apunta a este usuario sin ON DELETE CASCADE): antes se
+    // perdía y solo se veía "no se pudo eliminar", sin pista de por qué.
+    if (!delResp.ok) {
+      const detail = await delResp.text().catch(() => '');
+      return json({ ok: false, error: 'delete_failed', status: delResp.status, detail }, 200);
+    }
+    return json({ ok: true }, 200);
   } catch (e) {
     return json({ ok: false, error: String(e) }, 200);
   }

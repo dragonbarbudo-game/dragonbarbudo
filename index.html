@@ -4655,7 +4655,11 @@ async function doAdminDeleteUser(id) {
       loadAdminPlayersList();
       loadAdminStats();
     } else {
-      toast('❌ No se pudo eliminar la cuenta.');
+      // Se muestra el motivo real (que ahora devuelve la Function) en vez
+      // de un genérico "no se pudo", para poder ver qué lo está bloqueando.
+      console.error('delete-user failed:', result);
+      const reason = result.detail || result.error || 'motivo desconocido';
+      toast('❌ No se pudo eliminar la cuenta: ' + reason);
     }
   } catch (e) {
     toast('❌ No se pudo eliminar la cuenta.');
