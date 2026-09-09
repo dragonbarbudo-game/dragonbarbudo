@@ -1197,8 +1197,11 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 <!-- PANTALLA DE ENTRADA (HOME) -->
 <div class="entry-screen" id="entryScreen">
     <div class="entry-hero">
+        <!-- Moneda quitada a petición del usuario: va a sustituirse por una
+             imagen nueva. Para volver a ponerla: quita el style="display:none"
+             y pon el src correcto (mismo archivo u otro nuevo). -->
         <button type="button" class="entry-coin-btn" id="entryCoinBtn" onclick="handleEntryCoinClick()" aria-label="Continuar">
-            <img class="entry-coin" id="entryCoinImg" src="moneda-dragonbarbudo.png" alt="Dragonbarbudo">
+            <img class="entry-coin" id="entryCoinImg" src="moneda-dragonbarbudo.png" alt="Dragonbarbudo" style="display:none;">
         </button>
         <div class="entry-continue" id="entryContinueLabel">
             <span id="entryContinueText" data-i18n="entry_continue">Continuar</span>
@@ -1284,9 +1287,12 @@ body.light-mode .auth-tabs button.active { color: #fff; }
     </button>
 
     <div class="auth-box">
+        <!-- Logo quitado a petición del usuario: va a sustituirse por uno
+             nuevo. Para volver a ponerlo: quita el style="display:none" de
+             las dos imágenes (mismos archivos u otros nuevos). -->
         <div class="auth-logo-mark">
-            <img class="logo-dark" src="logo-dragonbarbudo-oscuro.png" alt="Dragonbarbudo">
-            <img class="logo-light" src="logo-dragonbarbudo-claro.png" alt="Dragonbarbudo">
+            <img class="logo-dark" src="logo-dragonbarbudo-oscuro.png" alt="Dragonbarbudo" style="display:none;">
+            <img class="logo-light" src="logo-dragonbarbudo-claro.png" alt="Dragonbarbudo" style="display:none;">
         </div>
 
         <div class="oauth-buttons" id="oauthSection">
@@ -1408,14 +1414,20 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 <header style="display:none">
     <div class="header-left">
         <button class="header-icon-btn menu-toggle-btn" id="menuToggleBtn" onclick="toggleSidebar()" title="Menú" data-i18n-title="title_menu" aria-label="Abrir menú">☰</button>
+        <!-- Logo quitado a petición del usuario: va a sustituirse por uno
+             nuevo. Para volver a ponerlo: quita el style="display:none" de
+             las dos imágenes (mismos archivos u otros nuevos). -->
         <a href="#" onclick="return false;" class="header-logo-link" aria-label="Dragonbarbudo">
-            <img class="header-logo-img logo-dark" src="logo-dragonbarbudo-oscuro.png" alt="Dragonbarbudo">
-            <img class="header-logo-img logo-light" src="logo-dragonbarbudo-claro.png" alt="Dragonbarbudo">
+            <img class="header-logo-img logo-dark" src="logo-dragonbarbudo-oscuro.png" alt="Dragonbarbudo" style="display:none;">
+            <img class="header-logo-img logo-light" src="logo-dragonbarbudo-claro.png" alt="Dragonbarbudo" style="display:none;">
         </a>
     </div>
     <div class="nav-user">
+        <!-- Icono de moneda quitado a petición del usuario (se va a sustituir
+             por uno nuevo): mientras tanto se usa el emoji 🪙 directamente,
+             sin depender de moneda-dragonbarbudo.png. -->
         <div class="coins">
-            <span class="coin-icon-3d"><img src="moneda-dragonbarbudo.png" alt="Moneda" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'🪙',style:'font-size:18px'}))"></span>
+            <span class="coin-icon-3d" style="font-size:18px;">🪙</span>
             <span id="coinDisplay">0</span>
         </div>
         <div class="avatar-stage size-sm frame-ring header-avatar-btn" id="headerAvatar" onclick="toggleFriendsPanel()" title="Ver amigos" data-i18n-title="title_view_friends"></div>
