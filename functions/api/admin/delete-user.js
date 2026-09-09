@@ -10,7 +10,7 @@
 
 const SUPABASE_URL = 'https://yptdxphximblpzlrgjpg.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdGR4cGh4aW1ibHB6bHJnanBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1MTI2ODIsImV4cCI6MjEwNDA4ODY4Mn0.aA2jm-SC6xRI1_klg-17M-Po81RZP6dnpDfRBDQq_gc';
-const ADMIN_EMAILS = ['dragonbarbudo.game@gmail.com', 'titicuriosi@gmail.com'];
+const ADMIN_EMAILS = ['dragonbarbudo.game@gmail.com'];
 
 function json(body, status) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });

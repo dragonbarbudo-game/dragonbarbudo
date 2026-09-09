@@ -1335,6 +1335,14 @@ body.light-mode .auth-tabs button.active { color: #fff; }
         </form>
 
         <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)">
+            <!-- El registro público está cerrado: esto no crea la cuenta al
+                 momento, solo manda una solicitud que el admin aprueba o
+                 rechaza a mano (ver /api/request-registration). Por eso no
+                 se pide contraseña aquí: si se aprueba, la persona recibe
+                 una invitación por correo y elige su contraseña ahí. -->
+            <p class="auth-note" style="margin-bottom:14px;" data-i18n="register_closed_notice">
+                El registro está limitado: al enviar la solicitud, el admin la revisará y, si la aprueba, recibirás una invitación por correo para elegir tu contraseña y entrar.
+            </p>
             <div class="auth-field">
                 <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-7 8-7s8 3 8 7"/></svg>
                 <input type="text" id="registerUsername" placeholder="Nombre de usuario (3-30 caracteres)" data-i18n-placeholder="register_username_ph" required minlength="3" maxlength="30">
@@ -1343,18 +1351,11 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                 <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
                 <input type="email" id="registerEmail" placeholder="Correo electrónico" data-i18n-placeholder="email_address" required>
             </div>
-            <div class="password-wrap auth-field">
-                <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-                <input type="password" id="registerPassword" placeholder="Contraseña (mínimo 6 caracteres)" data-i18n-placeholder="register_password_ph" required minlength="6">
-                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('registerPassword', this)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
-                </button>
-            </div>
             <div class="auth-error" id="registerError"></div>
             <div class="auth-confirm-banner" id="registerConfirmBanner" style="display:none;">
-                📧 Cuenta creada. Revisa tu correo electrónico y pulsa el enlace de confirmación para poder iniciar sesión.
+                📨 Solicitud enviada. Si el admin la aprueba, te llegará un correo de invitación para elegir tu contraseña y entrar.
             </div>
-            <button type="submit" class="btn btn-primary" data-i18n="tab_register">Crear cuenta</button>
+            <button type="submit" class="btn btn-primary" data-i18n="register_submit_btn">Solicitar registro</button>
         </form>
 
         <form class="auth-form" id="forgotForm" onsubmit="handleForgotPassword(event)">
@@ -1688,6 +1689,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 
             <div class="stats">
                 <div class="stat stat-clickable" onclick="showPage('adminPlayersPage'); loadAdminPlayersList();" title="Ver el listado de jugadores"><div class="stat-number" id="adminStatPlayers">–</div><div class="stat-label">👥 Jugadores registrados</div></div>
+                <div class="stat stat-clickable" onclick="showPage('adminRegistrationRequestsPage'); loadAdminRegistrationRequests();" title="Ver las solicitudes de registro pendientes"><div class="stat-number" id="adminStatPendingRequests">–</div><div class="stat-label">📨 Solicitudes de registro</div></div>
                 <div class="stat"><div class="stat-number" id="adminStatOnline">–</div><div class="stat-label">🟢 En línea ahora</div></div>
                 <div class="stat"><div class="stat-number" id="adminStatVisitsTotal">–</div><div class="stat-label">👁️ Visitantes únicos (total)</div></div>
                 <div class="stat"><div class="stat-number" id="adminStatVisitsToday">–</div><div class="stat-label">📅 Visitas de hoy</div></div>
@@ -1710,6 +1712,20 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                 <p>Todas las cuentas registradas y si están conectadas ahora mismo.</p>
             </div>
             <div class="rooms" id="adminPlayersList">
+                <p class="friend-empty">Cargando…</p>
+            </div>
+        </div>
+
+        <!-- ADMIN › SOLICITUDES DE REGISTRO (subpágina, solo accesible desde
+             el Panel de Admin). El registro público está cerrado: aquí se
+             aprueban o rechazan las peticiones de quien quiera unirse. -->
+        <div class="page" id="adminRegistrationRequestsPage">
+            <button class="page-back-btn" onclick="showPage('adminPage')">← Volver</button>
+            <div class="welcome">
+                <h1>📨 Solicitudes de registro</h1>
+                <p>El registro público está cerrado: aprueba aquí a quien quieras dejar entrar. Al aprobar, se le invita por correo para que elija su contraseña.</p>
+            </div>
+            <div class="rooms" id="adminRegistrationRequestsList">
                 <p class="friend-empty">Cargando…</p>
             </div>
         </div>
@@ -2019,6 +2035,8 @@ const I18N = {
   oauth_divider: { en:'or with your email', fr:'ou avec votre e-mail', de:'oder mit deiner E-Mail', nl:'of met je e-mail', ru:'или с помощью почты', ar:'أو باستخدام بريدك الإلكتروني', zh:'或使用邮箱', ja:'またはメールアドレスで' },
   tab_login: { en:'Log in', fr:'Connexion', de:'Anmelden', nl:'Inloggen', ru:'Вход', ar:'تسجيل الدخول', zh:'登录', ja:'ログイン' },
   tab_register: { en:'Create account', fr:'Créer un compte', de:'Konto erstellen', nl:'Account aanmaken', ru:'Создать аккаунт', ar:'إنشاء حساب', zh:'创建账户', ja:'アカウントを作成' },
+  register_closed_notice: { en:'Registration is limited: once you submit your request, the admin will review it and, if approved, you’ll get an email invite to choose your password and log in.', fr:'L’inscription est limitée : une fois la demande envoyée, l’administrateur l’examinera et, si elle est approuvée, tu recevras une invitation par e-mail pour choisir ton mot de passe et te connecter.', de:'Die Registrierung ist eingeschränkt: Nach dem Absenden prüft der Admin deine Anfrage und du erhältst bei Genehmigung eine E-Mail-Einladung, um dein Passwort festzulegen und dich anzumelden.', nl:'Registreren is beperkt: zodra je je aanvraag verstuurt, beoordeelt de beheerder deze en ontvang je bij goedkeuring een uitnodiging per e-mail om je wachtwoord te kiezen en in te loggen.', ru:'Регистрация ограничена: после отправки заявки администратор её рассмотрит, и в случае одобрения вам придёт приглашение по почте, чтобы выбрать пароль и войти.', ar:'التسجيل مقيَّد: بعد إرسال طلبك سيراجعه المشرف، وإذا تمت الموافقة عليه ستصلك دعوة عبر البريد الإلكتروني لاختيار كلمة مرورك والدخول.', zh:'注册目前受限：提交申请后，管理员会审核，如果通过，你会收到一封邀请邮件用来设置密码并登录。', ja:'登録は制限されています。申請を送信すると管理者が確認し、承認されるとパスワードを設定してログインするための招待メールが届きます。' },
+  register_submit_btn: { en:'Request registration', fr:'Demander l’inscription', de:'Registrierung anfragen', nl:'Registratie aanvragen', ru:'Отправить заявку', ar:'طلب التسجيل', zh:'申请注册', ja:'登録をリクエスト' },
   login_email_ph: { en:'Email or username', fr:"E-mail ou nom d'utilisateur", de:'E-Mail oder Benutzername', nl:'E-mail of gebruikersnaam', ru:'Почта или имя пользователя', ar:'البريد الإلكتروني أو اسم المستخدم', zh:'邮箱或用户名', ja:'メールアドレスまたはユーザー名' },
   password: { en:'Password', fr:'Mot de passe', de:'Passwort', nl:'Wachtwoord', ru:'Пароль', ar:'كلمة المرور', zh:'密码', ja:'パスワード' },
   remember_me: { en:'Remember me', fr:'Se souvenir de moi', de:'Angemeldet bleiben', nl:'Onthoud mij', ru:'Запомнить меня', ar:'تذكرني', zh:'记住我', ja:'ログイン状態を保持' },
@@ -2343,8 +2361,7 @@ const ACHIEVEMENTS = [
    Para añadir/quitar administradores, edita esta lista.
 ========================= */
 const ADMIN_EMAILS = [
-  'dragonbarbudo.game@gmail.com',
-  'titicuriosi@gmail.com'
+  'dragonbarbudo.game@gmail.com'
 ];
 let isAdmin = false;
 
@@ -4373,6 +4390,112 @@ async function loadAdminStats() {
   } else {
     tableEl.innerHTML = '<p class="friend-empty">Todavía no hay datos de visitas por día.</p>';
   }
+
+  const pendingRequests = await fetchAdminRegistrationRequests();
+  document.getElementById('adminStatPendingRequests').textContent = pendingRequests.length.toLocaleString('es-ES');
+}
+
+/* =========================
+   ADMIN › SOLICITUDES DE REGISTRO
+   El registro público está cerrado (ver Supabase → Authentication →
+   "Allow new users to sign up", desactivado); esto es lo único que deja
+   entrar a alguien nuevo: aprobar aquí su solicitud la invita por
+   correo (ella elige su contraseña al abrir el enlace).
+========================= */
+let adminRegistrationRequestsCache = null;
+
+async function fetchAdminRegistrationRequests() {
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const resp = await fetch('/api/admin/registration-requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (session?.access_token || '') },
+      body: JSON.stringify({ action: 'list' })
+    });
+    const result = await resp.json().catch(() => ({}));
+    return (result.ok && Array.isArray(result.requests)) ? result.requests : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+async function loadAdminRegistrationRequests() {
+  if (!isAdmin) return;
+  document.getElementById('adminRegistrationRequestsList').innerHTML = '<p class="friend-empty">Cargando…</p>';
+  adminRegistrationRequestsCache = await fetchAdminRegistrationRequests();
+  renderAdminRegistrationRequests();
+}
+
+function renderAdminRegistrationRequests() {
+  const listEl = document.getElementById('adminRegistrationRequestsList');
+  if (!listEl) return;
+  const rows = adminRegistrationRequestsCache || [];
+  if (!rows.length) { listEl.innerHTML = '<p class="friend-empty">No hay solicitudes pendientes.</p>'; return; }
+  listEl.innerHTML = rows.map(r => `
+    <div class="room">
+      <div class="room-left">
+        <div class="game-icon">📨</div>
+        <div class="room-info"><h3>${r.username}</h3><p>${r.email} · ${new Date(r.created_at).toLocaleString('es-ES')}</p></div>
+      </div>
+      <div class="player-actions">
+        <button class="icon-action-btn" data-tooltip="Aprobar e invitar" onclick="adminApproveRegistration('${r.id}', '${(r.email || '').replace(/'/g, "\\'")}', '${(r.username || '').replace(/'/g, "\\'")}')">✅</button>
+        <button class="icon-action-btn" data-tooltip="Rechazar" onclick="adminRejectRegistration('${r.id}')">❌</button>
+      </div>
+    </div>`).join('');
+}
+
+function adminApproveRegistration(id, email, username) {
+  showConfirmModal(
+    '✅ Aprobar solicitud',
+    `Se invitará a "${email}" por correo para que elija su contraseña y entre como "${username}". ¿Continuar?`,
+    () => doAdminApproveRegistration(id, email, username)
+  );
+}
+async function doAdminApproveRegistration(id, email, username) {
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const resp = await fetch('/api/admin/registration-requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (session?.access_token || '') },
+      body: JSON.stringify({ action: 'approve', id, email, username })
+    });
+    const result = await resp.json().catch(() => ({}));
+    if (resp.ok && result.ok) {
+      toast('✅ Solicitud aprobada. Se ha enviado la invitación.');
+      loadAdminRegistrationRequests();
+    } else {
+      toast('❌ No se pudo aprobar la solicitud.');
+    }
+  } catch (e) {
+    toast('❌ No se pudo aprobar la solicitud.');
+  }
+}
+
+function adminRejectRegistration(id) {
+  showConfirmModal(
+    '❌ Rechazar solicitud',
+    '¿Seguro que quieres rechazar esta solicitud de registro?',
+    () => doAdminRejectRegistration(id)
+  );
+}
+async function doAdminRejectRegistration(id) {
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const resp = await fetch('/api/admin/registration-requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (session?.access_token || '') },
+      body: JSON.stringify({ action: 'reject', id })
+    });
+    const result = await resp.json().catch(() => ({}));
+    if (resp.ok && result.ok) {
+      toast('🗑️ Solicitud rechazada.');
+      loadAdminRegistrationRequests();
+    } else {
+      toast('❌ No se pudo rechazar la solicitud.');
+    }
+  } catch (e) {
+    toast('❌ No se pudo rechazar la solicitud.');
+  }
 }
 
 /* =========================
@@ -4658,35 +4781,35 @@ async function handleResetPassword(event) {
   showAuthScreen();
 }
 
+/* El registro público está cerrado (ver Supabase → Authentication →
+   "Allow new users to sign up", desactivado): esto no crea ninguna
+   cuenta al momento, solo guarda la solicitud y avisa al admin, que la
+   aprueba o rechaza a mano desde el Panel de Admin (ver
+   /api/request-registration y /api/admin/registration-requests). */
 async function handleRegister(event) {
   event.preventDefault();
   const username = document.getElementById('registerUsername').value.trim();
   const email = document.getElementById('registerEmail').value.trim();
-  const password = document.getElementById('registerPassword').value;
   const errorBox = document.getElementById('registerError');
   const confirmBanner = document.getElementById('registerConfirmBanner');
   errorBox.textContent = '';
   confirmBanner.style.display = 'none';
 
-  const { data, error } = await supabaseClient.auth.signUp({
-    email,
-    password,
-    options: { data: { username } }
-  });
-
-  if (error) {
-    errorBox.textContent = translateAuthError(error);
-    return;
-  }
-
-  // Si el proyecto no exige confirmar el correo, ya hay sesión activa.
-  if (data.session) {
-    await enterApp(data.user);
-  } else {
-    // Aviso grande y difícil de pasar por alto: registrarse NO te deja
-    // entrar todavía, hace falta confirmar el correo primero (Supabase
-    // rechaza el login hasta entonces).
+  try {
+    const resp = await fetch('/api/request-registration', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email })
+    });
+    const result = await resp.json().catch(() => ({}));
+    if (!resp.ok || !result.ok) {
+      errorBox.textContent = 'No se pudo enviar la solicitud. Inténtalo de nuevo en un momento.';
+      return;
+    }
+    document.getElementById('registerForm').reset();
     confirmBanner.style.display = 'block';
+  } catch (e) {
+    errorBox.textContent = 'No se pudo enviar la solicitud. Inténtalo de nuevo en un momento.';
   }
 }
 
