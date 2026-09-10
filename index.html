@@ -1119,6 +1119,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
     min-height: 100dvh;
     padding: 20px;
     position: relative;
+    cursor: pointer;
     background-image: radial-gradient(circle at 50% 42%, rgba(217,164,65,.10), transparent 60%);
 }
 .entry-scroll-hint {
@@ -1247,16 +1248,17 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 
 <!-- PANTALLA DE ENTRADA (HOME) -->
 <div class="entry-screen" id="entryScreen">
-    <div class="entry-hero">
+    <!-- A petición del usuario: se puede pulsar en cualquier punto de esta
+         zona (no solo en el texto/moneda) para continuar. -->
+    <div class="entry-hero" onclick="handleEntryCoinClick()" role="button" tabindex="0" aria-label="Continuar">
         <!-- Moneda quitada a petición del usuario: va a sustituirse por una
              imagen nueva. Para volver a ponerla: quita el style="display:none"
              y pon el src correcto (mismo archivo u otro nuevo). -->
-        <button type="button" class="entry-coin-btn" id="entryCoinBtn" onclick="handleEntryCoinClick()" aria-label="Continuar">
+        <button type="button" class="entry-coin-btn" id="entryCoinBtn" aria-hidden="true" tabindex="-1">
             <img class="entry-coin" id="entryCoinImg" src="moneda-dragonbarbudo.png" alt="Dragonbarbudo" style="display:none;">
         </button>
         <div class="entry-continue" id="entryContinueLabel">
             <span id="entryContinueText" data-i18n="entry_continue">Continuar</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </div>
 
         <!-- Aviso persistente tras confirmar el correo (ver checkSession):
@@ -1264,7 +1266,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
              de Home, no desaparece solo como un toast normal. -->
         <div class="entry-confirm-banner" id="entryConfirmBanner" style="display:none;">
             <span>✅ Tu cuenta ha sido confirmada. Pulsa «Continuar» e inicia sesión con tu correo y contraseña para entrar.</span>
-            <button type="button" class="entry-confirm-close" onclick="document.getElementById('entryConfirmBanner').style.display='none'" aria-label="Cerrar aviso">✕</button>
+            <button type="button" class="entry-confirm-close" onclick="event.stopPropagation(); document.getElementById('entryConfirmBanner').style.display='none'" aria-label="Cerrar aviso">✕</button>
         </div>
 
         <div class="entry-scroll-hint" aria-hidden="true">
