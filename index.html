@@ -4853,19 +4853,27 @@ async function gmrpgStartGame() {
   if (!nombre || !gmrpgSelectedRace || spent !== GMRPG_ATTR_BUDGET) return;
 
   const initial = gmrpgBuildInitialState(nombre, gmrpgSelectedRace, { ...gmrpgAttrs });
-  const { data, error } = await supabaseClient.from('gmrpg_games').insert({
-    user_id: currentUserId,
-    personaje: initial.personaje,
-    mapa: initial.mapa,
-    turno: initial.turno,
-    turno_max: initial.turno_max,
-    historial: initial.historial,
-    status: initial.status
-  }).select().single();
+  let row = null;
+  try {
+    const { data, error } = await supabaseClient.from('gmrpg_games').insert({
+      user_id: currentUserId,
+      personaje: initial.personaje,
+      mapa: initial.mapa,
+      turno: initial.turno,
+      turno_max: initial.turno_max,
+      historial: initial.historial,
+      status: initial.status
+    }).select().single();
+    if (!error && data) row = data;
+  } catch (e) { /* sigue en local, ver comentario abajo */ }
 
-  if (error || !data) { toast('❌ No se pudo crear la partida.'); return; }
-
-  gmrpgState = data;
+  // Jugar solo contra el GM no debería depender de que exista la tabla
+  // en Supabase (p.ej. si aún no se ha ejecutado gmrpg-setup.sql): si
+  // guardar falla por lo que sea, la partida sigue siendo jugable en
+  // local —igual que el modo "Jugar con Bots" de Parchís/Conecta 4—,
+  // solo que no se podrá reanudar si se cierra el navegador.
+  gmrpgState = row || { id: 'local-' + Date.now(), user_id: currentUserId, ...initial };
+  gmrpgState.persisted = !!row;
   gmrpgPendingDice = null;
   closeGmrpgEntryModal();
   showPage('gmrpgGame');
@@ -4948,16 +4956,24 @@ async function gmrpgSendAction(accionTexto) {
     gmrpgState.resultado = result.estado.resultado || null;
     gmrpgState.status = gmrpgState.resultado ? 'finished' : 'active';
 
-    await supabaseClient.from('gmrpg_games').update({
-      personaje: gmrpgState.personaje,
-      mapa: gmrpgState.mapa,
-      turno: gmrpgState.turno,
-      ultima_tirada: gmrpgState.ultima_tirada,
-      historial: gmrpgState.historial,
-      status: gmrpgState.status,
-      resultado: gmrpgState.resultado,
-      updated_at: new Date().toISOString()
-    }).eq('id', gmrpgState.id);
+    // Si la partida no se pudo guardar en Supabase al crearla (o deja
+    // de poder guardarse a mitad), se sigue jugando en local sin más
+    // intentos de escritura — nunca debe bloquear la partida en sí.
+    if (gmrpgState.persisted) {
+      try {
+        const { error: saveError } = await supabaseClient.from('gmrpg_games').update({
+          personaje: gmrpgState.personaje,
+          mapa: gmrpgState.mapa,
+          turno: gmrpgState.turno,
+          ultima_tirada: gmrpgState.ultima_tirada,
+          historial: gmrpgState.historial,
+          status: gmrpgState.status,
+          resultado: gmrpgState.resultado,
+          updated_at: new Date().toISOString()
+        }).eq('id', gmrpgState.id);
+        if (saveError) gmrpgState.persisted = false;
+      } catch (e) { gmrpgState.persisted = false; }
+    }
 
     gmrpgPendingDice = gmrpgState.resultado ? null : gmrpgDetectDiceRequest(result.narracion);
     gmrpgRender();
