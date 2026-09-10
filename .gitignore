@@ -10,3 +10,7 @@ Imágenes/
 # NUNCA subir credenciales ni accesos directos locales
 client_secret_*.json
 *.url
+
+# NUNCA subir acuerdos/documentos legales o de socios (carpeta local
+# de trabajo, no forma parte del repo)
+docs/
