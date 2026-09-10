@@ -610,10 +610,8 @@ main { padding: 30px; overflow: hidden; }
     content: '★'; position: absolute; color: #b8901a; opacity: .55;
     font-size: calc(var(--pc-cell) * var(--pc-zoom) * 0.5); pointer-events: none;
 }
-/* Solo el bloque interior de cada rincón lleva el color de esa casa (como
-   el cuadro ilustrado de un tablero real); el borde de esa esquina se
-   queda del mismo tono neutro que el resto del tablero, para que no
-   parezca que el color de cada jugador ocupa todo el rincón. */
+/* El rincón entero es del color de esa casa, de punta a punta: así es un
+   Parchís de verdad (un cuadro grande de color, no un recuadro pequeño). */
 .pc-cell.pc-corral-red { background: #c0392b; }
 .pc-cell.pc-corral-green { background: #219653; }
 .pc-cell.pc-corral-yellow { background: #e8b923; }
@@ -622,16 +620,19 @@ main { padding: 30px; overflow: hidden; }
 .pc-cell.pc-home-green { background: rgba(67,160,71,.3); }
 .pc-cell.pc-home-yellow { background: rgba(253,216,53,.35); }
 .pc-cell.pc-home-blue { background: rgba(66,133,244,.3); }
-/* "Puente" de color: la casilla del rincón junto a la salida (pc-bridge-*)
-   y la propia salida (pc-start-*, además de su estrella) llevan el mismo
-   tono que el pasillo privado de ese color, para que el corral y la
-   salida se vean conectados como un solo territorio, no como dos piezas
-   sueltas. */
-.pc-cell.pc-bridge-red, .pc-cell.pc-start-red { background: rgba(224,63,63,.3); }
-.pc-cell.pc-bridge-green, .pc-cell.pc-start-green { background: rgba(67,160,71,.3); }
-.pc-cell.pc-bridge-yellow, .pc-cell.pc-start-yellow { background: rgba(253,216,53,.35); }
-.pc-cell.pc-bridge-blue, .pc-cell.pc-start-blue { background: rgba(66,133,244,.3); }
-.pc-cell.pc-center { background: linear-gradient(135deg, var(--gold), var(--gold-light)); }
+/* La propia casilla de salida de cada color, además de su estrella,
+   lleva un tono de su color (casilla segura "extra"). */
+.pc-cell.pc-start-red { background: rgba(224,63,63,.3); }
+.pc-cell.pc-start-green { background: rgba(67,160,71,.3); }
+.pc-cell.pc-start-yellow { background: rgba(253,216,53,.35); }
+.pc-cell.pc-start-blue { background: rgba(66,133,244,.3); }
+/* Centro en forma de molinillo de 4 puntas (una por cada color), como en
+   un tablero de Parchís real. */
+.pc-cell.pc-center { background: conic-gradient(from -45deg, #219653 0deg 90deg, #e8b923 90deg 180deg, #2874a6 180deg 270deg, #c0392b 270deg 360deg); }
+.pc-cell.pc-corner-nw { background: linear-gradient(135deg, #219653, #c0392b); }
+.pc-cell.pc-corner-ne { background: linear-gradient(225deg, #219653, #e8b923); }
+.pc-cell.pc-corner-sw { background: linear-gradient(45deg, #c0392b, #2874a6); }
+.pc-cell.pc-corner-se { background: linear-gradient(315deg, #2874a6, #e8b923); }
 .pc-corral-slot { width: 60%; height: 60%; border-radius: 50%; border: 2px dashed rgba(255,255,255,.4); }
 .pc-piece {
     width: 78%; height: 78%; border-radius: 50%; border: 2px solid rgba(0,0,0,.35);
@@ -3556,12 +3557,6 @@ const PARCHIS_SAFE_GLOBAL = new Set(Object.values(PARCHIS_START_INDEX));
 // salida (para pintarlas también de su color, no solo con la estrella).
 const PARCHIS_START_GLOBAL_COLOR = Object.fromEntries(Object.entries(PARCHIS_START_INDEX).map(([color, idx]) => [idx, color]));
 
-// "Puente" de cada color: la casilla del rincón (corral) que toca de
-// verdad su casilla de salida en la vuelta. Se pinta del color del
-// jugador, igual que esa salida, para que el corral y la salida se vean
-// como un único territorio conectado y no como dos piezas sueltas.
-const PARCHIS_BRIDGE = { red: [5, 1], green: [1, 9], yellow: [9, 13], blue: [13, 5] };
-
 let parchisState = null;         // partida actual (local o reflejo de la fila de Supabase)
 let parchisChannel = null;
 let parchisZoomLevel = 1;
@@ -3685,24 +3680,25 @@ function parchisCellRoleMap() {
   if (parchisCellRoleCache) return parchisCellRoleCache;
   const map = {};
   const set = (r, c, role) => { map[r + ',' + c] = role; };
-  // Solo el bloque interior 4x4 de cada rincón (con un margen de 1 casilla
-  // alrededor, del mismo tono neutro que el resto del tablero) lleva el
-  // color de esa casa: así el "territorio" de cada jugador se ve como un
-  // cuadro enmarcado, no como todo el rincón pintado de su color.
-  const corralInner = (localR, localC) => localR >= 1 && localR <= 4 && localC >= 1 && localC <= 4;
+  // El rincón entero (bloque de 6x6) es del color de esa casa, de punta a
+  // punta: así es un Parchís de verdad (un solo cuadro de color por
+  // jugador, no un recuadro pequeño enmarcado con margen alrededor).
   for (let r = 0; r < 15; r++) {
     for (let c = 0; c < 15; c++) {
-      if (r <= 5 && c <= 5) set(r, c, corralInner(r, c) ? 'corral-red' : 'margin');
-      else if (r <= 5 && c >= 9) set(r, c, corralInner(r, c - 9) ? 'corral-green' : 'margin');
-      else if (r >= 9 && c >= 9) set(r, c, corralInner(r - 9, c - 9) ? 'corral-yellow' : 'margin');
-      else if (r >= 9 && c <= 5) set(r, c, corralInner(r - 9, c) ? 'corral-blue' : 'margin');
+      if (r <= 5 && c <= 5) set(r, c, 'corral-red');
+      else if (r <= 5 && c >= 9) set(r, c, 'corral-green');
+      else if (r >= 9 && c >= 9) set(r, c, 'corral-yellow');
+      else if (r >= 9 && c <= 5) set(r, c, 'corral-blue');
       else set(r, c, 'blank');
     }
   }
   set(7, 7, 'center');
+  // Las 4 esquinas del cuadro central (antes vacías) llevan un degradado
+  // entre los dos colores que las tocan, para que el centro se vea como
+  // un molinillo de 4 puntas, como en un Parchís de verdad.
+  set(6, 6, 'corner-nw'); set(6, 8, 'corner-ne'); set(8, 6, 'corner-sw'); set(8, 8, 'corner-se');
   PARCHIS_LOOP.forEach(([r, c]) => set(r, c, 'track'));
   Object.entries(PARCHIS_HOME).forEach(([color, cells]) => cells.forEach(([r, c]) => set(r, c, 'home-' + color)));
-  Object.entries(PARCHIS_BRIDGE).forEach(([color, [r, c]]) => set(r, c, 'bridge-' + color));
   parchisCellRoleCache = map;
   return map;
 }
