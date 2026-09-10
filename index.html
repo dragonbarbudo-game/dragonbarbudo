@@ -598,57 +598,18 @@ main { padding: 30px; overflow: hidden; }
    "formato" de partida, solo cambia el tablero. Aquí solo se define lo
    que es exclusivo del Parchís: el tablero en cruz (rejilla 15x15), las
    fichas, el dado y la sala de espera mientras se completan 4 jugadores. */
+/* DISEÑO DEL TABLERO BORRADO A PROPÓSITO (a la espera de una definición
+   nueva): de momento es una rejilla lisa, sin colores ni decoración por
+   casilla. La lógica (quién es corral/pasillo/centro/segura) sigue
+   igual en el JS, solo no se pinta nada distinto todavía. */
 .pc-board {
     --pc-cell: 26px; --pc-zoom: 1;
     display: grid;
     grid-template-columns: repeat(15, calc(var(--pc-cell) * var(--pc-zoom)));
     grid-template-rows: repeat(15, calc(var(--pc-cell) * var(--pc-zoom)));
-    /* El hueco de 1px entre casillas usa este mismo fondo oscuro: hace de
-       línea de rejilla bien visible entre casilla y casilla. */
-    gap: 1px; background: #232323; padding: 10px; border-radius: 12px; width: fit-content; margin: 0 auto;
+    gap: 1px; background: var(--border); padding: 10px; border-radius: 12px; width: fit-content; margin: 0 auto;
 }
-.pc-cell { background: var(--parchment); position: relative; display: flex; align-items: center; justify-content: center; }
-.pc-cell.pc-safe::before {
-    content: '★'; position: absolute; color: #b8901a; opacity: .7;
-    font-size: calc(var(--pc-cell) * var(--pc-zoom) * 0.5); pointer-events: none;
-}
-/* El rincón entero es del color de esa casa, de punta a punta: así es un
-   Parchís de verdad (un cuadro grande de color, no un recuadro pequeño). */
-.pc-cell.pc-corral-red { background: #c0392b; }
-.pc-cell.pc-corral-green { background: #219653; }
-.pc-cell.pc-corral-yellow { background: #e8b923; }
-.pc-cell.pc-corral-blue { background: #2874a6; }
-/* Los 6 pasillos de cada color van a color sólido (como las casas), no
-   solo con un tinte suave: así se ve claramente "un corredor coloreado". */
-.pc-cell.pc-home-red { background: #c0392b; }
-.pc-cell.pc-home-green { background: #219653; }
-.pc-cell.pc-home-yellow { background: #e8b923; }
-.pc-cell.pc-home-blue { background: #2874a6; }
-/* La propia casilla de salida de cada color, además de su estrella,
-   lleva un tono de su color (casilla segura "extra"), más suave que el
-   pasillo para no confundirla con una casilla normal de la vuelta. */
-.pc-cell.pc-start-red { background: rgba(224,63,63,.35); }
-.pc-cell.pc-start-green { background: rgba(67,160,71,.35); }
-.pc-cell.pc-start-yellow { background: rgba(253,216,53,.4); }
-.pc-cell.pc-start-blue { background: rgba(66,133,244,.35); }
-/* Centro: cuadrado partido en 4 triángulos, uno de cada color, apuntando
-   cada uno hacia el lado de su jugador (como en un Parchís real). El
-   conic-gradient ya da bordes nítidos (no degradado) entre cada cuarto. */
-.pc-cell.pc-center { background: conic-gradient(from -45deg, #219653 0deg 90deg, #e8b923 90deg 180deg, #2874a6 180deg 270deg, #c0392b 270deg 360deg); }
-/* Las 4 esquinas del cuadro central completan esos mismos triángulos:
-   cada una es mitad de un color y mitad del otro, con un corte nítido
-   en diagonal (no degradado), para que se vea una sola pieza continua. */
-.pc-cell.pc-corner-nw { background: #219653; }
-.pc-cell.pc-corner-nw::after { content: ''; position: absolute; inset: 0; background: #c0392b; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
-.pc-cell.pc-corner-ne { background: #219653; }
-.pc-cell.pc-corner-ne::after { content: ''; position: absolute; inset: 0; background: #e8b923; clip-path: polygon(0 0, 100% 100%, 0 100%); }
-.pc-cell.pc-corner-sw { background: #c0392b; }
-.pc-cell.pc-corner-sw::after { content: ''; position: absolute; inset: 0; background: #2874a6; clip-path: polygon(100% 0, 100% 100%, 0 0); }
-.pc-cell.pc-corner-se { background: #2874a6; }
-.pc-cell.pc-corner-se::after { content: ''; position: absolute; inset: 0; background: #e8b923; clip-path: polygon(100% 0, 0 100%, 0 0); }
-/* Las 4 fichas de salida de cada casa: círculos blancos bien visibles
-   (no un simple contorno), como en un tablero de verdad. */
-.pc-corral-slot { width: 62%; height: 62%; border-radius: 50%; background: rgba(255,255,255,.85); box-shadow: inset 0 0 0 2px rgba(0,0,0,.15); }
+.pc-cell { background: var(--panel-2); position: relative; display: flex; align-items: center; justify-content: center; }
 .pc-piece {
     width: 78%; height: 78%; border-radius: 50%; border: 2px solid rgba(0,0,0,.35);
     box-shadow: 0 2px 3px rgba(0,0,0,.4); position: relative; z-index: 2;
