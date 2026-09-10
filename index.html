@@ -622,6 +622,15 @@ main { padding: 30px; overflow: hidden; }
 .pc-cell.pc-home-green { background: rgba(67,160,71,.3); }
 .pc-cell.pc-home-yellow { background: rgba(253,216,53,.35); }
 .pc-cell.pc-home-blue { background: rgba(66,133,244,.3); }
+/* "Puente" de color: la casilla del rincón junto a la salida (pc-bridge-*)
+   y la propia salida (pc-start-*, además de su estrella) llevan el mismo
+   tono que el pasillo privado de ese color, para que el corral y la
+   salida se vean conectados como un solo territorio, no como dos piezas
+   sueltas. */
+.pc-cell.pc-bridge-red, .pc-cell.pc-start-red { background: rgba(224,63,63,.3); }
+.pc-cell.pc-bridge-green, .pc-cell.pc-start-green { background: rgba(67,160,71,.3); }
+.pc-cell.pc-bridge-yellow, .pc-cell.pc-start-yellow { background: rgba(253,216,53,.35); }
+.pc-cell.pc-bridge-blue, .pc-cell.pc-start-blue { background: rgba(66,133,244,.3); }
 .pc-cell.pc-center { background: linear-gradient(135deg, var(--gold), var(--gold-light)); }
 .pc-corral-slot { width: 60%; height: 60%; border-radius: 50%; border: 2px dashed rgba(255,255,255,.4); }
 .pc-piece {
@@ -3543,6 +3552,15 @@ const PARCHIS_CORRAL = {
 };
 
 const PARCHIS_SAFE_GLOBAL = new Set(Object.values(PARCHIS_START_INDEX));
+// De índice global de la vuelta -> color, solo para las 4 casillas de
+// salida (para pintarlas también de su color, no solo con la estrella).
+const PARCHIS_START_GLOBAL_COLOR = Object.fromEntries(Object.entries(PARCHIS_START_INDEX).map(([color, idx]) => [idx, color]));
+
+// "Puente" de cada color: la casilla del rincón (corral) que toca de
+// verdad su casilla de salida en la vuelta. Se pinta del color del
+// jugador, igual que esa salida, para que el corral y la salida se vean
+// como un único territorio conectado y no como dos piezas sueltas.
+const PARCHIS_BRIDGE = { red: [5, 1], green: [1, 9], yellow: [9, 13], blue: [13, 5] };
 
 let parchisState = null;         // partida actual (local o reflejo de la fila de Supabase)
 let parchisChannel = null;
@@ -3684,6 +3702,7 @@ function parchisCellRoleMap() {
   set(7, 7, 'center');
   PARCHIS_LOOP.forEach(([r, c]) => set(r, c, 'track'));
   Object.entries(PARCHIS_HOME).forEach(([color, cells]) => cells.forEach(([r, c]) => set(r, c, 'home-' + color)));
+  Object.entries(PARCHIS_BRIDGE).forEach(([color, [r, c]]) => set(r, c, 'bridge-' + color));
   parchisCellRoleCache = map;
   return map;
 }
@@ -3790,6 +3809,7 @@ function parchisRender() {
         classes.push('pc-track');
         const globalIdx = (PARCHIS_LOOP.findIndex(([lr, lc]) => lr === r && lc === c));
         if (PARCHIS_SAFE_GLOBAL.has(globalIdx)) classes.push('pc-safe');
+        if (PARCHIS_START_GLOBAL_COLOR[globalIdx]) classes.push('pc-start-' + PARCHIS_START_GLOBAL_COLOR[globalIdx]);
       } else if (role === 'center') classes.push('pc-center');
       else classes.push('pc-' + role); // corral-<color> / home-<color>
 
