@@ -624,10 +624,21 @@ main { padding: 30px; overflow: hidden; }
 }
 /* El rincón entero es del color de esa casa, de punta a punta: una casa
    grande por jugador, con aspecto de tablero clásico impreso. */
-.pc-cell.pc-corral-yellow { background: #f2c318; }
-.pc-cell.pc-corral-blue { background: #1f6fb2; }
-.pc-cell.pc-corral-red { background: #c62828; }
-.pc-cell.pc-corral-green { background: #2e7d32; }
+/* Cada casa es UNA sola pieza (ocupa el ancho de 8 casillas numeradas,
+   para que "una casilla" mida siempre lo mismo en todo el tablero),
+   nunca una rejilla de casillitas por dentro. */
+.pc-corral { position: relative; display: flex; align-items: center; justify-content: center; }
+.pc-corral-emblem {
+    width: 90%; height: 90%; border-radius: 50%; position: relative;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,.35);
+}
+.pc-corral-emblem::before { content: ''; position: absolute; inset: 8%; border-radius: 50%; border: 3px solid rgba(255,255,255,.85); box-sizing: border-box; }
+.pc-corral-emblem::after { content: ''; position: absolute; inset: 30%; border-radius: 50%; background: #fff; }
+.pc-corral-yellow .pc-corral-emblem { background: #f2c318; }
+.pc-corral-blue .pc-corral-emblem { background: #1f6fb2; }
+.pc-corral-red .pc-corral-emblem { background: #c62828; }
+.pc-corral-green .pc-corral-emblem { background: #2e7d32; }
 /* Los 7 pasillos de cada color, en color sólido, apuntando hacia el centro. */
 .pc-cell.pc-home-yellow { background: #f2c318; }
 .pc-cell.pc-home-blue { background: #1f6fb2; }
@@ -3621,6 +3632,17 @@ const PARCHIS_CORRAL = {
 const PARCHIS_CORRAL_SLOT_SET = new Set(
   Object.values(PARCHIS_CORRAL).flat().map(([r, c]) => r + ',' + c)
 );
+// La casa de cada color NO es una rejilla de 8x8 casillitas: es UN solo
+// cuadrado (ocupa el mismo espacio que 8 casillas numeradas de lado,
+// para que el ancho de "una casilla" se mantenga igual en todo el
+// tablero, pero cuenta como una sola pieza, sin líneas de rejilla por
+// dentro). grid-row/grid-column van en formato CSS "inicio / fin".
+const PARCHIS_CORRAL_SPAN = {
+  yellow: { row: '1 / 9', col: '1 / 9' },
+  blue: { row: '1 / 9', col: '12 / 20' },
+  red: { row: '12 / 20', col: '12 / 20' },
+  green: { row: '12 / 20', col: '1 / 9' }
+};
 
 // 12 casillas seguras en total (3 por color: su salida + 2 más, siempre
 // a 7 y 12 casillas de esa salida) — coinciden exactamente con las
@@ -3974,12 +3996,14 @@ function parchisRender() {
     : [];
   const legalPieceIdxs = new Set(legal.map(m => m.pieceIdx));
 
+  // Solo las fichas que ya han salido (no las de la cárcel) van en la
+  // rejilla de casillas normal; las de la cárcel se dibujan aparte,
+  // sobre la casa entera (ver más abajo).
   const byCell = {};
   PARCHIS_COLORS.forEach(color => {
-    let corralSlot = 0;
     pieces[color].forEach((pos, idx) => {
-      const slot = pos === -1 ? corralSlot++ : 0;
-      const [r, c] = parchisCoord(color, pos, slot);
+      if (pos === -1) return;
+      const [r, c] = parchisCoord(color, pos, 0);
       const key = r + ',' + c;
       (byCell[key] = byCell[key] || []).push({ color, idx, movable: color === turnPlayer.color && legalPieceIdxs.has(idx) });
     });
@@ -3990,7 +4014,9 @@ function parchisRender() {
   for (let r = 0; r < 19; r++) {
     for (let c = 0; c < 19; c++) {
       const role = roles[r + ',' + c] || 'blank';
-      if (role === 'blank') continue;
+      // "blank" y las 4 casas (corral-*) no llevan casillita individual
+      // aquí: las casas se pintan aparte, como una sola pieza (ver abajo).
+      if (role === 'blank' || role.indexOf('corral-') === 0) continue;
       const classes = ['pc-cell'];
       let number = '';
       if (role === 'track') {
@@ -4000,11 +4026,10 @@ function parchisRender() {
         if (PARCHIS_START_GLOBAL_COLOR[globalIdx]) classes.push('pc-start-' + PARCHIS_START_GLOBAL_COLOR[globalIdx]);
         number = `<span class="pc-cell-number">${parchisDisplayNumber(globalIdx)}</span>`;
       } else if (role === 'center') classes.push('pc-center');
-      else classes.push('pc-' + role); // corral-<color> / home-<color> / goal-edge-<color> / corner-*
+      else classes.push('pc-' + role); // home-<color> / goal-edge-<color> / corner-*
 
       const cellPieces = byCell[r + ',' + c] || [];
       let inner = number;
-      if (!cellPieces.length && PARCHIS_CORRAL_SLOT_SET.has(r + ',' + c)) inner += '<span class="pc-corral-slot"></span>';
       if (cellPieces.length) {
         const groups = {};
         cellPieces.forEach(p => { (groups[p.color] = groups[p.color] || []).push(p); });
@@ -4021,6 +4046,31 @@ function parchisRender() {
       html += `<div class="${classes.join(' ')}" style="grid-row:${r + 1};grid-column:${c + 1};">${inner}</div>`;
     }
   }
+
+  // Las 4 casas: una sola pieza cada una (mismo ancho que 8 casillas
+  // numeradas, pero sin rejilla por dentro), con sus fichas en la
+  // cárcel colocadas encima en 2x2.
+  const corralSlotPos = [[26, 26], [26, 74], [74, 26], [74, 74]]; // % left/top dentro de la casa
+  PARCHIS_COLORS.forEach(color => {
+    const span = PARCHIS_CORRAL_SPAN[color];
+    let slot = 0;
+    const jailedPieces = pieces[color]
+      .map((pos, idx) => ({ pos, idx }))
+      .filter(p => p.pos === -1)
+      .map(p => {
+        const [left, top] = corralSlotPos[slot++];
+        const movable = color === turnPlayer.color && legalPieceIdxs.has(p.idx);
+        const attr = movable ? ` onclick="parchisPlayerMove(${p.idx})"` : '';
+        return `<div class="pc-piece pc-piece-${color}${movable ? ' pc-movable' : ''}" style="position:absolute; left:${left}%; top:${top}%; width:20%; height:20%; transform:translate(-50%,-50%);"${attr}></div>`;
+      });
+    const emptySlots = corralSlotPos.slice(jailedPieces.length)
+      .map(([left, top]) => `<span class="pc-corral-slot" style="position:absolute; left:${left}%; top:${top}%; width:16%; height:16%; transform:translate(-50%,-50%);"></span>`);
+    html += `<div class="pc-corral pc-corral-${color}" style="grid-row:${span.row}; grid-column:${span.col};">
+      <div class="pc-corral-emblem"></div>
+      ${emptySlots.join('')}${jailedPieces.join('')}
+    </div>`;
+  });
+
   document.getElementById('parchisBoard').innerHTML = html;
 
   if (justFinished) {
