@@ -312,6 +312,7 @@ main { padding: 30px; overflow: hidden; }
 .c4-entry-icon { font-size: 28px; flex-shrink: 0; }
 .c4-difficulty-options { display: flex; gap: 8px; flex-wrap: wrap; }
 .c4-difficulty-options .btn { flex: 1; min-width: 100px; }
+.c4-difficulty-options .btn.on { border-color: var(--gold); color: var(--gold-light); }
 .btn { border: none; padding: 11px 16px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: .15s; font-family: 'Manrope', sans-serif; }
 .btn-primary { background: var(--gold); color: #18130a; }
 .btn-primary:hover { background: var(--gold-light); transform: translateY(-1px); }
@@ -1571,6 +1572,16 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                 </div>
             </div>
 
+            <!-- Tirada inicial: todos tiran una vez y quien saque más alto
+                 empieza (ver parchisMaybeAutoAdvanceStartRoll). -->
+            <div id="pcStartRoll" style="display:none;">
+                <div class="pc-waiting-list" id="pcStartRollList"></div>
+                <div class="c4-actions">
+                    <button class="btn btn-dark" onclick="leaveParchisGame()">← Salir</button>
+                    <button class="btn btn-primary" id="pcStartRollBtn" onclick="parchisRollStart()">🎲 Tirar</button>
+                </div>
+            </div>
+
             <div id="pcGameBoard" style="display:none;">
                 <div class="c4-postgame" id="pcPostGameActions" style="display:none;">
                     <button class="btn btn-primary c4-postgame-btn" onclick="parchisRematch()" title="Revancha">🔁 Revancha</button>
@@ -1903,7 +1914,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
         <h2>🎲 Parchís</h2>
 
         <div id="pcEntryChoices">
-            <button class="c4-entry-option" onclick="parchisStartBotGame()">
+            <button class="c4-entry-option" onclick="showParchisBotDifficulty()">
                 <span class="c4-entry-icon">🤖</span>
                 <span><strong>Jugar con Bots</strong><br><small>Tú contra 3 bots</small></span>
             </button>
@@ -1913,9 +1924,25 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             </button>
         </div>
 
+        <div id="pcEntryBotDifficulty" style="display:none;">
+            <p class="friend-msg" style="margin-bottom:10px;">Elige la dificultad:</p>
+            <div class="c4-difficulty-options">
+                <button class="btn btn-dark" onclick="parchisStartBotGame('easy')">😊 Fácil</button>
+                <button class="btn btn-dark" onclick="parchisStartBotGame('normal')">🙂 Normal</button>
+                <button class="btn btn-dark" onclick="parchisStartBotGame('hard')">😈 Difícil</button>
+            </div>
+            <button class="page-back-btn" onclick="showParchisEntryChoices()" style="margin-top:16px;">← Volver</button>
+        </div>
+
         <div id="pcEntryFriendPicker" style="display:none;">
             <p class="friend-msg" style="margin-bottom:10px;">Elige a quién invitar (hasta 3):</p>
             <div id="pcFriendPickerList"><p class="friend-empty">Cargando…</p></div>
+            <p class="friend-msg" style="margin:14px 0 8px;">Dificultad de las plazas que se rellenen con bots:</p>
+            <div class="c4-difficulty-options" id="pcFriendBotDifficultyOptions">
+                <button type="button" class="btn btn-dark" data-difficulty="easy" onclick="parchisSelectBotDifficulty('easy')">😊 Fácil</button>
+                <button type="button" class="btn btn-dark on" data-difficulty="normal" onclick="parchisSelectBotDifficulty('normal')">🙂 Normal</button>
+                <button type="button" class="btn btn-dark" data-difficulty="hard" onclick="parchisSelectBotDifficulty('hard')">😈 Difícil</button>
+            </div>
             <button class="btn btn-primary" id="pcCreateGameBtn" onclick="parchisCreateFriendGame()" style="margin-top:12px; width:100%;" disabled>Elige al menos a un amigo</button>
             <button class="page-back-btn" onclick="showParchisEntryChoices()" style="margin-top:16px;">← Volver</button>
         </div>
@@ -3521,6 +3548,7 @@ let parchisState = null;         // partida actual (local o reflejo de la fila d
 let parchisChannel = null;
 let parchisZoomLevel = 1;
 let parchisSelectedFriends = []; // [{id,name}] elegidos en el selector de amigos
+let parchisSelectedBotDifficulty = 'normal'; // dificultad elegida para las plazas que se rellenen con bots
 let parchisRolling = false;      // evita disparar dos veces la misma tirada/pase automático
 let parchisWasActive = false;    // para detectar el instante justo en que termina la partida
 let parchisDiceRollShown = false; // evita repetir la animación de caída en cada repintado de la misma tirada
@@ -3593,13 +3621,41 @@ function parchisHasWon(pieces, color) {
 /* Bot: prioriza sacar ficha del corral con un 5, luego capturar si
    puede, y si no, adelanta la ficha más avanzada (suele ser lo más
    razonable sin mirar más jugadas por delante). */
-function parchisBotChooseMove(pieces, color, legal) {
+function parchisBotChooseMove(pieces, color, legal, difficulty) {
+  if (difficulty === 'easy') return legal[randInt(0, legal.length - 1)];
+
+  // Normal y difícil: sacar ficha del corral es siempre lo primero.
   const fromCorral = legal.find(m => m.from === -1);
   if (fromCorral) return fromCorral;
-  for (const move of legal) {
-    const { captured } = parchisApplyMove(pieces, color, move.pieceIdx, move.to);
-    if (captured.length) return move;
+
+  // Capturar es prioridad para los dos niveles; en difícil, si hay varias
+  // capturas posibles, se prefiere mandar a casa a la ficha rival más
+  // avanzada (es la que más le cuesta recuperar al rival).
+  const captureMoves = legal
+    .map(move => ({ move, captured: parchisApplyMove(pieces, color, move.pieceIdx, move.to).captured }))
+    .filter(x => x.captured.length);
+  if (captureMoves.length) {
+    if (difficulty === 'hard') {
+      captureMoves.sort((a, b) =>
+        Math.max(...b.captured.map(c => pieces[c.color][c.pieceIdx])) -
+        Math.max(...a.captured.map(c => pieces[c.color][c.pieceIdx]))
+      );
+    }
+    return captureMoves[0].move;
   }
+
+  if (difficulty === 'hard') {
+    // Prioriza terminar una ficha, luego meterla en su pasillo privado
+    // (ahí ya no la puede capturar nadie), y si no, dejarla en una
+    // casilla segura si hay alguna jugada que lo permita.
+    const finishing = legal.find(m => m.to === 55);
+    if (finishing) return finishing;
+    const enteringHome = legal.find(m => m.to >= 49 && m.from < 49);
+    if (enteringHome) return enteringHome;
+    const safeMove = legal.find(m => m.to <= 48 && PARCHIS_SAFE_GLOBAL.has((PARCHIS_START_INDEX[color] + m.to) % 52));
+    if (safeMove) return safeMove;
+  }
+
   return legal.reduce((best, m) => (m.from > best.from ? m : best), legal[0]);
 }
 
@@ -3760,7 +3816,12 @@ function parchisRender() {
 
   if (justFinished) {
     const myColor = myIdx >= 0 ? players[myIdx].color : null;
-    recordGameResult({ game: 'parchis', outcome: myColor === winner_color ? 'win' : 'loss', online: !parchisState.isBot });
+    recordGameResult({
+      game: 'parchis',
+      outcome: myColor === winner_color ? 'win' : 'loss',
+      online: !parchisState.isBot,
+      botDifficulty: (parchisState.isBot && myColor === winner_color) ? parchisState.bot_difficulty : undefined
+    });
   }
   parchisMaybeAutoAdvance();
 }
@@ -3774,7 +3835,7 @@ async function parchisWriteState(patch) {
   if (!parchisState) return;
   if (parchisState.isBot) {
     parchisState = { ...parchisState, ...patch };
-    parchisRender();
+    parchisRenderWaitingOrBoard();
     return;
   }
   const { error } = await supabaseClient.from('parchis_games')
@@ -3792,8 +3853,63 @@ function parchisNextTurnIndex() {
    turno cuando nadie puede mover, o tirar/mover por un bot. En online,
    solo la plaza 0 (quien creó la partida) conduce a los bots, para que
    dos personas conectadas a la vez no intenten mover el mismo bot. */
+function parchisEmptyStartRolls() { return [null, null, null, null]; }
+
+/* Tirada inicial: todos tiran una vez y quien saque más alto empieza
+   (empate = repiten solo los empatados). Solo la plaza 0 (quien creó la
+   partida; en local siempre soy yo) resuelve tiradas de bots y decide
+   el resultado final, para que dos clientes a la vez no lo hagan dos veces. */
+function parchisMaybeAutoAdvanceStartRoll() {
+  const myIdx = parchisMyIndex();
+  const iAmHost = parchisState.isBot || myIdx === 0;
+  const rolls = parchisState.start_rolls;
+  const players = parchisState.players;
+
+  const botIdx = players.findIndex((p, i) => p.type === 'bot' && rolls[i] == null);
+  if (botIdx !== -1) {
+    if (!iAmHost) return;
+    parchisRolling = true;
+    setTimeout(() => {
+      parchisRolling = false;
+      const next = [...rolls]; next[botIdx] = randInt(1, 6);
+      parchisWriteState({ start_rolls: next });
+    }, 900);
+    return;
+  }
+
+  if (rolls.some(r => r == null)) return; // faltan humanos por tirar su propio botón
+
+  if (!iAmHost) return;
+  const max = Math.max(...rolls);
+  const winners = rolls.map((r, i) => r === max ? i : -1).filter(i => i !== -1);
+  parchisRolling = true;
+  setTimeout(() => {
+    parchisRolling = false;
+    if (winners.length === 1) {
+      parchisWriteState({ status: 'active', turn: winners[0], start_rolls: null, dice: null });
+    } else {
+      toast(`🎲 Empate a ${max}: vuelven a tirar los empatados.`);
+      const next = [...rolls];
+      winners.forEach(i => { next[i] = null; });
+      parchisWriteState({ start_rolls: next });
+    }
+  }, 1200);
+}
+
+/* Un jugador humano tira para la tirada inicial, pulsando su propio botón. */
+function parchisRollStart() {
+  if (!parchisState || parchisState.status !== 'starting') return;
+  const myIdx = parchisMyIndex();
+  if (myIdx === -1 || parchisState.start_rolls[myIdx] != null) return;
+  const next = [...parchisState.start_rolls];
+  next[myIdx] = randInt(1, 6);
+  parchisWriteState({ start_rolls: next });
+}
+
 function parchisMaybeAutoAdvance() {
-  if (!parchisState || parchisState.status !== 'active' || parchisRolling) return;
+  if (!parchisState || parchisRolling) return;
+  if (parchisState.status === 'starting') { parchisMaybeAutoAdvanceStartRoll(); return; }
+  if (parchisState.status !== 'active') return;
   const myIdx = parchisMyIndex();
   const iAmHost = parchisState.isBot || myIdx === 0;
   const { turn, dice, players, pieces } = parchisState;
@@ -3805,23 +3921,26 @@ function parchisMaybeAutoAdvance() {
       const iShouldAct = turnPlayer.type === 'bot' ? iAmHost : myIdx === turn;
       if (!iShouldAct) return;
       parchisRolling = true;
-      setTimeout(() => { parchisRolling = false; parchisWriteState({ dice: null, turn: parchisNextTurnIndex() }); }, 900);
+      // Se espera a que el dado termine de caer (~1.2s, ver
+      // parchisAnimateDiceDrop) antes de pasar turno, para que dé tiempo
+      // a ver el número antes de que la partida siga sola.
+      setTimeout(() => { parchisRolling = false; parchisWriteState({ dice: null, turn: parchisNextTurnIndex() }); }, 1500);
       return;
     }
     if (turnPlayer.type === 'bot' && iAmHost) {
       parchisRolling = true;
       setTimeout(() => {
         parchisRolling = false;
-        const choice = parchisBotChooseMove(pieces, turnPlayer.color, legal);
+        const choice = parchisBotChooseMove(pieces, turnPlayer.color, legal, parchisState.bot_difficulty || 'normal');
         parchisResolveMove(choice, turnPlayer.color);
-      }, 700);
+      }, 1500);
     }
     return;
   }
 
   if (turnPlayer.type === 'bot' && iAmHost) {
     parchisRolling = true;
-    setTimeout(() => { parchisRolling = false; parchisWriteState({ dice: randInt(1, 6) }); }, 600);
+    setTimeout(() => { parchisRolling = false; parchisWriteState({ dice: randInt(1, 6) }); }, 1000);
   }
 }
 
@@ -3859,30 +3978,35 @@ function parchisResolveMove(move, color) {
 /* =========================
    PARCHÍS › MODO BOTS (un jugador contra 3 bots, 100% local)
 ========================= */
-function parchisStartBotGame() {
+function parchisDifficultyLabel(difficulty) {
+  return { easy: 'Fácil', normal: 'Normal', hard: 'Difícil' }[difficulty] || difficulty;
+}
+
+function parchisStartBotGame(difficulty) {
   closeParchisEntryModal();
   parchisWasActive = false;
   parchisDiceRollShown = false;
+  const tag = ' (' + parchisDifficultyLabel(difficulty) + ')';
   parchisState = {
     id: null,
     isBot: true,
+    bot_difficulty: difficulty,
     players: [
       { color: 'red', type: 'human', user_id: currentUserId, name: 'Tú' },
-      { color: 'green', type: 'bot', user_id: null, name: '🤖 Bot verde' },
-      { color: 'yellow', type: 'bot', user_id: null, name: '🤖 Bot amarillo' },
-      { color: 'blue', type: 'bot', user_id: null, name: '🤖 Bot azul' }
+      { color: 'green', type: 'bot', user_id: null, name: '🤖 Bot verde' + tag },
+      { color: 'yellow', type: 'bot', user_id: null, name: '🤖 Bot amarillo' + tag },
+      { color: 'blue', type: 'bot', user_id: null, name: '🤖 Bot azul' + tag }
     ],
     pieces: parchisEmptyPieces(),
     turn: 0,
     dice: null,
-    status: 'active',
+    status: 'starting',
+    start_rolls: parchisEmptyStartRolls(),
     winner_color: null
   };
   showPage('parchisGame');
-  document.getElementById('pcWaitingRoom').style.display = 'none';
-  document.getElementById('pcGameBoard').style.display = 'block';
   parchisSetZoom(1);
-  parchisRender();
+  parchisRenderWaitingOrBoard();
 }
 
 /* =========================
@@ -3917,18 +4041,42 @@ async function openParchisGame(gameId) {
 
 function parchisRenderWaitingOrBoard() {
   if (!parchisState) return;
+  document.getElementById('pcWaitingRoom').style.display = 'none';
+  document.getElementById('pcStartRoll').style.display = 'none';
+  document.getElementById('pcGameBoard').style.display = 'none';
+
   if (parchisState.status === 'waiting') {
     document.getElementById('pcWaitingRoom').style.display = 'block';
-    document.getElementById('pcGameBoard').style.display = 'none';
     document.getElementById('pcPlayersRow').innerHTML = parchisState.players.map(p => `
       <div class="c4-player"><span class="c4-piece-icon pc-piece-${p.color}"></span><span>${p.name}</span></div>
     `).join('');
+    document.getElementById('parchisStatus').textContent = 'Esperando a que se completen los 4 jugadores…';
     parchisRenderWaitingRoom();
+  } else if (parchisState.status === 'starting') {
+    document.getElementById('pcStartRoll').style.display = 'block';
+    document.getElementById('pcPlayersRow').innerHTML = parchisState.players.map(p => `
+      <div class="c4-player"><span class="c4-piece-icon pc-piece-${p.color}"></span><span>${p.name}</span></div>
+    `).join('');
+    document.getElementById('parchisStatus').textContent = '🎲 Tirada inicial: quien saque más alto empieza.';
+    parchisRenderStartRoll();
+    parchisMaybeAutoAdvance();
   } else {
-    document.getElementById('pcWaitingRoom').style.display = 'none';
     document.getElementById('pcGameBoard').style.display = 'block';
     parchisRender();
   }
+}
+
+function parchisRenderStartRoll() {
+  const rolls = parchisState.start_rolls;
+  const myIdx = parchisMyIndex();
+  document.getElementById('pcStartRollList').innerHTML = parchisState.players.map((p, i) => `
+    <div class="pc-waiting-slot">
+      <span class="pc-turn-badge pc-turn-${p.color}"></span>
+      <span class="pc-waiting-slot-name">${p.name}</span>
+      <span class="pc-waiting-slot-status">${rolls[i] != null ? '🎲 ' + rolls[i] : '⏳ esperando su tirada…'}</span>
+    </div>`).join('');
+  const btn = document.getElementById('pcStartRollBtn');
+  btn.style.display = (myIdx !== -1 && rolls[myIdx] == null) ? 'inline-flex' : 'none';
 }
 
 function parchisRenderWaitingRoom() {
@@ -3951,28 +4099,35 @@ function parchisRenderWaitingRoom() {
 async function parchisStartNow() {
   if (!parchisState || parchisState.created_by !== currentUserId) return;
   const players = parchisState.players.map(p => p.type === 'pending' ? { color: p.color, type: 'bot', user_id: null, name: '🤖 Bot' } : p);
-  const { error } = await supabaseClient.from('parchis_games').update({ players, status: 'active' }).eq('id', parchisState.id);
+  const { error } = await supabaseClient.from('parchis_games')
+    .update({ players, status: 'starting', start_rolls: parchisEmptyStartRolls() })
+    .eq('id', parchisState.id);
   if (error) toast('❌ No se pudo empezar la partida.');
 }
 
 /* Actualiza, dentro de "players", la plaza que corresponde a userId
    (localizada por el user_id que se guardó ahí desde que se invitó) con
    los campos de "patch". Si ya no queda ninguna plaza "pending", la
-   partida pasa sola a "active". La usan tanto aceptar como rechazar una
-   invitación (ver respondGameInvite). */
+   partida pasa sola a la tirada inicial (ver parchisMaybeAutoAdvanceStartRoll).
+   La usan tanto aceptar como rechazar una invitación (ver respondGameInvite). */
 async function parchisResolveInviteSlot(gameId, userId, patch) {
   const { data, error } = await supabaseClient.from('parchis_games').select('players').eq('id', gameId).single();
   if (error || !data) return;
   const players = data.players.map(p => (p.user_id === userId && p.type === 'pending') ? { ...p, ...patch } : p);
   const allResolved = players.every(p => p.type !== 'pending');
-  await supabaseClient.from('parchis_games').update({ players, status: allResolved ? 'active' : 'waiting' }).eq('id', gameId);
+  await supabaseClient.from('parchis_games')
+    .update(allResolved
+      ? { players, status: 'starting', start_rolls: parchisEmptyStartRolls() }
+      : { players, status: 'waiting' })
+    .eq('id', gameId);
 }
 
 async function parchisRematch() {
   if (!parchisState) return;
-  if (parchisState.isBot) { parchisStartBotGame(); return; }
+  if (parchisState.isBot) { parchisStartBotGame(parchisState.bot_difficulty); return; }
   const { error } = await supabaseClient.from('parchis_games').update({
-    pieces: parchisEmptyPieces(), turn: 0, dice: null, status: 'active', winner_color: null, updated_at: new Date().toISOString()
+    pieces: parchisEmptyPieces(), turn: 0, dice: null, status: 'starting', start_rolls: parchisEmptyStartRolls(),
+    winner_color: null, updated_at: new Date().toISOString()
   }).eq('id', parchisState.id);
   if (error) toast('❌ No se pudo iniciar la revancha.');
 }
@@ -3996,12 +4151,26 @@ function closeParchisEntryModal() {
 function showParchisEntryChoices() {
   parchisSelectedFriends = [];
   document.getElementById('pcEntryChoices').style.display = 'block';
+  document.getElementById('pcEntryBotDifficulty').style.display = 'none';
   document.getElementById('pcEntryFriendPicker').style.display = 'none';
+}
+function showParchisBotDifficulty() {
+  document.getElementById('pcEntryChoices').style.display = 'none';
+  document.getElementById('pcEntryBotDifficulty').style.display = 'block';
 }
 async function showParchisFriendPicker() {
   document.getElementById('pcEntryChoices').style.display = 'none';
   document.getElementById('pcEntryFriendPicker').style.display = 'block';
   await loadParchisFriendPicker();
+}
+/* Dificultad de las plazas que se rellenen con bots en una partida con
+   amigos (se guarda en la fila de la partida y se usa siempre que le
+   toque a un bot, incluida cualquier plaza que se rellene más tarde). */
+function parchisSelectBotDifficulty(difficulty) {
+  parchisSelectedBotDifficulty = difficulty;
+  document.querySelectorAll('#pcFriendBotDifficultyOptions .btn').forEach(btn => {
+    btn.classList.toggle('on', btn.dataset.difficulty === difficulty);
+  });
 }
 async function loadParchisFriendPicker() {
   const listEl = document.getElementById('pcFriendPickerList');
@@ -4058,7 +4227,8 @@ async function parchisCreateFriendGame() {
     pieces: parchisEmptyPieces(),
     turn: 0,
     dice: null,
-    status: 'waiting'
+    status: 'waiting',
+    bot_difficulty: parchisSelectedBotDifficulty
   }).select().single();
   if (error || !data) { toast('❌ No se pudo crear la partida.'); return; }
 

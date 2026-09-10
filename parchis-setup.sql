@@ -9,8 +9,10 @@ create table if not exists public.parchis_games (
   pieces jsonb not null,         -- {red:[..4],green:[..4],yellow:[..4],blue:[..4]}
   turn int not null default 0,
   dice int,
-  status text not null default 'waiting', -- 'waiting' | 'active' | 'finished'
+  status text not null default 'waiting', -- 'waiting' | 'starting' | 'active' | 'finished'
+  start_rolls jsonb,             -- tirada inicial (quién empieza): [n,n,n,n] o null
   winner_color text,
+  bot_difficulty text not null default 'normal', -- 'easy' | 'normal' | 'hard'
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
