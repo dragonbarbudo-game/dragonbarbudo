@@ -3502,12 +3502,32 @@ document.getElementById('parchisEntryModalBg').addEventListener('click', functio
    online la fila se guarda en Supabase (tabla parchis_games) y cada
    cambio llega al instante a todos vía Realtime.
 
-   Reglas "esenciales": un dado; hace falta un 5 para sacar una ficha
-   del corral; capturar a un rival (fuera de una casilla segura) lo
-   manda de vuelta a su corral; las 4 casillas de salida son siempre
-   seguras; sacar un 6 da turno extra; hay que llegar a la meta con el
-   número justo; gana quien primero lleva sus 4 fichas a la meta. No
-   hay barreras ni penalización por seises seguidos.
+   Reglas: las de la Wikipedia en español (es.wikipedia.org/wiki/Parchís),
+   adaptadas al tablero de 15x15 que ya teníamos:
+   - Con las 4 fichas en la cárcel y un 5, salen DOS fichas a la vez
+     (despachurrando sin premio a cualquier rival que hubiera en esa
+     salida). Con 1-3 en la cárcel y un 5, se puede sacar UNA (opcional),
+     salvo que ya haya 2 propias en la salida (barrera propia, no cabe
+     una 3ª).
+   - Sin ninguna ficha en la cárcel, un 6 mueve 7 casillas en vez de 6
+     (mismo dado, pero cuenta distinto porque no hace falta para sacar).
+   - Un 6 da turno extra (hasta 2 veces seguidas). Al 3er 6 seguido, no
+     se mueve: la ficha que se movió con el 2º 6 vuelve a la cárcel de
+     penalización y pasa el turno.
+   - Barrera: 2 fichas propias en SU salida. Nadie (ni ella misma) puede
+     aterrizar ahí ni pasar por encima mientras siga la barrera; si el
+     jugador saca un 6 y mover una ficha de la barrera es posible, es
+     obligatorio hacerlo.
+   - Puente: 2 fichas del mismo color en cualquier otra casilla. Nadie
+     puede aterrizar ahí, pero sí se puede pasar por encima.
+   - Capturar (fuera de una casilla segura) manda la ficha rival a su
+     cárcel Y da un premio: otra ficha propia avanza 20 casillas más
+     (se elige sola la más adelantada que quepa). Llegar justo a la
+     meta da otro premio: 10 casillas más para otra ficha (misma
+     selección automática; no hay UI para elegir a mano).
+   - Hay que llegar a la meta con el número justo. Gana quien primero
+     mete sus 4 fichas (la partida termina ahí; no se juega 2º/3er
+     puesto).
 
    TABLERO: rejilla lógica de 15x15. Cada ficha recorre, en relativo:
    0-48 = las 49 casillas compartidas de su vuelta, 49-54 = su pasillo
@@ -3582,76 +3602,179 @@ function parchisCoord(color, relPos, corralSlot) {
   return [7, 7]; // meta
 }
 
-/* Movimientos legales para "color" con el dado ya tirado: una entrada
-   por ficha que sí puede moverse, {pieceIdx, from, to}. */
+/* =========================
+   PARCHÍS › REGLAS (barreras, puentes, capturas, premios...)
+========================= */
+// Índice global (0-51) de la vuelta que ocuparía "color" en su posición
+// relativa "rel", o null si rel ya no es de la vuelta compartida (está
+// en su pasillo privado, en la cárcel, o en la meta).
+function parchisGlobalPos(color, rel) {
+  if (rel < 0 || rel > 48) return null;
+  return (PARCHIS_START_INDEX[color] + rel) % 52;
+}
+// Al revés: qué posición relativa tendría "color" en la casilla global
+// "g", o null si esa casilla ya no la usa ese color (para él ya es
+// pasillo privado, así que nunca puede tener una ficha ahí).
+function parchisRelForGlobal(color, g) {
+  const rel = ((g - PARCHIS_START_INDEX[color]) % 52 + 52) % 52;
+  return rel <= 48 ? rel : null;
+}
+function parchisCountAtRel(pieces, color, rel) {
+  return pieces[color].filter(p => p === rel).length;
+}
+// ¿Hay una barrera (2 fichas propias en SU salida) en la casilla global
+// "g"? Devuelve el color de esa barrera, o null si no hay ninguna (una
+// barrera solo puede darse en una casilla de salida).
+function parchisBarrierColorAtGlobal(pieces, g) {
+  const owner = PARCHIS_START_GLOBAL_COLOR[g];
+  if (!owner) return null;
+  return parchisCountAtRel(pieces, owner, 0) === 2 ? owner : null;
+}
+// ¿Se puede aterrizar en "to" (relativo de "color")? No, si ya hay 2
+// fichas de un mismo color ahí (barrera o puente, sea de quien sea).
+function parchisCanLandOn(pieces, color, to) {
+  if (to === 55) return true; // la meta no tiene límite de fichas
+  if (to >= 49) return parchisCountAtRel(pieces, color, to) < 2; // pasillo privado: solo puede haber ahí fichas propias
+  const g = parchisGlobalPos(color, to);
+  for (const c of PARCHIS_COLORS) {
+    const rel = (c === color) ? to : parchisRelForGlobal(c, g);
+    if (rel != null && parchisCountAtRel(pieces, c, rel) >= 2) return false;
+  }
+  return true;
+}
+// ¿El camino de "color" desde "from" (exclusive) hasta "to" (inclusive)
+// atraviesa alguna barrera AJENA? Las barreras bloquean pasar por
+// encima (a diferencia de los puentes, que solo bloquean aterrizar).
+function parchisPathBlockedByBarrier(pieces, color, from, to) {
+  const start = Math.max(from, 0) + 1;
+  const end = Math.min(to, 48);
+  for (let rel = start; rel <= end; rel++) {
+    const g = parchisGlobalPos(color, rel);
+    if (g == null) continue;
+    const barrierColor = parchisBarrierColorAtGlobal(pieces, g);
+    if (barrierColor && barrierColor !== color) return true;
+  }
+  return false;
+}
+
+/* Movimientos legales para "color" con el dado ya tirado. Casi siempre
+   son {type:'move', pieceIdx, from, to}; el caso especial de sacar dos
+   fichas a la vez (las 4 en la cárcel y un 5) es {type:'double-exit'},
+   la única jugada posible ese turno. */
 function parchisLegalMoves(pieces, color, dice) {
+  const jailCount = pieces[color].filter(p => p === -1).length;
+  if (jailCount === 4 && dice === 5) return [{ type: 'double-exit' }];
+
+  const ownAtStart = parchisCountAtRel(pieces, color, 0);
+  const effectiveDice = (dice === 6 && jailCount === 0) ? 7 : dice; // sin nadie en la cárcel, el 6 mueve 7
+
   const moves = [];
   pieces[color].forEach((pos, idx) => {
     if (pos === -1) {
-      if (dice === 5) moves.push({ pieceIdx: idx, from: -1, to: 0 });
+      if (dice === 5 && ownAtStart < 2) moves.push({ type: 'move', pieceIdx: idx, from: -1, to: 0 });
       return;
     }
     if (pos === 55) return; // ya en meta
-    const to = pos + dice;
+    const to = pos + effectiveDice;
     if (to > 55) return; // hace falta el número justo, no vale pasarse
-    moves.push({ pieceIdx: idx, from: pos, to });
+    if (!parchisCanLandOn(pieces, color, to)) return;
+    if (parchisPathBlockedByBarrier(pieces, color, pos, to)) return;
+    moves.push({ type: 'move', pieceIdx: idx, from: pos, to });
   });
+
+  // Con una barrera propia en la salida y un 6, es obligatorio mover una
+  // ficha de esa barrera, si alguna de esas dos jugadas es legal.
+  if (dice === 6 && ownAtStart === 2) {
+    const barrierMoves = moves.filter(m => m.from === 0);
+    if (barrierMoves.length) return barrierMoves;
+  }
   return moves;
 }
 
-/* Aplica un movimiento y devuelve {pieces, captured}: "captured" son las
-   fichas rivales que, por caer en su misma casilla (fuera de una
-   casilla segura), vuelven a su corral. Solo se captura en la vuelta
-   compartida (0-48): en el pasillo privado de cada color no entra
-   nadie más. */
-function parchisApplyMove(pieces, color, pieceIdx, to) {
+/* Aplica un movimiento (o el "double-exit") y devuelve {pieces, events}.
+   events: 'capture' (ficha rival sola, fuera de casilla segura, vuelve
+   a su cárcel), 'squash' (despachurrada al sacar dos de golpe, sin
+   premio), 'finish' (ficha que llega justo a meta). */
+function parchisApplyMove(pieces, color, move) {
   const next = {}; PARCHIS_COLORS.forEach(c => { next[c] = [...pieces[c]]; });
-  next[color][pieceIdx] = to;
-  const captured = [];
+  const events = [];
 
-  if (to >= 0 && to <= 48) {
-    const globalIdx = (PARCHIS_START_INDEX[color] + to) % 52;
-    if (!PARCHIS_SAFE_GLOBAL.has(globalIdx)) {
+  if (move.type === 'double-exit') {
+    const g = PARCHIS_START_INDEX[color];
+    PARCHIS_COLORS.forEach(rival => {
+      if (rival === color) return;
+      next[rival] = next[rival].map((p, idx) => {
+        if (p < 0 || p > 48 || parchisGlobalPos(rival, p) !== g) return p;
+        events.push({ type: 'squash', color: rival, pieceIdx: idx });
+        return -1;
+      });
+    });
+    let placed = 0;
+    next[color] = next[color].map(p => (p === -1 && placed < 2) ? (placed++, 0) : p);
+    return { pieces: next, events };
+  }
+
+  const { pieceIdx, to } = move;
+  next[color][pieceIdx] = to;
+
+  if (to <= 48) {
+    const g = parchisGlobalPos(color, to);
+    if (!PARCHIS_SAFE_GLOBAL.has(g)) {
       PARCHIS_COLORS.forEach(rival => {
         if (rival === color) return;
-        next[rival].forEach((rPos, rIdx) => {
-          if (rPos < 0 || rPos > 48) return;
-          if ((PARCHIS_START_INDEX[rival] + rPos) % 52 === globalIdx) {
-            next[rival][rIdx] = -1;
-            captured.push({ color: rival, pieceIdx: rIdx });
-          }
-        });
+        const rel = parchisRelForGlobal(rival, g);
+        if (rel == null) return;
+        // Ya se comprobó al validar el movimiento que ese destino no
+        // tiene una barrera/puente ajeno, así que como mucho hay UNA
+        // ficha rival suelta ahí: se captura.
+        const idx = next[rival].findIndex(p => p === rel);
+        if (idx !== -1) {
+          next[rival][idx] = -1;
+          events.push({ type: 'capture', color: rival, pieceIdx: idx });
+        }
       });
     }
   }
-  return { pieces: next, captured };
+  if (to === 55) events.push({ type: 'finish', color, pieceIdx });
+  return { pieces: next, events };
+}
+
+/* Premio (capturar = +20, llegar a meta = +10): avanza sola la ficha
+   propia más adelantada que quepa sin pasarse; si ninguna cabe, se
+   pierde el premio (no hay UI para elegir a mano qué ficha avanza). */
+function parchisApplyBonus(pieces, color, amount) {
+  const candidates = pieces[color]
+    .map((p, idx) => ({ idx, p }))
+    .filter(x => x.p >= 0 && x.p < 55 && x.p + amount <= 55);
+  if (!candidates.length) return { pieces, applied: false };
+  candidates.sort((a, b) => b.p - a.p);
+  const next = {}; PARCHIS_COLORS.forEach(c => { next[c] = [...pieces[c]]; });
+  next[color][candidates[0].idx] += amount;
+  return { pieces: next, applied: true };
 }
 
 function parchisHasWon(pieces, color) {
   return pieces[color].every(p => p === 55);
 }
 
-/* Bot: prioriza sacar ficha del corral con un 5, luego capturar si
-   puede, y si no, adelanta la ficha más avanzada (suele ser lo más
-   razonable sin mirar más jugadas por delante). */
+/* Bot: prioriza sacar ficha(s) del corral, luego capturar si puede, y
+   si no, adelanta la ficha más avanzada (suele ser lo más razonable sin
+   mirar más jugadas por delante). */
 function parchisBotChooseMove(pieces, color, legal, difficulty) {
+  if (legal.length === 1) return legal[0]; // "double-exit", o único movimiento posible (p.ej. barrera obligada)
   if (difficulty === 'easy') return legal[randInt(0, legal.length - 1)];
 
-  // Normal y difícil: sacar ficha del corral es siempre lo primero.
   const fromCorral = legal.find(m => m.from === -1);
   if (fromCorral) return fromCorral;
 
-  // Capturar es prioridad para los dos niveles; en difícil, si hay varias
-  // capturas posibles, se prefiere mandar a casa a la ficha rival más
-  // avanzada (es la que más le cuesta recuperar al rival).
   const captureMoves = legal
-    .map(move => ({ move, captured: parchisApplyMove(pieces, color, move.pieceIdx, move.to).captured }))
-    .filter(x => x.captured.length);
+    .map(move => ({ move, events: parchisApplyMove(pieces, color, move).events.filter(e => e.type === 'capture') }))
+    .filter(x => x.events.length);
   if (captureMoves.length) {
     if (difficulty === 'hard') {
       captureMoves.sort((a, b) =>
-        Math.max(...b.captured.map(c => pieces[c.color][c.pieceIdx])) -
-        Math.max(...a.captured.map(c => pieces[c.color][c.pieceIdx]))
+        Math.max(...b.events.map(e => pieces[e.color][e.pieceIdx])) -
+        Math.max(...a.events.map(e => pieces[e.color][e.pieceIdx]))
       );
     }
     return captureMoves[0].move;
@@ -3665,7 +3788,7 @@ function parchisBotChooseMove(pieces, color, legal, difficulty) {
     if (finishing) return finishing;
     const enteringHome = legal.find(m => m.to >= 49 && m.from < 49);
     if (enteringHome) return enteringHome;
-    const safeMove = legal.find(m => m.to <= 48 && PARCHIS_SAFE_GLOBAL.has((PARCHIS_START_INDEX[color] + m.to) % 52));
+    const safeMove = legal.find(m => m.to <= 48 && PARCHIS_SAFE_GLOBAL.has(parchisGlobalPos(color, m.to)));
     if (safeMove) return safeMove;
   }
 
@@ -3780,7 +3903,9 @@ function parchisRender() {
   rollBtn.disabled = !canRoll;
   rollBtn.textContent = dice ? `Tirado: ${dice}` : '🎲 Tirar dado';
 
-  const legal = (status === 'active' && myTurn && dice) ? parchisLegalMoves(pieces, turnPlayer.color, dice) : [];
+  const legal = (status === 'active' && myTurn && dice && !parchisIsThirdSix())
+    ? parchisLegalMoves(pieces, turnPlayer.color, dice).filter(m => m.type === 'move')
+    : [];
   const legalPieceIdxs = new Set(legal.map(m => m.pieceIdx));
 
   const byCell = {};
@@ -3902,7 +4027,7 @@ function parchisMaybeAutoAdvanceStartRoll() {
   setTimeout(() => {
     parchisRolling = false;
     if (winners.length === 1) {
-      parchisWriteState({ status: 'active', turn: winners[0], start_rolls: null, dice: null });
+      parchisWriteState({ status: 'active', turn: winners[0], start_rolls: null, dice: null, six_streak: 0, six_streak_piece: null });
     } else {
       toast(`🎲 Empate a ${max}: vuelven a tirar los empatados.`);
       const next = [...rolls];
@@ -3932,15 +4057,32 @@ function parchisMaybeAutoAdvance() {
   const turnPlayer = players[turn];
 
   if (dice) {
+    const iShouldAct = turnPlayer.type === 'bot' ? iAmHost : myIdx === turn;
+
+    // 3er 6 seguido: no se elige jugada, se resuelve solo (penalización).
+    if (parchisIsThirdSix()) {
+      if (!iShouldAct) return;
+      parchisRolling = true;
+      setTimeout(() => { parchisRolling = false; parchisResolveThirdSix(); }, 1500);
+      return;
+    }
+
     const legal = parchisLegalMoves(pieces, turnPlayer.color, dice);
     if (!legal.length) {
-      const iShouldAct = turnPlayer.type === 'bot' ? iAmHost : myIdx === turn;
       if (!iShouldAct) return;
       parchisRolling = true;
       // Se espera a que el dado termine de caer (~1.2s, ver
       // parchisAnimateDiceDrop) antes de pasar turno, para que dé tiempo
       // a ver el número antes de que la partida siga sola.
-      setTimeout(() => { parchisRolling = false; parchisWriteState({ dice: null, turn: parchisNextTurnIndex() }); }, 1500);
+      setTimeout(() => { parchisRolling = false; parchisWriteState({ dice: null, turn: parchisNextTurnIndex(), six_streak: 0, six_streak_piece: null }); }, 1500);
+      return;
+    }
+    // "double-exit" (las 4 en la cárcel y un 5) o cualquier jugada única
+    // obligada: no hace falta elegir ficha, se aplica sola.
+    if (legal.length === 1 && legal[0].type === 'double-exit') {
+      if (!iShouldAct) return;
+      parchisRolling = true;
+      setTimeout(() => { parchisRolling = false; parchisResolveMove(legal[0], turnPlayer.color); }, 1500);
       return;
     }
     if (turnPlayer.type === 'bot' && iAmHost) {
@@ -3972,22 +4114,66 @@ function parchisRoll() {
 function parchisPlayerMove(pieceIdx) {
   if (!parchisState || parchisState.status !== 'active' || !parchisState.dice) return;
   if (parchisMyIndex() !== parchisState.turn) { toast('⏳ No es tu turno.'); return; }
+  if (parchisIsThirdSix()) return; // ese 6 se resuelve solo (ver parchisMaybeAutoAdvance)
   const { players, turn, pieces, dice } = parchisState;
   const color = players[turn].color;
-  const move = parchisLegalMoves(pieces, color, dice).find(m => m.pieceIdx === pieceIdx);
+  const move = parchisLegalMoves(pieces, color, dice).find(m => m.type === 'move' && m.pieceIdx === pieceIdx);
   if (!move) return;
   parchisResolveMove(move, color);
 }
 
+/* ¿El dado que hay ahora mismo tirado es el 3er 6 seguido? Ese 6 no se
+   usa para mover: se resuelve solo mandando a la cárcel la ficha que
+   movió el 2º 6 (ver parchisMaybeAutoAdvance / parchisResolveThirdSix). */
+function parchisIsThirdSix() {
+  return parchisState.dice === 6 && (parchisState.six_streak || 0) >= 2;
+}
+
+function parchisResolveThirdSix() {
+  const punished = parchisState.six_streak_piece;
+  let pieces = parchisState.pieces;
+  if (punished) {
+    pieces = { ...pieces, [punished.color]: [...pieces[punished.color]] };
+    pieces[punished.color][punished.pieceIdx] = -1;
+    toast('⚠️ Tres 6 seguidos: esa ficha vuelve a la cárcel.');
+  }
+  parchisWriteState({ pieces, dice: null, turn: parchisNextTurnIndex(), six_streak: 0, six_streak_piece: null });
+}
+
 function parchisResolveMove(move, color) {
-  const { pieces: nextPieces, captured } = parchisApplyMove(parchisState.pieces, color, move.pieceIdx, move.to);
   const dice = parchisState.dice;
-  const won = parchisHasWon(nextPieces, color);
-  captured.forEach(cap => toast(`🎯 Ficha ${PARCHIS_COLOR_LABEL[cap.color].toLowerCase()} capturada: vuelve al corral.`));
+  let { pieces: nextPieces, events } = parchisApplyMove(parchisState.pieces, color, move);
+
+  events.forEach(ev => {
+    if (ev.type === 'capture') toast(`🎯 Ficha ${PARCHIS_COLOR_LABEL[ev.color].toLowerCase()} capturada: vuelve al corral.`);
+    if (ev.type === 'squash') toast(`💥 Ficha ${PARCHIS_COLOR_LABEL[ev.color].toLowerCase()} despachurrada: vuelve al corral.`);
+  });
+
+  if (events.some(e => e.type === 'capture')) {
+    const bonus = parchisApplyBonus(nextPieces, color, 20);
+    if (bonus.applied) { nextPieces = bonus.pieces; toast('🎁 +20 casillas por capturar.'); }
+  }
+  let won = parchisHasWon(nextPieces, color);
+  if (events.some(e => e.type === 'finish') && !won) {
+    const bonus = parchisApplyBonus(nextPieces, color, 10);
+    if (bonus.applied) { nextPieces = bonus.pieces; toast('🏠 +10 casillas por llegar a meta.'); won = parchisHasWon(nextPieces, color); }
+  }
 
   const patch = { pieces: nextPieces, dice: null };
-  if (won) { patch.status = 'finished'; patch.winner_color = color; }
-  else patch.turn = dice === 6 ? parchisState.turn : parchisNextTurnIndex();
+  if (won) {
+    patch.status = 'finished'; patch.winner_color = color;
+    patch.six_streak = 0; patch.six_streak_piece = null;
+  } else if (dice === 6) {
+    // 1er o 2º 6 seguido: turno extra (el 3ro se intercepta antes, ver
+    // parchisIsThirdSix, y nunca llega a esta función).
+    patch.turn = parchisState.turn;
+    patch.six_streak = (parchisState.six_streak || 0) + 1;
+    patch.six_streak_piece = (move.type === 'move') ? { color, pieceIdx: move.pieceIdx } : null;
+  } else {
+    patch.turn = parchisNextTurnIndex();
+    patch.six_streak = 0;
+    patch.six_streak_piece = null;
+  }
   parchisWriteState(patch);
 }
 
@@ -4018,7 +4204,9 @@ function parchisStartBotGame(difficulty) {
     dice: null,
     status: 'starting',
     start_rolls: parchisEmptyStartRolls(),
-    winner_color: null
+    winner_color: null,
+    six_streak: 0,
+    six_streak_piece: null
   };
   showPage('parchisGame');
   parchisSetZoom(1);
@@ -4143,7 +4331,7 @@ async function parchisRematch() {
   if (parchisState.isBot) { parchisStartBotGame(parchisState.bot_difficulty); return; }
   const { error } = await supabaseClient.from('parchis_games').update({
     pieces: parchisEmptyPieces(), turn: 0, dice: null, status: 'starting', start_rolls: parchisEmptyStartRolls(),
-    winner_color: null, updated_at: new Date().toISOString()
+    winner_color: null, six_streak: 0, six_streak_piece: null, updated_at: new Date().toISOString()
   }).eq('id', parchisState.id);
   if (error) toast('❌ No se pudo iniciar la revancha.');
 }

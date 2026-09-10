@@ -13,6 +13,8 @@ create table if not exists public.parchis_games (
   start_rolls jsonb,             -- tirada inicial (quién empieza): [n,n,n,n] o null
   winner_color text,
   bot_difficulty text not null default 'normal', -- 'easy' | 'normal' | 'hard'
+  six_streak int not null default 0,     -- 6 seguidos en el turno actual (0, 1 o 2; el 3º se resuelve solo)
+  six_streak_piece jsonb,                -- {color,pieceIdx} movida por el último 6, o null
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
