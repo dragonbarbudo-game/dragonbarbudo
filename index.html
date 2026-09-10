@@ -598,18 +598,70 @@ main { padding: 30px; overflow: hidden; }
    "formato" de partida, solo cambia el tablero. Aquí solo se define lo
    que es exclusivo del Parchís: el tablero en cruz (rejilla 15x15), las
    fichas, el dado y la sala de espera mientras se completan 4 jugadores. */
-/* DISEÑO DEL TABLERO BORRADO A PROPÓSITO (a la espera de una definición
-   nueva): de momento es una rejilla lisa, sin colores ni decoración por
-   casilla. La lógica (quién es corral/pasillo/centro/segura) sigue
-   igual en el JS, solo no se pinta nada distinto todavía. */
+/* TABLERO: Parchís español tradicional, 68 casillas numeradas en cruz,
+   4 casas de 8x8 (amarillo/azul/rojo/verde en sentido horario desde
+   arriba-izquierda), pasillos de 7 casillas por color y meta central en
+   forma de molinillo de 4 triángulos. Ver PARCHIS_LOOP/PARCHIS_HOME/
+   PARCHIS_CORRAL en el JS para la geometría exacta (rejilla 19x19). */
 .pc-board {
-    --pc-cell: 26px; --pc-zoom: 1;
+    --pc-cell: 20px; --pc-zoom: 1;
     display: grid;
-    grid-template-columns: repeat(15, calc(var(--pc-cell) * var(--pc-zoom)));
-    grid-template-rows: repeat(15, calc(var(--pc-cell) * var(--pc-zoom)));
-    gap: 1px; background: var(--border); padding: 10px; border-radius: 12px; width: fit-content; margin: 0 auto;
+    grid-template-columns: repeat(19, calc(var(--pc-cell) * var(--pc-zoom)));
+    grid-template-rows: repeat(19, calc(var(--pc-cell) * var(--pc-zoom)));
+    gap: 1px; background: #1c1c1c; padding: 10px; border-radius: 14px; width: fit-content; margin: 0 auto;
 }
-.pc-cell { background: var(--panel-2); position: relative; display: flex; align-items: center; justify-content: center; }
+.pc-cell { background: #fbf8f0; position: relative; display: flex; align-items: center; justify-content: center; }
+.pc-cell-number {
+    position: absolute; font-family: Arial, Helvetica, sans-serif; color: #2a2a2a; font-weight: 700;
+    font-size: calc(var(--pc-cell) * var(--pc-zoom) * 0.34); line-height: 1; pointer-events: none; z-index: 1;
+}
+/* Casillas seguras: además de su color (si son también salida), llevan
+   un pequeño círculo bien visible en el centro. */
+.pc-cell.pc-safe::after {
+    /* Anillo hueco (no relleno): deja el número leíble en el centro. */
+    content: ''; position: absolute; width: 76%; height: 76%; border-radius: 50%;
+    border: 2px solid rgba(0,0,0,.45); background: transparent; pointer-events: none; z-index: 0;
+}
+/* El rincón entero es del color de esa casa, de punta a punta: una casa
+   grande por jugador, con aspecto de tablero clásico impreso. */
+.pc-cell.pc-corral-yellow { background: #f2c318; }
+.pc-cell.pc-corral-blue { background: #1f6fb2; }
+.pc-cell.pc-corral-red { background: #c62828; }
+.pc-cell.pc-corral-green { background: #2e7d32; }
+/* Los 7 pasillos de cada color, en color sólido, apuntando hacia el centro. */
+.pc-cell.pc-home-yellow { background: #f2c318; }
+.pc-cell.pc-home-blue { background: #1f6fb2; }
+.pc-cell.pc-home-red { background: #c62828; }
+.pc-cell.pc-home-green { background: #2e7d32; }
+/* La propia casilla de salida de cada color, además de su círculo de
+   segura, lleva un tono de su color (más suave que el pasillo, para no
+   confundirla con una casilla normal de la vuelta). */
+.pc-cell.pc-start-yellow { background: rgba(242,195,24,.4); }
+.pc-cell.pc-start-blue { background: rgba(31,111,178,.35); }
+.pc-cell.pc-start-red { background: rgba(198,40,40,.35); }
+.pc-cell.pc-start-green { background: rgba(46,125,50,.35); }
+/* Meta central: cuadrado partido en 4 triángulos (uno por color), con
+   cortes nítidos en diagonal, no degradados. El centro exacto usa un
+   conic-gradient (ya da bordes nítidos entre cada cuarto); las 4
+   casillas junto a cada pasillo llevan el color de ese pasillo; las 4
+   esquinas del cuadro completan el molinillo, mitad de un color y
+   mitad del otro. */
+.pc-cell.pc-center { background: conic-gradient(from -45deg, #1f6fb2 0deg 90deg, #c62828 90deg 180deg, #2e7d32 180deg 270deg, #f2c318 270deg 360deg); }
+.pc-cell.pc-goal-edge-yellow { background: #f2c318; }
+.pc-cell.pc-goal-edge-blue { background: #1f6fb2; }
+.pc-cell.pc-goal-edge-red { background: #c62828; }
+.pc-cell.pc-goal-edge-green { background: #2e7d32; }
+.pc-cell.pc-corner-nw { background: #f2c318; }
+.pc-cell.pc-corner-nw::before { content: ''; position: absolute; inset: 0; background: #1f6fb2; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+.pc-cell.pc-corner-ne { background: #1f6fb2; }
+.pc-cell.pc-corner-ne::before { content: ''; position: absolute; inset: 0; background: #c62828; clip-path: polygon(0 0, 100% 100%, 0 100%); }
+.pc-cell.pc-corner-se { background: #c62828; }
+.pc-cell.pc-corner-se::before { content: ''; position: absolute; inset: 0; background: #2e7d32; clip-path: polygon(100% 0, 100% 100%, 0 0); }
+.pc-cell.pc-corner-sw { background: #2e7d32; }
+.pc-cell.pc-corner-sw::before { content: ''; position: absolute; inset: 0; background: #f2c318; clip-path: polygon(100% 0, 0 100%, 0 0); }
+/* Las 4 fichas de salida de cada casa: círculos blancos bien visibles,
+   como los huecos de un tablero de verdad. */
+.pc-corral-slot { width: 62%; height: 62%; border-radius: 50%; background: rgba(255,255,255,.9); box-shadow: inset 0 0 0 2px rgba(0,0,0,.2); z-index: 1; position: relative; }
 .pc-piece {
     width: 78%; height: 78%; border-radius: 50%; border: 2px solid rgba(0,0,0,.35);
     box-shadow: 0 2px 3px rgba(0,0,0,.4); position: relative; z-index: 2;
@@ -667,10 +719,11 @@ main { padding: 30px; overflow: hidden; }
 .pc-friend-check input { width: 16px; height: 16px; accent-color: var(--gold); }
 
 @media (max-width: 700px) {
-    .pc-board { --pc-cell: 20px; }
+    .pc-board { --pc-cell: 15px; }
 }
 @media (max-width: 480px) {
-    .pc-board { --pc-cell: 16px; padding: 6px; }
+    .pc-board { --pc-cell: 12px; padding: 6px; }
+    .pc-cell-number { font-size: calc(var(--pc-cell) * var(--pc-zoom) * 0.4); }
 }
 
 /* MODAL */
@@ -3511,41 +3564,57 @@ document.getElementById('parchisEntryModalBg').addEventListener('click', functio
 ========================= */
 const PARCHIS_COLORS = ['red', 'green', 'yellow', 'blue'];
 const PARCHIS_COLOR_LABEL = { red: 'Rojo', green: 'Verde', yellow: 'Amarillo', blue: 'Azul' };
-const PARCHIS_START_INDEX = { red: 0, green: 13, yellow: 26, blue: 39 };
+// Geometría de un Parchís real: 68 casillas numeradas en la vuelta
+// compartida, salidas en las casillas 5 (amarillo), 22 (azul), 39 (rojo)
+// y 56 (verde) — separadas 17 exactas unas de otras —, esquinas
+// amarillo/azul/rojo/verde en sentido horario desde arriba-izquierda, y
+// un pasillo privado de 7 casillas por color. PARCHIS_START_INDEX guarda
+// el índice INTERNO (0-67, empieza en la propia casilla de cada color);
+// la casilla 5/22/39/56 impresa en el tablero es solo una etiqueta (ver
+// parchisDisplayNumber), no cambia la lógica.
+const PARCHIS_START_INDEX = { yellow: 0, blue: 17, red: 34, green: 51 };
+const PARCHIS_LOOP_LEN = 68;      // total de casillas de la vuelta compartida
+const PARCHIS_SHARED_MAX = 64;    // última posición relativa en la vuelta (0-64 = 65 casillas por ficha)
+const PARCHIS_HOME_START = 65;    // primera posición relativa del pasillo privado
+const PARCHIS_HOME_MAX = 71;      // última posición relativa del pasillo (65-71 = 7 casillas)
+const PARCHIS_FINISH = 72;        // meta
 
-// Las 52 casillas compartidas de la vuelta exterior, en orden de recorrido.
+// Rejilla lógica de 19x19. Las 68 casillas compartidas de la vuelta
+// exterior, en orden de recorrido (verificado: 68 únicas, arrancan en
+// las 4 salidas separadas 17 a 17).
 const PARCHIS_LOOP = (() => {
   const cells = [];
-  for (let c = 1; c <= 5; c++) cells.push([6, c]);
-  for (let r = 5; r >= 0; r--) cells.push([r, 6]);
-  cells.push([0, 7]); cells.push([0, 8]);
-  for (let r = 1; r <= 5; r++) cells.push([r, 8]);
-  for (let c = 9; c <= 14; c++) cells.push([6, c]);
-  cells.push([7, 14]); cells.push([8, 14]);
-  for (let c = 13; c >= 9; c--) cells.push([8, c]);
-  for (let r = 9; r <= 14; r++) cells.push([r, 8]);
-  cells.push([14, 7]); cells.push([14, 6]);
-  for (let r = 13; r >= 9; r--) cells.push([r, 6]);
-  for (let c = 5; c >= 0; c--) cells.push([8, c]);
-  cells.push([7, 0]); cells.push([6, 0]);
+  for (let c = 1; c <= 7; c++) cells.push([8, c]);
+  for (let r = 7; r >= 0; r--) cells.push([r, 8]);
+  cells.push([0, 9]); cells.push([0, 10]);
+  for (let r = 1; r <= 7; r++) cells.push([r, 10]);
+  for (let c = 11; c <= 18; c++) cells.push([8, c]);
+  cells.push([9, 18]); cells.push([10, 18]);
+  for (let c = 17; c >= 11; c--) cells.push([10, c]);
+  for (let r = 11; r <= 18; r++) cells.push([r, 10]);
+  cells.push([18, 9]); cells.push([18, 8]);
+  for (let r = 17; r >= 11; r--) cells.push([r, 8]);
+  for (let c = 7; c >= 0; c--) cells.push([10, c]);
+  cells.push([9, 0]); cells.push([8, 0]);
   return cells;
 })();
 
-// Pasillo final privado de cada color (6 casillas, ya en orden de avance
-// hacia el centro).
+// Pasillo final privado de cada color (7 casillas, ya en orden de avance
+// hacia el centro; la última de cada uno queda pegada al cuadro central).
 const PARCHIS_HOME = {
-  red: [[7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6]],
-  green: [[1, 7], [2, 7], [3, 7], [4, 7], [5, 7], [6, 7]],
-  yellow: [[7, 13], [7, 12], [7, 11], [7, 10], [7, 9], [7, 8]],
-  blue: [[13, 7], [12, 7], [11, 7], [10, 7], [9, 7], [8, 7]]
+  yellow: [[9, 1], [9, 2], [9, 3], [9, 4], [9, 5], [9, 6], [9, 7]],
+  blue: [[1, 9], [2, 9], [3, 9], [4, 9], [5, 9], [6, 9], [7, 9]],
+  red: [[9, 17], [9, 16], [9, 15], [9, 14], [9, 13], [9, 12], [9, 11]],
+  green: [[17, 9], [16, 9], [15, 9], [14, 9], [13, 9], [12, 9], [11, 9]]
 };
 
-// Las 4 casillas del corral (fichas sin salir) de cada color.
+// Las 4 casillas del corral (fichas sin salir) de cada color, centradas
+// en su casa de 8x8.
 const PARCHIS_CORRAL = {
-  red: [[2, 2], [2, 3], [3, 2], [3, 3]],
-  green: [[2, 11], [2, 12], [3, 11], [3, 12]],
-  yellow: [[11, 11], [11, 12], [12, 11], [12, 12]],
-  blue: [[11, 2], [11, 3], [12, 2], [12, 3]]
+  yellow: [[3, 3], [3, 4], [4, 3], [4, 4]],
+  blue: [[3, 14], [3, 15], [4, 14], [4, 15]],
+  red: [[14, 14], [14, 15], [15, 14], [15, 15]],
+  green: [[14, 3], [14, 4], [15, 3], [15, 4]]
 };
 // Solo estas 16 casillas (4 por color) muestran el círculo blanco de
 // "hueco de ficha"; el resto del rincón es color liso, sin puntitos.
@@ -3553,10 +3622,22 @@ const PARCHIS_CORRAL_SLOT_SET = new Set(
   Object.values(PARCHIS_CORRAL).flat().map(([r, c]) => r + ',' + c)
 );
 
-const PARCHIS_SAFE_GLOBAL = new Set(Object.values(PARCHIS_START_INDEX));
+// 12 casillas seguras en total (3 por color: su salida + 2 más, siempre
+// a 7 y 12 casillas de esa salida) — coinciden exactamente con las
+// casillas 5,12,17,22,29,34,39,46,51,56,63,68 de un Parchís real.
+const PARCHIS_SAFE_OFFSETS = [0, 7, 12];
+const PARCHIS_SAFE_GLOBAL = new Set(
+  Object.values(PARCHIS_START_INDEX).flatMap(start => PARCHIS_SAFE_OFFSETS.map(o => (start + o) % PARCHIS_LOOP_LEN))
+);
 // De índice global de la vuelta -> color, solo para las 4 casillas de
-// salida (para pintarlas también de su color, no solo con la estrella).
+// salida (para pintarlas también de su color, no solo con su marca de segura).
 const PARCHIS_START_GLOBAL_COLOR = Object.fromEntries(Object.entries(PARCHIS_START_INDEX).map(([color, idx]) => [idx, color]));
+// Número impreso (1-68) de cada casilla de la vuelta, según su índice
+// interno: el interno 0 (salida amarilla) imprime "5", tal cual un
+// Parchís real (no empieza a numerar en la propia salida amarilla).
+function parchisDisplayNumber(globalIdx) {
+  return ((globalIdx + 4) % PARCHIS_LOOP_LEN) + 1;
+}
 
 let parchisState = null;         // partida actual (local o reflejo de la fila de Supabase)
 let parchisChannel = null;
@@ -3578,9 +3659,9 @@ function parchisEmptyPieces() {
    corral, para repartir las 4 fichas por sus 4 huecos. */
 function parchisCoord(color, relPos, corralSlot) {
   if (relPos === -1) return PARCHIS_CORRAL[color][corralSlot];
-  if (relPos <= 48) return PARCHIS_LOOP[(PARCHIS_START_INDEX[color] + relPos) % 52];
-  if (relPos <= 54) return PARCHIS_HOME[color][relPos - 49];
-  return [7, 7]; // meta
+  if (relPos <= PARCHIS_SHARED_MAX) return PARCHIS_LOOP[(PARCHIS_START_INDEX[color] + relPos) % PARCHIS_LOOP_LEN];
+  if (relPos <= PARCHIS_HOME_MAX) return PARCHIS_HOME[color][relPos - PARCHIS_HOME_START];
+  return [9, 9]; // meta (centro exacto del tablero de 19x19)
 }
 
 /* =========================
@@ -3590,15 +3671,15 @@ function parchisCoord(color, relPos, corralSlot) {
 // relativa "rel", o null si rel ya no es de la vuelta compartida (está
 // en su pasillo privado, en la cárcel, o en la meta).
 function parchisGlobalPos(color, rel) {
-  if (rel < 0 || rel > 48) return null;
-  return (PARCHIS_START_INDEX[color] + rel) % 52;
+  if (rel < 0 || rel > PARCHIS_SHARED_MAX) return null;
+  return (PARCHIS_START_INDEX[color] + rel) % PARCHIS_LOOP_LEN;
 }
 // Al revés: qué posición relativa tendría "color" en la casilla global
 // "g", o null si esa casilla ya no la usa ese color (para él ya es
 // pasillo privado, así que nunca puede tener una ficha ahí).
 function parchisRelForGlobal(color, g) {
-  const rel = ((g - PARCHIS_START_INDEX[color]) % 52 + 52) % 52;
-  return rel <= 48 ? rel : null;
+  const rel = ((g - PARCHIS_START_INDEX[color]) % PARCHIS_LOOP_LEN + PARCHIS_LOOP_LEN) % PARCHIS_LOOP_LEN;
+  return rel <= PARCHIS_SHARED_MAX ? rel : null;
 }
 function parchisCountAtRel(pieces, color, rel) {
   return pieces[color].filter(p => p === rel).length;
@@ -3614,8 +3695,8 @@ function parchisBarrierColorAtGlobal(pieces, g) {
 // ¿Se puede aterrizar en "to" (relativo de "color")? No, si ya hay 2
 // fichas de un mismo color ahí (barrera o puente, sea de quien sea).
 function parchisCanLandOn(pieces, color, to) {
-  if (to === 55) return true; // la meta no tiene límite de fichas
-  if (to >= 49) return parchisCountAtRel(pieces, color, to) < 2; // pasillo privado: solo puede haber ahí fichas propias
+  if (to === PARCHIS_FINISH) return true; // la meta no tiene límite de fichas
+  if (to >= PARCHIS_HOME_START) return parchisCountAtRel(pieces, color, to) < 2; // pasillo privado: solo puede haber ahí fichas propias
   const g = parchisGlobalPos(color, to);
   for (const c of PARCHIS_COLORS) {
     const rel = (c === color) ? to : parchisRelForGlobal(c, g);
@@ -3628,7 +3709,7 @@ function parchisCanLandOn(pieces, color, to) {
 // encima (a diferencia de los puentes, que solo bloquean aterrizar).
 function parchisPathBlockedByBarrier(pieces, color, from, to) {
   const start = Math.max(from, 0) + 1;
-  const end = Math.min(to, 48);
+  const end = Math.min(to, PARCHIS_SHARED_MAX);
   for (let rel = start; rel <= end; rel++) {
     const g = parchisGlobalPos(color, rel);
     if (g == null) continue;
@@ -3655,9 +3736,9 @@ function parchisLegalMoves(pieces, color, dice) {
       if (dice === 5 && ownAtStart < 2) moves.push({ type: 'move', pieceIdx: idx, from: -1, to: 0 });
       return;
     }
-    if (pos === 55) return; // ya en meta
+    if (pos === PARCHIS_FINISH) return; // ya en meta
     const to = pos + effectiveDice;
-    if (to > 55) return; // hace falta el número justo, no vale pasarse
+    if (to > PARCHIS_FINISH) return; // hace falta el número justo, no vale pasarse
     if (!parchisCanLandOn(pieces, color, to)) return;
     if (parchisPathBlockedByBarrier(pieces, color, pos, to)) return;
     moves.push({ type: 'move', pieceIdx: idx, from: pos, to });
@@ -3685,7 +3766,7 @@ function parchisApplyMove(pieces, color, move) {
     PARCHIS_COLORS.forEach(rival => {
       if (rival === color) return;
       next[rival] = next[rival].map((p, idx) => {
-        if (p < 0 || p > 48 || parchisGlobalPos(rival, p) !== g) return p;
+        if (p < 0 || p > PARCHIS_SHARED_MAX || parchisGlobalPos(rival, p) !== g) return p;
         events.push({ type: 'squash', color: rival, pieceIdx: idx });
         return -1;
       });
@@ -3698,7 +3779,7 @@ function parchisApplyMove(pieces, color, move) {
   const { pieceIdx, to } = move;
   next[color][pieceIdx] = to;
 
-  if (to <= 48) {
+  if (to <= PARCHIS_SHARED_MAX) {
     const g = parchisGlobalPos(color, to);
     if (!PARCHIS_SAFE_GLOBAL.has(g)) {
       PARCHIS_COLORS.forEach(rival => {
@@ -3716,7 +3797,7 @@ function parchisApplyMove(pieces, color, move) {
       });
     }
   }
-  if (to === 55) events.push({ type: 'finish', color, pieceIdx });
+  if (to === PARCHIS_FINISH) events.push({ type: 'finish', color, pieceIdx });
   return { pieces: next, events };
 }
 
@@ -3726,7 +3807,7 @@ function parchisApplyMove(pieces, color, move) {
 function parchisApplyBonus(pieces, color, amount) {
   const candidates = pieces[color]
     .map((p, idx) => ({ idx, p }))
-    .filter(x => x.p >= 0 && x.p < 55 && x.p + amount <= 55);
+    .filter(x => x.p >= 0 && x.p < PARCHIS_FINISH && x.p + amount <= PARCHIS_FINISH);
   if (!candidates.length) return { pieces, applied: false };
   candidates.sort((a, b) => b.p - a.p);
   const next = {}; PARCHIS_COLORS.forEach(c => { next[c] = [...pieces[c]]; });
@@ -3735,7 +3816,7 @@ function parchisApplyBonus(pieces, color, amount) {
 }
 
 function parchisHasWon(pieces, color) {
-  return pieces[color].every(p => p === 55);
+  return pieces[color].every(p => p === PARCHIS_FINISH);
 }
 
 /* Bot: prioriza sacar ficha(s) del corral, luego capturar si puede, y
@@ -3765,11 +3846,11 @@ function parchisBotChooseMove(pieces, color, legal, difficulty) {
     // Prioriza terminar una ficha, luego meterla en su pasillo privado
     // (ahí ya no la puede capturar nadie), y si no, dejarla en una
     // casilla segura si hay alguna jugada que lo permita.
-    const finishing = legal.find(m => m.to === 55);
+    const finishing = legal.find(m => m.to === PARCHIS_FINISH);
     if (finishing) return finishing;
-    const enteringHome = legal.find(m => m.to >= 49 && m.from < 49);
+    const enteringHome = legal.find(m => m.to >= PARCHIS_HOME_START && m.from < PARCHIS_HOME_START);
     if (enteringHome) return enteringHome;
-    const safeMove = legal.find(m => m.to <= 48 && PARCHIS_SAFE_GLOBAL.has(parchisGlobalPos(color, m.to)));
+    const safeMove = legal.find(m => m.to <= PARCHIS_SHARED_MAX && PARCHIS_SAFE_GLOBAL.has(parchisGlobalPos(color, m.to)));
     if (safeMove) return safeMove;
   }
 
@@ -3784,23 +3865,27 @@ function parchisCellRoleMap() {
   if (parchisCellRoleCache) return parchisCellRoleCache;
   const map = {};
   const set = (r, c, role) => { map[r + ',' + c] = role; };
-  // El rincón entero (bloque de 6x6) es del color de esa casa, de punta a
-  // punta: así es un Parchís de verdad (un solo cuadro de color por
-  // jugador, no un recuadro pequeño enmarcado con margen alrededor).
-  for (let r = 0; r < 15; r++) {
-    for (let c = 0; c < 15; c++) {
-      if (r <= 5 && c <= 5) set(r, c, 'corral-red');
-      else if (r <= 5 && c >= 9) set(r, c, 'corral-green');
-      else if (r >= 9 && c >= 9) set(r, c, 'corral-yellow');
-      else if (r >= 9 && c <= 5) set(r, c, 'corral-blue');
+  // El rincón entero (bloque de 8x8) es del color de esa casa, de punta a
+  // punta: así es un Parchís de verdad (un solo cuadro grande de color
+  // por jugador). Amarillo arriba-izda, azul arriba-dcha, rojo abajo-dcha,
+  // verde abajo-izda, en sentido horario.
+  for (let r = 0; r < 19; r++) {
+    for (let c = 0; c < 19; c++) {
+      if (r <= 7 && c <= 7) set(r, c, 'corral-yellow');
+      else if (r <= 7 && c >= 11) set(r, c, 'corral-blue');
+      else if (r >= 11 && c >= 11) set(r, c, 'corral-red');
+      else if (r >= 11 && c <= 7) set(r, c, 'corral-green');
       else set(r, c, 'blank');
     }
   }
-  set(7, 7, 'center');
-  // Las 4 esquinas del cuadro central (antes vacías) llevan un degradado
-  // entre los dos colores que las tocan, para que el centro se vea como
-  // un molinillo de 4 puntas, como en un Parchís de verdad.
-  set(6, 6, 'corner-nw'); set(6, 8, 'corner-ne'); set(8, 6, 'corner-sw'); set(8, 8, 'corner-se');
+  // El cuadro central (3x3) es la meta: el centro exacto es un molinillo
+  // de 4 triángulos (uno por color), las 4 casillas junto a cada pasillo
+  // llevan el color de ese pasillo, y las 4 esquinas del cuadro son mitad
+  // de un color y mitad del otro — todo junto forma una sola pieza.
+  set(9, 9, 'center');
+  set(8, 9, 'goal-edge-blue'); set(9, 8, 'goal-edge-yellow');
+  set(9, 10, 'goal-edge-red'); set(10, 9, 'goal-edge-green');
+  set(8, 8, 'corner-nw'); set(8, 10, 'corner-ne'); set(10, 10, 'corner-se'); set(10, 8, 'corner-sw');
   PARCHIS_LOOP.forEach(([r, c]) => set(r, c, 'track'));
   Object.entries(PARCHIS_HOME).forEach(([color, cells]) => cells.forEach(([r, c]) => set(r, c, 'home-' + color)));
   parchisCellRoleCache = map;
@@ -3902,22 +3987,24 @@ function parchisRender() {
 
   const roles = parchisCellRoleMap();
   let html = '';
-  for (let r = 0; r < 15; r++) {
-    for (let c = 0; c < 15; c++) {
+  for (let r = 0; r < 19; r++) {
+    for (let c = 0; c < 19; c++) {
       const role = roles[r + ',' + c] || 'blank';
       if (role === 'blank') continue;
       const classes = ['pc-cell'];
+      let number = '';
       if (role === 'track') {
         classes.push('pc-track');
         const globalIdx = (PARCHIS_LOOP.findIndex(([lr, lc]) => lr === r && lc === c));
         if (PARCHIS_SAFE_GLOBAL.has(globalIdx)) classes.push('pc-safe');
         if (PARCHIS_START_GLOBAL_COLOR[globalIdx]) classes.push('pc-start-' + PARCHIS_START_GLOBAL_COLOR[globalIdx]);
+        number = `<span class="pc-cell-number">${parchisDisplayNumber(globalIdx)}</span>`;
       } else if (role === 'center') classes.push('pc-center');
-      else classes.push('pc-' + role); // corral-<color> / home-<color>
+      else classes.push('pc-' + role); // corral-<color> / home-<color> / goal-edge-<color> / corner-*
 
       const cellPieces = byCell[r + ',' + c] || [];
-      let inner = '';
-      if (!cellPieces.length && PARCHIS_CORRAL_SLOT_SET.has(r + ',' + c)) inner = '<span class="pc-corral-slot"></span>';
+      let inner = number;
+      if (!cellPieces.length && PARCHIS_CORRAL_SLOT_SET.has(r + ',' + c)) inner += '<span class="pc-corral-slot"></span>';
       if (cellPieces.length) {
         const groups = {};
         cellPieces.forEach(p => { (groups[p.color] = groups[p.color] || []).push(p); });
@@ -4427,7 +4514,7 @@ async function parchisCreateFriendGame() {
    de las casillas vía --pc-zoom, con menú, Ctrl+rueda y pellizco)
 ========================= */
 function parchisSetZoom(level) {
-  parchisZoomLevel = Math.min(1.6, Math.max(0.5, level));
+  parchisZoomLevel = Math.min(2.2, Math.max(0.4, level));
   document.getElementById('parchisBoard').style.setProperty('--pc-zoom', parchisZoomLevel.toFixed(2));
   document.getElementById('pcZoomLabel').textContent = Math.round(parchisZoomLevel * 100) + '%';
 }
