@@ -208,6 +208,14 @@ export async function onRequestPost(context) {
         return `- ${nombrePorId[id] || id}: "${texto}"`;
       }).join('\n');
       mensaje = `Estado actual (JSON):\n${JSON.stringify(estadoParaModelo)}\n\nAcciones de esta ronda:\n${lineasAcciones}`;
+    } else if (esInicio) {
+      // Arranque de una misión en solo: mismo aviso explícito que en
+      // grupo, en vez de dejar que se entienda solo por el texto de
+      // la acción ("(inicio de la partida)") — así el modelo tiene
+      // más probabilidades de narrar bien la apertura y de acordarse
+      // del campo "escena_visual" (aunque no lo haga, hay una imagen
+      // de respaldo igualmente, ver más abajo).
+      mensaje = `Estado actual (JSON):\n${JSON.stringify(estadoParaModelo)}\n\nEsto es el inicio de la misión: narra la apertura y describe dónde se encuentra el personaje, todavía no hay ninguna acción que resolver.`;
     } else {
       const accionSegura = String(accion || '').slice(0, ACCION_MAX_LEN);
       mensaje = `Estado actual (JSON):\n${JSON.stringify(estadoParaModelo)}\n\nAcción del jugador: "${accionSegura}"`;
@@ -236,12 +244,20 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: 'respuesta_invalida' }, 200);
     }
 
-    // Ilustración de apertura: solo en el turno de inicio, y solo si
-    // el modelo de verdad devolvió una frase visual. Un fallo aquí no
-    // debe tirar el turno completo — sin imagen, la partida sigue.
+    // Ilustración de apertura: solo en el turno de inicio. Un modelo
+    // más pequeño que Claude no siempre sigue al pie de la letra una
+    // instrucción "extra" como añadir "escena_visual" — así que si no
+    // la trae, se genera la imagen igualmente a partir de la propia
+    // narración (el modelo de imagen tolera bien un prompt mixto
+    // español/inglés). Así la misión SIEMPRE tiene ilustración de
+    // apertura, no solo cuando el modelo se acuerda del campo extra.
+    // Un fallo aquí no debe tirar el turno completo — sin imagen, la
+    // partida sigue igual.
     let imagen = null;
-    const escenaVisual = parsed.estado && typeof parsed.estado.escena_visual === 'string' ? parsed.estado.escena_visual.slice(0, 300) : null;
-    if (esInicio && escenaVisual) {
+    if (esInicio) {
+      const escenaVisual = (parsed.estado && typeof parsed.estado.escena_visual === 'string' && parsed.estado.escena_visual.trim())
+        ? parsed.estado.escena_visual.trim().slice(0, 300)
+        : `Fantasy tavern adventure illustration: ${parsed.narracion}`.slice(0, 300);
       try {
         const imgResult = await env.AI.run(WORKERS_AI_IMAGE_MODEL, { prompt: escenaVisual, steps: 4 });
         if (imgResult && imgResult.image) imagen = `data:image/jpeg;charset=utf-8;base64,${imgResult.image}`;
