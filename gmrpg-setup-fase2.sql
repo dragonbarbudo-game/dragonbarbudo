@@ -3,6 +3,13 @@
 -- puede ejecutar aunque ya haya partidas en solo guardadas, no las toca.
 -- Ejecuta esto en Supabase → SQL Editor DESPUÉS de gmrpg-setup.sql.
 
+-- "personaje" se creó como obligatoria en gmrpg-setup.sql (Fase 1,
+-- pensada solo para partidas en solitario) — las partidas de grupo
+-- nunca la rellenan (usan "grupo" en su lugar), así que hay que
+-- permitir que quede vacía o el insert de cualquier partida de grupo
+-- falla con "null value in column personaje violates not-null constraint".
+alter table public.gmrpg_games alter column personaje drop not null;
+
 alter table public.gmrpg_games add column if not exists mode text not null default 'solo'; -- 'solo' | 'grupo'
 alter table public.gmrpg_games add column if not exists grupo jsonb;             -- array de miembros del grupo (null en modo solo)
 alter table public.gmrpg_games add column if not exists orden_turno jsonb;       -- array de ids, orden fijo en el que actúa cada miembro
