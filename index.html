@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dragonbarbudo - Home</title>
-<link rel="icon" type="image/png" href="favicon-moneda.png">
+<!-- Favicon provisional con emoji (sin archivo de imagen): se sustituirá
+     por uno propio en cuanto el usuario tenga listo el diseño final. -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
@@ -1412,11 +1414,13 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 </button>
 
 <!-- PANTALLA DE ACCESO -->
+<!-- Las fotos de fondo (fondo-taberna-oscuro/claro.png) se han quitado
+     a petición del usuario, en espera de las definitivas — el propio
+     .auth-screen ya lleva su degradado cálido de base (ver --auth-bg /
+     background-image más arriba), así que queda un fondo liso en vez
+     de foto, sin romper nada. Para volver a poner fotos: añade aquí
+     de nuevo <img class="auth-scene(-fill) logo-dark/light" src="..."> -->
 <div class="auth-screen" id="authScreen" style="display:none">
-    <img class="auth-scene-fill logo-dark" src="fondo-taberna-oscuro.png" alt="" aria-hidden="true">
-    <img class="auth-scene-fill logo-light" src="fondo-taberna-claro.png" alt="" aria-hidden="true">
-    <img class="auth-scene logo-dark" src="fondo-taberna-oscuro.png" alt="" aria-hidden="true">
-    <img class="auth-scene logo-light" src="fondo-taberna-claro.png" alt="" aria-hidden="true">
 
     <button class="theme-toggle theme-toggle-fixed" id="themeToggleBtn" onclick="toggleTheme()" title="Cambiar tema">
         <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M20.7 14.6a8.5 8.5 0 1 1-9.3-12 .6.6 0 0 1 .7.9 6.8 6.8 0 0 0 8.9 8.9.6.6 0 0 1 .8.7 8.5 8.5 0 0 1-1.1 1.5z"/></svg>
