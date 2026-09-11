@@ -5469,7 +5469,21 @@ function gmrpgSubscribeChannel(gameId) {
       { event: 'UPDATE', schema: 'public', table: 'gmrpg_games', filter: `id=eq.${gameId}` },
       (payload) => {
         const wasWaiting = gmrpgState && gmrpgState.status === 'waiting';
+        // Las ilustraciones (result.imagen) nunca se guardan en
+        // Supabase —ver gmrpgHistorialForSave— para no hinchar la
+        // base de datos, así que este eco de Realtime (incluido el de
+        // nuestro propio guardado) siempre trae el historial "limpio",
+        // sin imagen. Sin este reinjerto, la imagen aparecía un
+        // instante y desaparecía en cuanto llegaba el eco de la
+        // escritura que la generó.
+        const historialConImagenes = gmrpgState ? gmrpgState.historial : [];
         gmrpgState = payload.new;
+        if (Array.isArray(gmrpgState.historial)) {
+          gmrpgState.historial = gmrpgState.historial.map(h => {
+            const previo = historialConImagenes.find(p => p.turno === h.turno && p.imagen);
+            return previo ? { ...h, imagen: previo.imagen } : h;
+          });
+        }
         if (gmrpgState.status === 'abandoned') {
           // Alguien del grupo (o tú mismo, en otra pestaña) abandonó la
           // partida: no tiene sentido seguir mostrándola.
