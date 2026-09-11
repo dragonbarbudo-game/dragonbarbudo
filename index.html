@@ -776,6 +776,7 @@ main { padding: 30px; overflow: hidden; }
 .gm-log { display: flex; flex-direction: column; gap: 12px; max-height: 46vh; overflow-y: auto; background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
 .gm-log-entry { font-size: 14px; line-height: 1.55; }
 .gm-log-entry .gm-log-turn { color: var(--gold); font-weight: 700; font-size: 12px; display: block; margin-bottom: 3px; }
+.gm-log-image { display: block; width: 100%; max-width: 420px; border-radius: 10px; margin: 4px 0 8px; }
 .gm-log-loading { color: var(--muted); font-style: italic; font-size: 13px; text-align: center; }
 
 /* Turno normal: texto libre */
@@ -2210,7 +2211,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                 <div id="gmrpgFriendPickerList"><p class="friend-empty">Cargando…</p></div>
             </div>
 
-            <p class="friend-msg" style="margin:14px 0 8px;">Dificultad de los bots:</p>
+            <p class="friend-msg" style="margin:14px 0 8px;">Dificultad de la partida (también afecta a cómo narra el Game Master, no solo a los bots):</p>
             <div class="c4-difficulty-options" id="gmrpgBotDifficultyOptions">
                 <button type="button" class="btn btn-dark" data-difficulty="easy" onclick="gmrpgSelectBotDifficulty('easy')">😊 Fácil</button>
                 <button type="button" class="btn btn-dark on" data-difficulty="normal" onclick="gmrpgSelectBotDifficulty('normal')">🙂 Normal</button>
@@ -5218,7 +5219,7 @@ async function gmrpgStartSoloGame() {
   closeGmrpgEntryModal();
   showPage('gmrpgGame');
   gmrpgRenderWaitingOrGame();
-  await gmrpgSendAction('(inicio de la partida)');
+  await gmrpgSendAction('(inicio de la partida)', true);
 }
 
 // BUG corregido: "Salir de la partida" solo limpiaba el estado local,
@@ -5558,7 +5559,17 @@ function gmrpgSetLoading(isLoading) {
   if (rollBtn) rollBtn.disabled = isLoading;
 }
 
-async function gmrpgSendAction(accionTexto) {
+// La ilustración de apertura (result.imagen) NUNCA se guarda en
+// Supabase —el historial ahí solo lleva {turno, narracion}— para no
+// hinchar la base de datos con imágenes en base64: es un detalle de
+// la sesión actual, si se recarga la página no hace falta que
+// sobreviva. gmrpgState.historial en memoria SÍ conserva "imagen"
+// para poder pintarla mientras se sigue jugando (ver gmrpgRender).
+function gmrpgHistorialForSave(historial) {
+  return historial.map(h => ({ turno: h.turno, narracion: h.narracion }));
+}
+
+async function gmrpgSendAction(accionTexto, esInicio) {
   if (!gmrpgState || gmrpgSending) return;
   gmrpgSending = true;
   gmrpgSetLoading(true);
@@ -5569,6 +5580,7 @@ async function gmrpgSendAction(accionTexto) {
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (session?.access_token || '') },
       body: JSON.stringify({
         modo: 'solo',
+        inicio: !!esInicio,
         estado: {
           personaje: gmrpgState.personaje,
           mapa: gmrpgState.mapa,
@@ -5585,7 +5597,7 @@ async function gmrpgSendAction(accionTexto) {
       return; // el jugador no pierde su acción: puede volver a intentarlo
     }
 
-    gmrpgState.historial.push({ turno: gmrpgState.turno, narracion: result.narracion });
+    gmrpgState.historial.push({ turno: gmrpgState.turno, narracion: result.narracion, imagen: result.imagen || null });
     gmrpgState.personaje = result.estado.personaje || gmrpgState.personaje;
     gmrpgState.mapa = result.estado.mapa || gmrpgState.mapa;
     gmrpgState.turno = result.estado.turno || (gmrpgState.turno + 1);
@@ -5603,7 +5615,7 @@ async function gmrpgSendAction(accionTexto) {
           mapa: gmrpgState.mapa,
           turno: gmrpgState.turno,
           ultima_tirada: gmrpgState.ultima_tirada,
-          historial: gmrpgState.historial,
+          historial: gmrpgHistorialForSave(gmrpgState.historial),
           status: gmrpgState.status,
           resultado: gmrpgState.resultado,
           updated_at: new Date().toISOString()
@@ -5748,6 +5760,16 @@ function gmrpgGroupMaybeAutoAdvance() {
   if (gmrpgState.user_id !== currentUserId) return;
   if (gmrpgResolving) return;
 
+  // Arranque de la misión: nadie ha actuado todavía (turno 1, sin
+  // historial) — el GM narra la apertura solo, sin esperar acciones
+  // (a diferencia de modo solo, aquí no hay un "gmrpgStartGame" que lo
+  // dispare directamente, así que lo hace el motor reactivo).
+  if (gmrpgState.turno === 1 && gmrpgState.historial.length === 0) {
+    gmrpgResolving = true;
+    setTimeout(() => { gmrpgSendGroupIntro().finally(() => { gmrpgResolving = false; }); }, 600);
+    return;
+  }
+
   const acciones = gmrpgState.acciones_ronda || {};
   const orden = gmrpgState.orden_turno || [];
   const allDone = orden.length > 0 && orden.every(id => acciones[id] !== undefined);
@@ -5780,6 +5802,7 @@ async function gmrpgResolveRound() {
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (session?.access_token || '') },
       body: JSON.stringify({
         modo: 'grupo',
+        dificultad: gmrpgState.bot_difficulty || 'normal',
         estado: {
           grupo: gmrpgState.grupo, orden_turno: gmrpgState.orden_turno,
           mapa: gmrpgState.mapa, turno: gmrpgState.turno, turno_max: gmrpgState.turno_max
@@ -5790,11 +5813,12 @@ async function gmrpgResolveRound() {
     const result = await resp.json().catch(() => ({}));
     if (!result.ok) { toast('❌ El Game Master no ha podido narrar esta ronda. Se reintentará.'); return; }
 
+    const nuevoHistorialLocal = [...gmrpgState.historial, { turno: gmrpgState.turno, narracion: result.narracion, imagen: result.imagen || null }];
     const patch = {
       grupo: result.estado.grupo || gmrpgState.grupo,
       mapa: result.estado.mapa || gmrpgState.mapa,
       turno: result.estado.turno || (gmrpgState.turno + 1),
-      historial: [...gmrpgState.historial, { turno: gmrpgState.turno, narracion: result.narracion }],
+      historial: gmrpgHistorialForSave(nuevoHistorialLocal),
       resultado: result.estado.resultado || null,
       status: result.estado.resultado ? 'finished' : 'active',
       acciones_ronda: {},
@@ -5804,8 +5828,52 @@ async function gmrpgResolveRound() {
     const { error } = await supabaseClient.from('gmrpg_games').update(patch).eq('id', gmrpgState.id);
     if (error) { toast('❌ No se pudo guardar el resultado de la ronda.'); return; }
 
-    gmrpgState = { ...gmrpgState, ...patch };
+    gmrpgState = { ...gmrpgState, ...patch, historial: nuevoHistorialLocal };
     gmrpgRenderWaitingOrGame(); // la recompensa/penalización (si resultado ya no es null) se aplica sola aquí dentro, ver gmrpgApplyGameEndEconomy
+  } catch (e) {
+    toast('❌ No se pudo contactar con el Game Master.');
+  } finally {
+    gmrpgSetLoading(false);
+  }
+}
+
+// Narración de apertura de la misión, automática: se llama sola en
+// cuanto la partida de grupo pasa a 'active' con el historial vacío
+// (ver gmrpgGroupMaybeAutoAdvance) — nadie tiene que enviar nada
+// todavía. También es donde se genera la ilustración de la misión
+// (ver escena_visual / WORKERS_AI_IMAGE_MODEL en turn.js).
+async function gmrpgSendGroupIntro() {
+  if (!gmrpgState) return;
+  gmrpgSetLoading(true);
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const resp = await fetch('/api/gmrpg/turn', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (session?.access_token || '') },
+      body: JSON.stringify({
+        modo: 'grupo',
+        inicio: true,
+        dificultad: gmrpgState.bot_difficulty || 'normal',
+        estado: {
+          grupo: gmrpgState.grupo, orden_turno: gmrpgState.orden_turno,
+          mapa: gmrpgState.mapa, turno: gmrpgState.turno, turno_max: gmrpgState.turno_max
+        }
+      })
+    });
+    const result = await resp.json().catch(() => ({}));
+    if (!result.ok) { toast('❌ El Game Master no ha podido narrar el inicio. Se reintentará.'); return; }
+
+    const nuevoHistorialLocal = [...gmrpgState.historial, { turno: gmrpgState.turno, narracion: result.narracion, imagen: result.imagen || null }];
+    const patch = {
+      mapa: result.estado.mapa || gmrpgState.mapa,
+      historial: gmrpgHistorialForSave(nuevoHistorialLocal),
+      updated_at: new Date().toISOString()
+    };
+    const { error } = await supabaseClient.from('gmrpg_games').update(patch).eq('id', gmrpgState.id);
+    if (error) { toast('❌ No se pudo guardar el inicio de la misión.'); return; }
+
+    gmrpgState = { ...gmrpgState, ...patch, historial: nuevoHistorialLocal };
+    gmrpgRenderWaitingOrGame();
   } catch (e) {
     toast('❌ No se pudo contactar con el Game Master.');
   } finally {
@@ -5885,7 +5953,11 @@ function gmrpgRender() {
 
   const log = document.getElementById('gmrpgLog');
   log.innerHTML = gmrpgState.historial.map(h => `
-    <div class="gm-log-entry"><span class="gm-log-turn">Turno ${h.turno}</span>${gmEsc(h.narracion)}</div>
+    <div class="gm-log-entry">
+      <span class="gm-log-turn">Turno ${h.turno}</span>
+      ${h.imagen ? `<img class="gm-log-image" src="${h.imagen}" alt="Ilustración de la misión">` : ''}
+      ${gmEsc(h.narracion)}
+    </div>
   `).join('');
 
   document.getElementById('gmrpgPostGameActions').style.display = gmrpgState.resultado ? 'flex' : 'none';

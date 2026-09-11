@@ -20,6 +20,10 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const WORKERS_AI_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const WORKERS_AI_MAX_TOKENS = 600;
 const WORKERS_AI_MAX_TOKENS_GRUPO = 900; // resolver 2-4 personajes a la vez necesita más espacio de respuesta
+// Ilustración de apertura de cada misión: mismo binding "AI", modelo de
+// imagen "Cloudflare-hosted" (no es un modelo "Partner" de terceros
+// con facturación aparte) — gratis dentro de la misma cuota diaria.
+const WORKERS_AI_IMAGE_MODEL = '@cf/black-forest-labs/flux-1-schnell';
 const ACCION_MAX_LEN = 500;
 
 // Escenario fijo del MVP (Fase 1): una sola aventura preescrita. Vive
@@ -49,7 +53,24 @@ En este modo NUNCA pidas una tirada ("Tira 1d6..."): cada jugador decide de ante
 
 Derrota de grupo: fuera del combate final, un personaje a 0 de vida queda "fuera de combate" un instante y vuelve a 1 (igual que en modo solo). Durante el combate final, si TODOS los personajes vivos del grupo llegan a 0 de vida, es derrota para el grupo entero: cierra con "resultado":"derrota". Si solo caen algunos y otros siguen en pie, la aventura continúa para el grupo.`;
 
-function buildSystemPrompt(modo) {
+// "Dificultad de la partida" (antes solo afectaba a los bots, ahora
+// también calibra cómo de duro narra el GM — a petición del usuario).
+const DIFICULTAD_ADENDA = {
+  easy: '\n\n## Dificultad de la partida: fácil\nSé generoso: enemigos más débiles y torpes, dale al grupo más margen en los éxitos parciales, y evita rachas de mala suerte encadenadas.',
+  hard: '\n\n## Dificultad de la partida: difícil\nSé exigente: enemigos más duros y numerosos, las consecuencias de un fallo pesan más, y no regales victorias fáciles.'
+};
+
+// Al empezar la misión (turno 1, sin acciones previas) el GM narra la
+// apertura solo, sin esperar ninguna acción del jugador — y además
+// genera una frase MUY breve en inglés para ilustrar la escena (se
+// usa para una imagen generada aparte, nunca se le muestra al
+// jugador). Ver gmrpgSendGroupIntro / gmrpgStartSoloGame en index.html.
+const INICIO_ADENDA = `
+
+## Inicio de la misión
+Esto es el arranque de la aventura: todavía no hay ninguna acción que resolver. Describe brevemente la historia y el lugar donde se encuentra el grupo (2-4 frases, como siempre). Además, en el JSON de estado añade el campo "escena_visual": una frase MUY breve en inglés describiendo la escena de forma visual, pensada para generar una ilustración (nunca se muestra al jugador, es solo para la imagen) — por ejemplo "escena_visual": "a torch-lit tavern at night, wooden beams, adventurers gathered around a table".`;
+
+function buildSystemPrompt(modo, dificultad, esInicio) {
   return `Eres el Game Master de una partida de rol corta dentro de Dragonbarbudo, un mundo de fantasía con razas jugables (${LISTA_RAZAS}). Narras, controlas enemigos y resuelves acciones — nunca decides por el jugador.
 
 ## Premisa de esta aventura
@@ -114,7 +135,7 @@ ${TONO}
 ## Victoria, derrota y recompensas
 - Victoria si ${CONDICION_VICTORIA}.
 - Derrota si ${CONDICION_DERROTA}.
-- Al terminar, sustituye NARRACIÓN por un cierre de 1-2 frases, y en el JSON añade "resultado": "victoria" | "derrota".${modo === 'grupo' ? MODO_GRUPO_ADENDA : ''}`;
+- Al terminar, sustituye NARRACIÓN por un cierre de 1-2 frases, y en el JSON añade "resultado": "victoria" | "derrota".${modo === 'grupo' ? MODO_GRUPO_ADENDA : ''}${DIFICULTAD_ADENDA[dificultad] || ''}${esInicio ? INICIO_ADENDA : ''}`;
 }
 
 // Separa el bloque NARRACIÓN del bloque ESTADO en el texto crudo que
@@ -155,8 +176,9 @@ export async function onRequestPost(context) {
     });
     if (!meResp.ok) return json({ ok: false, error: 'invalid_session' }, 200);
 
-    const { modo, estado, accion, acciones } = await request.json().catch(() => ({}));
+    const { modo, estado, accion, acciones, inicio, dificultad } = await request.json().catch(() => ({}));
     const modoSeguro = modo === 'grupo' ? 'grupo' : 'solo';
+    const esInicio = !!inicio;
     if (!estado || typeof estado !== 'object') return json({ ok: false, error: 'missing_params' }, 200);
     if (typeof estado.turno !== 'number' || typeof estado.turno_max !== 'number') {
       return json({ ok: false, error: 'missing_params' }, 200);
@@ -170,7 +192,12 @@ export async function onRequestPost(context) {
     const { historial, orden_turno, acciones_ronda, turno_actual, ...estadoParaModelo } = estado;
 
     let mensaje;
-    if (modoSeguro === 'grupo') {
+    if (modoSeguro === 'grupo' && esInicio) {
+      // Arranque de una misión de grupo: todavía no hay acciones que
+      // resolver, solo hace falta la apertura (ver gmrpgSendGroupIntro).
+      if (!Array.isArray(estado.grupo)) return json({ ok: false, error: 'missing_params' }, 200);
+      mensaje = `Estado actual (JSON):\n${JSON.stringify(estadoParaModelo)}\n\nEsto es el inicio de la misión: narra la apertura, todavía no hay ninguna acción que resolver.`;
+    } else if (modoSeguro === 'grupo') {
       if (!Array.isArray(estado.grupo) || !Array.isArray(orden_turno) || !acciones || typeof acciones !== 'object') {
         return json({ ok: false, error: 'missing_params' }, 200);
       }
@@ -191,7 +218,7 @@ export async function onRequestPost(context) {
       aiResult = await env.AI.run(WORKERS_AI_MODEL, {
         max_tokens: modoSeguro === 'grupo' ? WORKERS_AI_MAX_TOKENS_GRUPO : WORKERS_AI_MAX_TOKENS,
         messages: [
-          { role: 'system', content: buildSystemPrompt(modoSeguro) },
+          { role: 'system', content: buildSystemPrompt(modoSeguro, dificultad, esInicio) },
           { role: 'user', content: mensaje }
         ]
       });
@@ -209,7 +236,20 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: 'respuesta_invalida' }, 200);
     }
 
-    return json({ ok: true, narracion: parsed.narracion, estado: parsed.estado }, 200);
+    // Ilustración de apertura: solo en el turno de inicio, y solo si
+    // el modelo de verdad devolvió una frase visual. Un fallo aquí no
+    // debe tirar el turno completo — sin imagen, la partida sigue.
+    let imagen = null;
+    const escenaVisual = parsed.estado && typeof parsed.estado.escena_visual === 'string' ? parsed.estado.escena_visual.slice(0, 300) : null;
+    if (esInicio && escenaVisual) {
+      try {
+        const imgResult = await env.AI.run(WORKERS_AI_IMAGE_MODEL, { prompt: escenaVisual, steps: 4 });
+        if (imgResult && imgResult.image) imagen = `data:image/jpeg;charset=utf-8;base64,${imgResult.image}`;
+      } catch (e) { /* sin imagen, la misión sigue igual */ }
+    }
+    if (parsed.estado) delete parsed.estado.escena_visual; // interno, no forma parte del esquema de la partida
+
+    return json({ ok: true, narracion: parsed.narracion, estado: parsed.estado, imagen }, 200);
   } catch (e) {
     return json({ ok: false, error: String(e) }, 200);
   }
