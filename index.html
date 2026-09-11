@@ -787,7 +787,12 @@ main { padding: 30px; overflow: hidden; }
 
 /* Zona de narración: historial de turnos, con scroll propio */
 .gm-log-wrap { margin: 0 0 14px; }
-.gm-log { display: flex; flex-direction: column; gap: 12px; max-height: 60vh; overflow-y: auto; background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+/* Sin scroll propio a propósito: con la imagen de apertura, el bloque
+   fácilmente supera cualquier alto fijo razonable, y una barra de
+   scroll interna obligaba a desplazar DENTRO del registro para leer
+   el texto bajo la imagen. Crece con el contenido y es la página
+   entera la que hace scroll, como el resto del sitio. */
+.gm-log { display: flex; flex-direction: column; gap: 12px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
 .gm-log-entry { font-size: 14px; line-height: 1.55; }
 .gm-log-entry .gm-log-turn { color: var(--gold); font-weight: 700; font-size: 12px; display: block; margin-bottom: 3px; }
 .gm-log-image { display: block; width: 100%; border-radius: 10px; margin: 4px 0 8px; }
@@ -811,6 +816,7 @@ main { padding: 30px; overflow: hidden; }
 .gm-group-card.gm-group-turn { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
 .gm-group-card .gm-group-name { font-weight: 600; }
 .gm-group-card .gm-group-life { font-size: 11px; }
+.gm-group-card .gm-group-avatar { font-size: 22px; width: 34px; height: 34px; border-radius: 50%; background: var(--panel); display: flex; align-items: center; justify-content: center; }
 
 /* Fase 2 (grupo): mi turno — texto libre + tirada opcional con el
    atributo elegido, en vez del turno reactivo de modo solo (ver
@@ -5615,7 +5621,7 @@ function gmrpgSetLoading(isLoading) {
       loadingEl.className = 'gm-log-loading';
       loadingEl.textContent = '✍️ El Game Master está narrando…';
       log.appendChild(loadingEl);
-      log.scrollTop = log.scrollHeight;
+      loadingEl.scrollIntoView({ block: 'end', behavior: 'smooth' });
     }
   } else if (loadingEl) {
     loadingEl.remove();
@@ -5958,9 +5964,16 @@ function gmrpgRenderCharBar() {
       const isTurn = gmrpgState.turno_actual === m.id;
       let hearts = '';
       for (let i = 0; i < m.vida_max; i++) hearts += (i < m.vida ? '❤️' : '🖤');
+      // Icono de cada miembro (jugador o bot): no se puede mostrar el
+      // avatar personalizado de OTRA cuenta (state.equipped vive solo
+      // en el navegador de cada uno, no se sincroniza), así que se usa
+      // el emoji de su raza como icono simple, igual para todos.
+      const race = GMRPG_RACES.find(r => r.id === m.raza);
+      const icon = race ? race.emoji : '🧑';
       return `<div class="gm-group-card${isTurn ? ' gm-group-turn' : ''}">
-        <span class="gm-group-name">${m.tipo === 'bot' ? '🤖 ' : ''}${gmEsc(m.nombre)}</span>
         <span class="gm-group-life">${hearts}</span>
+        <span class="gm-group-avatar">${icon}</span>
+        <span class="gm-group-name">${m.tipo === 'bot' ? '🤖 ' : ''}${gmEsc(m.nombre)}</span>
       </div>`;
     }).join('')}</div>`;
   } else {
@@ -6064,7 +6077,7 @@ function gmrpgRender() {
     document.getElementById('gmrpgActionBar').style.display = 'flex';
   }
 
-  log.scrollTop = log.scrollHeight;
+  if (log.lastElementChild) log.lastElementChild.scrollIntoView({ block: 'end' });
   gmrpgRenderSidePanels();
   gmrpgRenderChatPanel();
 }
