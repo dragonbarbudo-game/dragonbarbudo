@@ -18,6 +18,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const ANTHROPIC_MODEL = 'claude-sonnet-5';
 const ANTHROPIC_MAX_TOKENS = 600;
+const ANTHROPIC_MAX_TOKENS_GRUPO = 900; // resolver 2-4 personajes a la vez necesita más espacio de respuesta
 const ACCION_MAX_LEN = 500;
 
 // Escenario fijo del MVP (Fase 1): una sola aventura preescrita. Vive
@@ -33,7 +34,21 @@ function json(body, status) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
-function buildSystemPrompt() {
+// Fase 2: añadido de grupo (docs/modo-multijugador-bots.md). En modo
+// grupo el JSON de estado trae "grupo" (array de personajes) y
+// "orden_turno" en vez de un único "personaje"; el GM nunca pide
+// tiradas (no hay margen para un ida-y-vuelta a mitad de ronda), solo
+// narra sobre las que cada jugador ya resolvió por su cuenta.
+const MODO_GRUPO_ADENDA = `
+
+## Modo grupo (2-4 personajes)
+Esta partida es de grupo: en vez de "personaje", el JSON de estado trae "grupo" (un array, un personaje por entrada, cada uno con su propio nombre/raza/vida/vida_max/atributos/inventario) y "orden_turno" (el orden fijo en que actúan). Cada ronda recibes la acción de TODOS los personajes de la lista, en ese mismo orden, bajo "Acciones de esta ronda". Resuelve cada acción para el personaje al que corresponde y actualiza su vida/atributos/inventario dentro del array "grupo" — nunca un único personaje.
+
+En este modo NUNCA pidas una tirada ("Tira 1d6..."): cada jugador decide de antemano si su acción necesita tirada y, si la necesita, ya viene marcada con un bloque "[TIRADA] atributo=... dado=... total=... banda=... natural=..." al final de su texto — narra sobre ese resultado ya resuelto, no lo repitas ni lo contradigas. Si una acción NO trae ese bloque, resuélvela de forma narrativa sin banda numérica: ni fallo ni éxito total "porque sí", algo intermedio y razonable según lo que describa el jugador.
+
+Derrota de grupo: fuera del combate final, un personaje a 0 de vida queda "fuera de combate" un instante y vuelve a 1 (igual que en modo solo). Durante el combate final, si TODOS los personajes vivos del grupo llegan a 0 de vida, es derrota para el grupo entero: cierra con "resultado":"derrota". Si solo caen algunos y otros siguen en pie, la aventura continúa para el grupo.`;
+
+function buildSystemPrompt(modo) {
   return `Eres el Game Master de una partida de rol corta dentro de Dragonbarbudo, un mundo de fantasía con razas jugables (${LISTA_RAZAS}). Narras, controlas enemigos y resuelves acciones — nunca decides por el jugador.
 
 ## Premisa de esta aventura
@@ -98,7 +113,7 @@ ${TONO}
 ## Victoria, derrota y recompensas
 - Victoria si ${CONDICION_VICTORIA}.
 - Derrota si ${CONDICION_DERROTA}.
-- Al terminar, sustituye NARRACIÓN por un cierre de 1-2 frases, y en el JSON añade "resultado": "victoria" | "derrota".`;
+- Al terminar, sustituye NARRACIÓN por un cierre de 1-2 frases, y en el JSON añade "resultado": "victoria" | "derrota".${modo === 'grupo' ? MODO_GRUPO_ADENDA : ''}`;
 }
 
 // Separa el bloque NARRACIÓN del bloque ESTADO en el texto crudo que
@@ -139,20 +154,36 @@ export async function onRequestPost(context) {
     });
     if (!meResp.ok) return json({ ok: false, error: 'invalid_session' }, 200);
 
-    const { estado, accion } = await request.json().catch(() => ({}));
+    const { modo, estado, accion, acciones } = await request.json().catch(() => ({}));
+    const modoSeguro = modo === 'grupo' ? 'grupo' : 'solo';
     if (!estado || typeof estado !== 'object') return json({ ok: false, error: 'missing_params' }, 200);
     if (typeof estado.turno !== 'number' || typeof estado.turno_max !== 'number') {
       return json({ ok: false, error: 'missing_params' }, 200);
     }
     if (estado.turno > estado.turno_max) return json({ ok: false, error: 'partida_terminada' }, 200);
 
-    const accionSegura = String(accion || '').slice(0, ACCION_MAX_LEN);
+    // No mandamos "historial" (ni el resto de campos de recolección de
+    // turno, que ya no hacen falta una vez armado el mensaje) al
+    // modelo: no lo necesita —la spec pide que el JSON de estado sea
+    // su única memoria— y así se ahorran tokens en cada turno.
+    const { historial, orden_turno, acciones_ronda, turno_actual, ...estadoParaModelo } = estado;
 
-    // No mandamos "historial" al modelo: no lo necesita (la spec pide
-    // que el JSON de estado sea su única memoria) y así se ahorran
-    // tokens en cada turno.
-    const { historial, ...estadoParaModelo } = estado;
-    const mensaje = `Estado actual (JSON):\n${JSON.stringify(estadoParaModelo)}\n\nAcción del jugador: "${accionSegura}"`;
+    let mensaje;
+    if (modoSeguro === 'grupo') {
+      if (!Array.isArray(estado.grupo) || !Array.isArray(orden_turno) || !acciones || typeof acciones !== 'object') {
+        return json({ ok: false, error: 'missing_params' }, 200);
+      }
+      const nombrePorId = {};
+      estado.grupo.forEach(p => { if (p && p.id) nombrePorId[p.id] = p.nombre || p.id; });
+      const lineasAcciones = orden_turno.map(id => {
+        const texto = String(acciones[id] || '(no ha hecho nada esta ronda)').slice(0, ACCION_MAX_LEN);
+        return `- ${nombrePorId[id] || id}: "${texto}"`;
+      }).join('\n');
+      mensaje = `Estado actual (JSON):\n${JSON.stringify(estadoParaModelo)}\n\nAcciones de esta ronda:\n${lineasAcciones}`;
+    } else {
+      const accionSegura = String(accion || '').slice(0, ACCION_MAX_LEN);
+      mensaje = `Estado actual (JSON):\n${JSON.stringify(estadoParaModelo)}\n\nAcción del jugador: "${accionSegura}"`;
+    }
 
     const apiResp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -163,8 +194,8 @@ export async function onRequestPost(context) {
       },
       body: JSON.stringify({
         model: ANTHROPIC_MODEL,
-        max_tokens: ANTHROPIC_MAX_TOKENS,
-        system: buildSystemPrompt(),
+        max_tokens: modoSeguro === 'grupo' ? ANTHROPIC_MAX_TOKENS_GRUPO : ANTHROPIC_MAX_TOKENS,
+        system: buildSystemPrompt(modoSeguro),
         messages: [{ role: 'user', content: mensaje }]
       })
     });

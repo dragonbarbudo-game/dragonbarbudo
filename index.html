@@ -739,7 +739,7 @@ main { padding: 30px; overflow: hidden; }
     .pc-cell-number { font-size: calc(var(--pc-cell) * var(--pc-zoom) * 0.4); }
 }
 
-/* AVENTURA GM IA (modo solo, Fase 1) */
+/* AVENTURA GM IA (modo solo, Fase 1 + modo grupo, Fase 2) */
 
 /* Creación de personaje, dentro del modal de entrada */
 .gm-race-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; margin-bottom: 8px; }
@@ -774,6 +774,25 @@ main { padding: 30px; overflow: hidden; }
 /* Turno de tirada: el GM ha pedido "Tira 1d6 + atributo" */
 .gm-dice-bar { display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 640px; margin: 0 auto 14px; }
 .gm-dice-wrap { position: relative; width: 60px; height: 60px; }
+
+/* Fase 2 (grupo): fila de tarjetas, una por miembro, con indicador de
+   a quién le toca actuar en esta ronda */
+.gm-group-bar { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.gm-group-card { display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 6px 10px; font-size: 12px; min-width: 70px; }
+.gm-group-card.gm-group-turn { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+.gm-group-card .gm-group-name { font-weight: 600; }
+.gm-group-card .gm-group-life { font-size: 11px; }
+
+/* Fase 2 (grupo): mi turno — texto libre + tirada opcional con el
+   atributo elegido, en vez del turno reactivo de modo solo (ver
+   comentario en index.html sobre por qué el GM nunca pide tirada
+   dentro de una ronda de grupo) */
+.gm-group-action-bar { display: flex; flex-direction: column; gap: 10px; max-width: 640px; margin: 0 auto 14px; }
+.gm-group-action-bar textarea { padding: 12px; background: var(--input-bg); border: 1px solid var(--border); color: var(--input-text); border-radius: 8px; font-family: inherit; resize: vertical; }
+.gm-group-action-buttons { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+/* Fase 2 (grupo): no es mi turno */
+.gm-waiting-turn { display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 640px; margin: 0 auto 14px; color: var(--muted); font-size: 14px; }
 
 /* Fin de partida */
 .gm-end-banner { max-width: 640px; margin: 0 auto 14px; text-align: center; padding: 18px; border-radius: 12px; border: 1px solid var(--border); }
@@ -1714,9 +1733,10 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             </div>
         </div>
 
-        <!-- AVENTURA GM IA (modo solo, Fase 1): el personaje se crea en el
-             modal de entrada; a partir de ahí cada turno pasa por
-             /api/gmrpg/turn (ver gmrpgSendAction en el bloque de JS). -->
+        <!-- AVENTURA GM IA: el personaje (o el grupo, en Fase 2) se crea en
+             el modal de entrada; a partir de ahí cada turno pasa por
+             /api/gmrpg/turn (ver gmrpgSendAction/gmrpgGroupMaybeAutoAdvance
+             en el bloque de JS). -->
         <div class="page" id="gmrpgGame">
             <div class="c4-header">
                 <h1>📜 Aventura con GM IA</h1>
@@ -1724,32 +1744,67 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                 <div class="c4-status" id="gmrpgStatus">Cargando partida…</div>
             </div>
 
-            <div class="c4-postgame" id="gmrpgPostGameActions" style="display:none;">
-                <button class="btn btn-dark c4-postgame-btn" onclick="leaveGmrpgGame()" title="Volver a Juegos">🚪 Volver a Juegos</button>
-            </div>
-
-            <div class="gm-log-wrap">
-                <div class="gm-log" id="gmrpgLog"></div>
-            </div>
-
-            <!-- Turno normal: acción libre -->
-            <div class="gm-action-bar" id="gmrpgActionBar">
-                <textarea id="gmrpgActionInput" placeholder="¿Qué haces?" maxlength="300" rows="2"></textarea>
-                <button class="btn btn-primary" id="gmrpgSendBtn" onclick="gmrpgSendTypedAction()">Enviar</button>
-            </div>
-
-            <!-- Turno de tirada: el GM ha pedido "Tira 1d6 + atributo" (ver
-                 gmrpgDetectDiceRequest / gmrpgRollDice) -->
-            <div class="gm-dice-bar" id="gmrpgDiceBar" style="display:none;">
-                <p id="gmrpgDicePrompt">Tira 1d6 + fuerza</p>
-                <div class="gm-dice-wrap">
-                    <div class="pc-dice-drop" id="gmrpgDiceDrop"></div>
+            <!-- Sala de espera (solo modo grupo): se ve mientras haya
+                 amigos invitados sin responder -->
+            <div id="gmrpgWaitingRoom" style="display:none;">
+                <div class="pc-waiting-list" id="gmrpgWaitingList"></div>
+                <div class="c4-actions">
+                    <button class="btn btn-dark" onclick="leaveGmrpgGame()">← Salir</button>
+                    <button class="btn btn-primary" id="gmrpgStartNowBtn" onclick="gmrpgStartNow()">🚀 Rellenar con bots y empezar</button>
                 </div>
-                <button class="btn btn-primary" id="gmrpgRollBtn" onclick="gmrpgRollDice()">🎲 Tirar</button>
             </div>
 
-            <div class="c4-actions">
-                <button class="btn btn-dark" onclick="leaveGmrpgGame()">← Salir de la partida</button>
+            <div id="gmrpgPlayArea" style="display:none;">
+                <div class="c4-postgame" id="gmrpgPostGameActions" style="display:none;">
+                    <button class="btn btn-dark c4-postgame-btn" onclick="leaveGmrpgGame()" title="Volver a Juegos">🚪 Volver a Juegos</button>
+                </div>
+
+                <div class="gm-log-wrap">
+                    <div class="gm-log" id="gmrpgLog"></div>
+                </div>
+
+                <!-- Modo solo: acción libre -->
+                <div class="gm-action-bar" id="gmrpgActionBar">
+                    <textarea id="gmrpgActionInput" placeholder="¿Qué haces?" maxlength="300" rows="2"></textarea>
+                    <button class="btn btn-primary" id="gmrpgSendBtn" onclick="gmrpgSendTypedAction()">Enviar</button>
+                </div>
+
+                <!-- Modo solo: turno de tirada, el GM ha pedido "Tira 1d6 +
+                     atributo" (ver gmrpgDetectDiceRequest / gmrpgRollDice) -->
+                <div class="gm-dice-bar" id="gmrpgDiceBar" style="display:none;">
+                    <p id="gmrpgDicePrompt">Tira 1d6 + fuerza</p>
+                    <div class="gm-dice-wrap">
+                        <div class="pc-dice-drop" id="gmrpgDiceDrop"></div>
+                    </div>
+                    <button class="btn btn-primary" id="gmrpgRollBtn" onclick="gmrpgRollDice()">🎲 Tirar</button>
+                </div>
+
+                <!-- Modo grupo, mi turno: el GM nunca pide tirada a mitad de
+                     ronda (no hay margen para el ida y vuelta), así que aquí
+                     decides tú de antemano si tu acción la acompañas de una
+                     tirada — ver gmrpgSendGroupAction. -->
+                <div class="gm-group-action-bar" id="gmrpgGroupActionBar" style="display:none;">
+                    <textarea id="gmrpgGroupActionInput" placeholder="¿Qué haces?" maxlength="300" rows="2"></textarea>
+                    <div class="gm-group-action-buttons">
+                        <button class="btn btn-primary" onclick="gmrpgSendGroupAction(null)">Enviar</button>
+                        <button class="btn btn-dark" onclick="gmrpgSendGroupAction('fuerza')">🎲 Fuerza</button>
+                        <button class="btn btn-dark" onclick="gmrpgSendGroupAction('astucia')">🎲 Astucia</button>
+                        <button class="btn btn-dark" onclick="gmrpgSendGroupAction('coraje')">🎲 Coraje</button>
+                    </div>
+                    <div class="gm-dice-wrap" id="gmrpgGroupDiceWrap" style="display:none;">
+                        <div class="pc-dice-drop" id="gmrpgGroupDiceDrop"></div>
+                    </div>
+                </div>
+
+                <!-- Modo grupo, no es mi turno -->
+                <div class="gm-waiting-turn" id="gmrpgWaitingTurn" style="display:none;">
+                    <p id="gmrpgWaitingTurnText">⏳ Esperando la acción de…</p>
+                    <button class="btn btn-dark" id="gmrpgPlayForBtn" onclick="gmrpgPlayForCurrentMember()">🤖 Jugar por él/ella</button>
+                </div>
+
+                <div class="c4-actions">
+                    <button class="btn btn-dark" onclick="leaveGmrpgGame()">← Salir de la partida</button>
+                </div>
             </div>
         </div>
 
@@ -2097,22 +2152,60 @@ body.light-mode .auth-tabs button.active { color: #fff; }
     </div>
 </div>
 
-<!-- AVENTURA GM IA › MODAL DE ENTRADA (creación de personaje; Fase 1: modo
-     solo, sin amigos ni bots de grupo todavía). -->
+<!-- AVENTURA GM IA › MODAL DE ENTRADA. Tres paneles: elegir solo/con
+     amigos, crear tu personaje (común a ambos modos), y —solo en modo
+     grupo— tamaño de grupo + invitar amigos + dificultad de bots. -->
 <div class="modal-bg" id="gmrpgEntryModalBg">
     <div class="modal">
         <h2>📜 Aventura con GM IA</h2>
-        <p class="friend-msg" style="margin-bottom:10px;">Crea tu personaje para esta aventura:</p>
 
-        <input type="text" id="gmrpgNameInput" placeholder="Nombre del personaje" maxlength="20" oninput="gmrpgUpdateStartButton()">
+        <div id="gmrpgEntryChoices">
+            <button class="c4-entry-option" onclick="gmrpgChooseMode('solo')">
+                <span class="c4-entry-icon">🧙</span>
+                <span><strong>Jugar solo</strong><br><small>Tú contra el Game Master</small></span>
+            </button>
+            <button class="c4-entry-option" onclick="gmrpgChooseMode('grupo')">
+                <span class="c4-entry-icon">👥</span>
+                <span><strong>Jugar con amigos</strong><br><small>De 2 a 4 jugadores; el resto se rellena con bots</small></span>
+            </button>
+        </div>
 
-        <p class="friend-msg" style="margin:14px 0 8px;">Raza:</p>
-        <div class="gm-race-grid" id="gmrpgRaceGrid"></div>
+        <div id="gmrpgEntryCharCreation" style="display:none;">
+            <p class="friend-msg" style="margin-bottom:10px;">Crea tu personaje para esta aventura:</p>
 
-        <p class="friend-msg" style="margin:14px 0 8px;">Reparto de atributos (<span id="gmrpgPointsLeft">4</span> puntos por repartir):</p>
-        <div class="gm-attr-list" id="gmrpgAttrList"></div>
+            <input type="text" id="gmrpgNameInput" placeholder="Nombre del personaje" maxlength="20" oninput="gmrpgUpdateStartButton()">
 
-        <button class="btn btn-primary" id="gmrpgStartBtn" onclick="gmrpgStartGame()" style="margin-top:14px; width:100%;" disabled>Ponle nombre a tu personaje</button>
+            <p class="friend-msg" style="margin:14px 0 8px;">Raza:</p>
+            <div class="gm-race-grid" id="gmrpgRaceGrid"></div>
+
+            <p class="friend-msg" style="margin:14px 0 8px;">Reparto de atributos (<span id="gmrpgPointsLeft">4</span> puntos por repartir):</p>
+            <div class="gm-attr-list" id="gmrpgAttrList"></div>
+
+            <button class="btn btn-primary" id="gmrpgStartBtn" onclick="gmrpgConfirmCharacter()" style="margin-top:14px; width:100%;" disabled>Ponle nombre a tu personaje</button>
+            <button class="page-back-btn" onclick="gmrpgShowEntryChoices()" style="margin-top:16px;">← Volver</button>
+        </div>
+
+        <div id="gmrpgEntryGroupSetup" style="display:none;">
+            <p class="friend-msg" style="margin-bottom:10px;">Tamaño del grupo:</p>
+            <div class="c4-difficulty-options" id="gmrpgGroupSizeOptions">
+                <button type="button" class="btn btn-dark" data-size="2" onclick="gmrpgSelectGroupSize(2)">👥 2</button>
+                <button type="button" class="btn btn-dark on" data-size="3" onclick="gmrpgSelectGroupSize(3)">👥 3</button>
+                <button type="button" class="btn btn-dark" data-size="4" onclick="gmrpgSelectGroupSize(4)">👥 4</button>
+            </div>
+
+            <p class="friend-msg" style="margin:14px 0 8px;">Invita a tus amigos (hasta <span id="gmrpgMaxFriendsLabel">2</span>; el resto de plazas se rellena con bots):</p>
+            <div id="gmrpgFriendPickerList"><p class="friend-empty">Cargando…</p></div>
+
+            <p class="friend-msg" style="margin:14px 0 8px;">Dificultad de las plazas que se rellenen con bots:</p>
+            <div class="c4-difficulty-options" id="gmrpgBotDifficultyOptions">
+                <button type="button" class="btn btn-dark" data-difficulty="easy" onclick="gmrpgSelectBotDifficulty('easy')">😊 Fácil</button>
+                <button type="button" class="btn btn-dark on" data-difficulty="normal" onclick="gmrpgSelectBotDifficulty('normal')">🙂 Normal</button>
+                <button type="button" class="btn btn-dark" data-difficulty="hard" onclick="gmrpgSelectBotDifficulty('hard')">😈 Difícil</button>
+            </div>
+
+            <button class="btn btn-primary" id="gmrpgCreateGroupBtn" onclick="gmrpgCreateGroupGame()" style="margin-top:12px; width:100%;">Crear partida</button>
+            <button class="page-back-btn" onclick="gmrpgShowCharCreation()" style="margin-top:16px;">← Volver</button>
+        </div>
 
         <div class="modal-actions">
             <button class="btn btn-dark" onclick="closeGmrpgEntryModal()">Cancelar</button>
@@ -4718,18 +4811,29 @@ function parchisZoom(direction) {
 })();
 
 /* =========================
-   AVENTURA GM IA (modo solo, Fase 1: sin amigos ni bots de grupo
-   todavía — eso es la Fase 2, ver docs/modo-multijugador-bots.md).
+   AVENTURA GM IA
+   - Fase 1 (modo solo): un jugador contra el GM.
+   - Fase 2 (modo grupo, ver docs/modo-multijugador-bots.md): 2-4
+     jugadores (amigos y/o bots) contra el GM, en rondas — cada ronda,
+     todos los miembros del grupo actúan una vez, por orden fijo
+     (orden_turno/turno_actual), y solo entonces el GM narra la ronda
+     entera. Por eso, en modo grupo el GM nunca pide una tirada a
+     mitad de ronda (no hay margen para el ida y vuelta): cada jugador
+     decide de antemano si su acción lleva tirada (ver
+     gmrpgSendGroupAction) y el GM narra sobre el resultado ya resuelto.
 
-   Cada turno llama a /api/gmrpg/turn (Cloudflare Function), que a su
-   vez llama a la API de Anthropic con el system prompt fijo de
+   Cada turno/ronda llama a /api/gmrpg/turn (Cloudflare Function), que
+   a su vez llama a la API de Anthropic con el system prompt fijo de
    docs/gm-system-prompt-final.md y devuelve {narracion, estado}. El
    dado SIEMPRE lo tira este cliente (randInt), nunca el modelo: se le
    manda el resultado ya resuelto como una acción con el prefijo
    "[TIRADA]" para que narre sobre un hecho consumado.
 
    La partida se guarda en Supabase (tabla gmrpg_games, RLS por
-   auth.uid()) para poder reanudarla si se cierra el navegador.
+   participante) para poder reanudarla si se cierra el navegador. En
+   modo grupo, solo el anfitrión (gmrpgState.user_id) dirige a los
+   bots y resuelve la ronda contra el GM — igual que Parchís, para que
+   dos clientes conectados no acaben actuando dos veces por lo mismo.
 ========================= */
 const GMRPG_RACES = [
   { id: 'humano', label: 'Humano', emoji: '🧑' },
@@ -4741,45 +4845,86 @@ const GMRPG_RACES = [
 const GMRPG_ATTR_KEYS = ['fuerza', 'astucia', 'coraje'];
 const GMRPG_ATTR_BUDGET = 4;
 const GMRPG_ATTR_CAP = 2;
+const GMRPG_BOT_NAMES = ['Grim el Silencioso', 'Vela la Rápida', 'Bruno el Fuerte', 'Nix la Astuta', 'Kael el Temerario', 'Sable la Sigilosa', 'Orin el Firme', 'Luna la Perspicaz'];
+const GMRPG_BOT_ACTIONS_COMBATE = ['ataca sin dudar al enemigo más cercano', 'busca un punto débil en el enemigo', 'se lanza a proteger al grupo', 'golpea con todo lo que tiene'];
+const GMRPG_BOT_ACTIONS_EXPLORACION = ['explora los alrededores con cuidado', 'vigila que no haya peligro', 'examina lo que hay cerca', 'avanza con cautela'];
 
 let gmrpgState = null;
 let gmrpgSelectedRace = null;
 let gmrpgAttrs = { fuerza: 0, astucia: 0, coraje: 0 };
-let gmrpgPendingDice = null; // atributo pedido por el GM en la última narración, o null
+let gmrpgPendingDice = null; // modo solo: atributo pedido por el GM en la última narración, o null
 let gmrpgSending = false;    // evita doble envío mientras se espera al modelo
+let gmrpgResolving = false;  // modo grupo: evita resolver la misma ronda dos veces
+let gmrpgChannel = null;     // modo grupo: canal Realtime de la partida
+let gmrpgEntryMode = 'solo'; // 'solo' | 'grupo' | 'joining' (aceptando una invitación), elegido en el modal
+let gmrpgJoiningInvite = null; // invitación de game_invites que se está aceptando (modo 'joining')
+let gmrpgPendingCharacter = null; // {nombre,raza,atributos} ya creado, a la espera de configurar el grupo
+let gmrpgGroupSize = 3;
+let gmrpgSelectedFriends = []; // [{id,name}]
+let gmrpgSelectedBotDifficulty = 'normal';
 
 function gmEsc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
 /* -------- Creación de personaje (modal de entrada) -------- */
 
 async function openGmrpgEntryModal() {
-  // Si ya hay una partida en curso, se retoma directamente en vez de
-  // pedir un personaje nuevo (la tabla guarda el progreso por si se
-  // cierra el navegador a mitad de aventura).
+  // Si ya hay una partida en curso —propia en solo, o de grupo donde
+  // participo—, se retoma directamente en vez de pedir personaje
+  // nuevo. "grupo.cs...." comprueba si algún elemento del array grupo
+  // tiene mi user_id (contención jsonb): cubre las partidas de grupo
+  // sin necesitar una consulta aparte.
   try {
     const { data } = await supabaseClient
       .from('gmrpg_games').select('*')
-      .eq('user_id', currentUserId).eq('status', 'active')
+      .or(`user_id.eq.${currentUserId},grupo.cs.[{"user_id":"${currentUserId}"}]`)
+      .in('status', ['waiting', 'active'])
       .order('created_at', { ascending: false }).limit(1).maybeSingle();
     if (data) {
       gmrpgState = data;
-      gmrpgPendingDice = gmrpgDetectLastDiceRequest();
+      gmrpgPendingDice = data.mode === 'grupo' ? null : gmrpgDetectLastDiceRequest();
       showPage('gmrpgGame');
-      gmrpgRender();
+      if (data.mode === 'grupo') gmrpgSubscribeChannel(data.id);
+      gmrpgRenderWaitingOrGame();
       return;
     }
   } catch (e) { /* si falla la comprobación, se sigue al formulario normal */ }
 
+  gmrpgEntryMode = 'solo';
+  gmrpgJoiningInvite = null;
+  gmrpgPendingCharacter = null;
+  gmrpgSelectedRace = null;
+  gmrpgAttrs = { fuerza: 0, astucia: 0, coraje: 0 };
+  document.getElementById('gmrpgNameInput').value = '';
+  gmrpgShowEntryChoices();
+  document.getElementById('gmrpgEntryModalBg').style.display = 'flex';
+}
+function closeGmrpgEntryModal() {
+  document.getElementById('gmrpgEntryModalBg').style.display = 'none';
+}
+function gmrpgShowEntryChoices() {
+  document.getElementById('gmrpgEntryChoices').style.display = 'block';
+  document.getElementById('gmrpgEntryCharCreation').style.display = 'none';
+  document.getElementById('gmrpgEntryGroupSetup').style.display = 'none';
+}
+function gmrpgShowCharCreation() {
+  document.getElementById('gmrpgEntryChoices').style.display = 'none';
+  document.getElementById('gmrpgEntryCharCreation').style.display = 'block';
+  document.getElementById('gmrpgEntryGroupSetup').style.display = 'none';
+}
+function gmrpgShowGroupSetup() {
+  document.getElementById('gmrpgEntryChoices').style.display = 'none';
+  document.getElementById('gmrpgEntryCharCreation').style.display = 'none';
+  document.getElementById('gmrpgEntryGroupSetup').style.display = 'block';
+}
+function gmrpgChooseMode(mode) {
+  gmrpgEntryMode = mode;
   gmrpgSelectedRace = null;
   gmrpgAttrs = { fuerza: 0, astucia: 0, coraje: 0 };
   document.getElementById('gmrpgNameInput').value = '';
   gmrpgRenderRaces();
   gmrpgRenderAttrs();
   gmrpgUpdateStartButton();
-  document.getElementById('gmrpgEntryModalBg').style.display = 'flex';
-}
-function closeGmrpgEntryModal() {
-  document.getElementById('gmrpgEntryModalBg').style.display = 'none';
+  gmrpgShowCharCreation();
 }
 
 function gmrpgRenderRaces() {
@@ -4830,39 +4975,51 @@ function gmrpgUpdateStartButton() {
   if (!gmrpgSelectedRace) { btn.disabled = true; btn.textContent = 'Elige una raza'; return; }
   if (spent !== GMRPG_ATTR_BUDGET) { btn.disabled = true; btn.textContent = `Reparte los ${GMRPG_ATTR_BUDGET} puntos de atributos`; return; }
   btn.disabled = false;
-  btn.textContent = '⚔️ Empezar aventura';
+  btn.textContent = gmrpgEntryMode === 'grupo' ? 'Siguiente →' : (gmrpgEntryMode === 'joining' ? '🚪 Unirme a la partida' : '⚔️ Empezar aventura');
 }
 
-function gmrpgBuildInitialState(nombre, raza, atributos) {
+function gmrpgBuildInitialMapa() {
   return {
-    personaje: { nombre, raza, vida: 3, vida_max: 3, atributos, inventario: [] },
-    mapa: {
-      escena_actual: 'La entrada de unas ruinas donde se han refugiado los trasgos que robaron la reliquia.',
-      combate_final: false, enemigos: [], objetos_visibles: []
-    },
-    turno: 1,
-    turno_max: 12, // fijo en esta fase (debe coincidir con TURNOS_MAX en turn.js)
-    historial: [],
-    status: 'active'
+    escena_actual: 'La entrada de unas ruinas donde se han refugiado los trasgos que robaron la reliquia.',
+    combate_final: false, enemigos: [], objetos_visibles: []
   };
 }
 
-async function gmrpgStartGame() {
+// Común a la creación de personaje en modo solo, modo grupo (el
+// anfitrión) y al aceptar una invitación (modo 'joining') — cada uno
+// decide qué hacer con el personaje ya construido.
+async function gmrpgConfirmCharacter() {
   const nombre = document.getElementById('gmrpgNameInput').value.trim();
   const spent = GMRPG_ATTR_KEYS.reduce((s, k) => s + gmrpgAttrs[k], 0);
   if (!nombre || !gmrpgSelectedRace || spent !== GMRPG_ATTR_BUDGET) return;
 
-  const initial = gmrpgBuildInitialState(nombre, gmrpgSelectedRace, { ...gmrpgAttrs });
+  const personaje = { nombre, raza: gmrpgSelectedRace, vida: 3, vida_max: 3, atributos: { ...gmrpgAttrs }, inventario: [] };
+
+  if (gmrpgEntryMode === 'joining') {
+    await gmrpgJoinGroupGame(personaje);
+    return;
+  }
+  if (gmrpgEntryMode === 'grupo') {
+    gmrpgPendingCharacter = personaje;
+    gmrpgGroupSize = 3;
+    gmrpgSelectedFriends = [];
+    gmrpgSelectedBotDifficulty = 'normal';
+    document.querySelectorAll('#gmrpgGroupSizeOptions .btn').forEach(b => b.classList.toggle('on', b.dataset.size === '3'));
+    document.querySelectorAll('#gmrpgBotDifficultyOptions .btn').forEach(b => b.classList.toggle('on', b.dataset.difficulty === 'normal'));
+    document.getElementById('gmrpgMaxFriendsLabel').textContent = gmrpgGroupSize - 1;
+    gmrpgShowGroupSetup();
+    await loadGmrpgFriendPicker();
+    return;
+  }
+  await gmrpgStartSoloGame(personaje);
+}
+
+async function gmrpgStartSoloGame(personaje) {
+  const initial = { personaje, mapa: gmrpgBuildInitialMapa(), turno: 1, turno_max: 12, historial: [], status: 'active' };
   let row = null;
   try {
     const { data, error } = await supabaseClient.from('gmrpg_games').insert({
-      user_id: currentUserId,
-      personaje: initial.personaje,
-      mapa: initial.mapa,
-      turno: initial.turno,
-      turno_max: initial.turno_max,
-      historial: initial.historial,
-      status: initial.status
+      user_id: currentUserId, mode: 'solo', ...initial
     }).select().single();
     if (!error && data) row = data;
   } catch (e) { /* sigue en local, ver comentario abajo */ }
@@ -4872,19 +5029,271 @@ async function gmrpgStartGame() {
   // guardar falla por lo que sea, la partida sigue siendo jugable en
   // local —igual que el modo "Jugar con Bots" de Parchís/Conecta 4—,
   // solo que no se podrá reanudar si se cierra el navegador.
-  gmrpgState = row || { id: 'local-' + Date.now(), user_id: currentUserId, ...initial };
+  gmrpgState = row || { id: 'local-' + Date.now(), user_id: currentUserId, mode: 'solo', ...initial };
   gmrpgState.persisted = !!row;
   gmrpgPendingDice = null;
   closeGmrpgEntryModal();
   showPage('gmrpgGame');
-  gmrpgRender();
+  gmrpgRenderWaitingOrGame();
   await gmrpgSendAction('(inicio de la partida)');
 }
 
 function leaveGmrpgGame() {
+  if (gmrpgChannel) { supabaseClient.removeChannel(gmrpgChannel); gmrpgChannel = null; }
   gmrpgState = null;
   gmrpgPendingDice = null;
   showPage('lobby');
+}
+
+/* -------- Modo grupo: configuración (tamaño, amigos, dificultad) -------- */
+
+function gmrpgSelectGroupSize(n) {
+  gmrpgGroupSize = n;
+  document.querySelectorAll('#gmrpgGroupSizeOptions .btn').forEach(b => b.classList.toggle('on', Number(b.dataset.size) === n));
+  document.getElementById('gmrpgMaxFriendsLabel').textContent = n - 1;
+  if (gmrpgSelectedFriends.length > n - 1) gmrpgSelectedFriends = gmrpgSelectedFriends.slice(0, n - 1);
+  loadGmrpgFriendPicker();
+}
+function gmrpgSelectBotDifficulty(difficulty) {
+  gmrpgSelectedBotDifficulty = difficulty;
+  document.querySelectorAll('#gmrpgBotDifficultyOptions .btn').forEach(btn => {
+    btn.classList.toggle('on', btn.dataset.difficulty === difficulty);
+  });
+}
+async function loadGmrpgFriendPicker() {
+  const listEl = document.getElementById('gmrpgFriendPickerList');
+  listEl.innerHTML = '<p class="friend-empty">Cargando…</p>';
+  if (!currentUserId) { listEl.innerHTML = '<p class="friend-empty">Inicia sesión para invitar a un amigo.</p>'; return; }
+
+  const { data: rows, error } = await supabaseClient
+    .from('friendships').select('*')
+    .or(`user_id.eq.${currentUserId},friend_id.eq.${currentUserId}`)
+    .eq('status', 'accepted');
+  if (error || !rows || !rows.length) {
+    listEl.innerHTML = '<p class="friend-empty">Todavía no tienes amigos añadidos.</p>';
+    return;
+  }
+  const otherIds = rows.map(r => r.user_id === currentUserId ? r.friend_id : r.user_id);
+  const { data: profs } = await supabaseClient.from('profiles').select('id, username, avatar').in('id', otherIds);
+  listEl.innerHTML = (profs || []).map(p => {
+    const safeName = (p.username || '...').replace(/'/g, "\\'");
+    const checked = gmrpgSelectedFriends.some(f => f.id === p.id);
+    return `
+    <label class="pc-friend-check${checked ? ' checked' : ''}" id="gmrpgFriendCheck-${p.id}">
+      <input type="checkbox" ${checked ? 'checked' : ''} onchange="gmrpgToggleFriend('${p.id}', '${safeName}', this.checked)">
+      <span>${p.avatar || '🧙'} ${p.username || '...'}</span>
+    </label>`;
+  }).join('');
+}
+function gmrpgToggleFriend(id, name, checked) {
+  const max = gmrpgGroupSize - 1;
+  const row = document.getElementById('gmrpgFriendCheck-' + id);
+  if (checked) {
+    if (gmrpgSelectedFriends.length >= max) {
+      toast(`Solo puedes invitar hasta a ${max} amigo${max === 1 ? '' : 's'} para un grupo de ${gmrpgGroupSize}.`);
+      row.querySelector('input').checked = false;
+      return;
+    }
+    gmrpgSelectedFriends.push({ id, name });
+  } else {
+    gmrpgSelectedFriends = gmrpgSelectedFriends.filter(f => f.id !== id);
+  }
+  row.classList.toggle('checked', checked);
+}
+
+/* -------- Modo grupo: bots (nombre, atributos por dificultad, heurística) -------- */
+
+// El dado nunca se trucará (igual que en Parchís): la "dificultad" de
+// un bot sale de qué tan bien reparte sus 4 puntos entre los 3
+// atributos, no de tiradas falseadas.
+function gmrpgBotAttributes(difficulty) {
+  if (difficulty === 'easy') {
+    const patterns = [[2,1,1],[1,2,1],[1,1,2],[2,2,0],[2,0,2],[0,2,2]];
+    const p = patterns[randInt(0, patterns.length - 1)];
+    return { fuerza: p[0], astucia: p[1], coraje: p[2] };
+  }
+  if (difficulty === 'hard') {
+    const patterns = [[2,2,0],[2,0,2],[0,2,2]];
+    const p = patterns[randInt(0, patterns.length - 1)];
+    return { fuerza: p[0], astucia: p[1], coraje: p[2] };
+  }
+  return { fuerza: 1, astucia: 2, coraje: 1 }; // normal: reparto equilibrado
+}
+function gmrpgBotBestAttr(atributos) {
+  return GMRPG_ATTR_KEYS.reduce((best, k) => (atributos[k] > atributos[best] ? k : best), GMRPG_ATTR_KEYS[0]);
+}
+function gmrpgPickBotName(usedNames) {
+  const free = GMRPG_BOT_NAMES.filter(n => !usedNames.includes(n));
+  const pool = free.length ? free : GMRPG_BOT_NAMES;
+  return pool[randInt(0, pool.length - 1)];
+}
+// Frase + tirada con el atributo más alto: la heurística de bots (y la
+// del botón "🤖 Jugar por…" sobre un humano inactivo, que reutiliza
+// esta misma función con sus propios atributos reales).
+function gmrpgHeuristicAction(member) {
+  const enCombate = gmrpgState.mapa && Array.isArray(gmrpgState.mapa.enemigos) && gmrpgState.mapa.enemigos.length > 0;
+  const frases = enCombate ? GMRPG_BOT_ACTIONS_COMBATE : GMRPG_BOT_ACTIONS_EXPLORACION;
+  const frase = frases[randInt(0, frases.length - 1)];
+  const atributos = member.atributos || { fuerza: 0, astucia: 0, coraje: 0 };
+  const atributo = gmrpgBotBestAttr(atributos);
+  const dado = randInt(1, 6);
+  const total = dado + (atributos[atributo] || 0);
+  const banda = total <= 3 ? 'fallo' : total <= 5 ? 'parcial' : 'exito';
+  const natural = dado === 6 ? '6' : dado === 1 ? '1' : 'no';
+  return `${frase} [TIRADA] atributo=${atributo} dado=${dado} total=${total} banda=${banda} natural=${natural}`;
+}
+
+function gmrpgBuildGroupMember({ id, user_id, nombre, raza, tipo, atributos, dificultad, vida, vida_max, inventario }) {
+  return {
+    id, user_id: user_id || null, nombre, raza, tipo,
+    vida: vida != null ? vida : 3, vida_max: vida_max != null ? vida_max : 3,
+    atributos: atributos || { fuerza: 0, astucia: 0, coraje: 0 },
+    inventario: inventario || [], dificultad: dificultad || null
+  };
+}
+
+async function gmrpgCreateGroupGame() {
+  if (!gmrpgPendingCharacter || !currentUserId) return;
+
+  const grupo = [gmrpgBuildGroupMember({
+    id: currentUserId, user_id: currentUserId, nombre: gmrpgPendingCharacter.nombre,
+    raza: gmrpgPendingCharacter.raza, tipo: 'human', atributos: gmrpgPendingCharacter.atributos
+  })];
+
+  gmrpgSelectedFriends.forEach(f => {
+    grupo.push(gmrpgBuildGroupMember({
+      id: f.id, user_id: f.id, nombre: f.name,
+      raza: GMRPG_RACES[randInt(0, GMRPG_RACES.length - 1)].id, tipo: 'pending'
+    }));
+  });
+
+  const usedBotNames = [];
+  while (grupo.length < gmrpgGroupSize) {
+    const nombre = gmrpgPickBotName(usedBotNames);
+    usedBotNames.push(nombre);
+    grupo.push(gmrpgBuildGroupMember({
+      id: 'bot_' + grupo.length, user_id: null, nombre,
+      raza: GMRPG_RACES[randInt(0, GMRPG_RACES.length - 1)].id, tipo: 'bot',
+      atributos: gmrpgBotAttributes(gmrpgSelectedBotDifficulty), dificultad: gmrpgSelectedBotDifficulty
+    }));
+  }
+
+  const ordenTurno = grupo.map(m => m.id);
+  const allResolved = grupo.every(m => m.tipo !== 'pending');
+
+  const { data, error } = await supabaseClient.from('gmrpg_games').insert({
+    user_id: currentUserId, mode: 'grupo',
+    grupo, orden_turno: ordenTurno, turno_actual: ordenTurno[0], acciones_ronda: {},
+    bot_difficulty: gmrpgSelectedBotDifficulty,
+    mapa: gmrpgBuildInitialMapa(), turno: 1, turno_max: 12, historial: [],
+    status: allResolved ? 'active' : 'waiting'
+  }).select().single();
+  if (error || !data) { toast('❌ No se pudo crear la partida.'); return; }
+
+  await Promise.all(gmrpgSelectedFriends.map(f => sendGameInvite(f.id, f.name, 'gmrpg', data.id)));
+  closeGmrpgEntryModal();
+  openGmrpgGame(data.id);
+}
+
+// Ocupa la plaza reservada de quien acaba de aceptar una invitación,
+// ya con su propio personaje creado (patch trae nombre/raza/atributos
+// reales, no el placeholder de la plaza "pending"). Si con esto ya no
+// queda ninguna plaza pendiente, la partida pasa sola a 'active' —
+// igual que parchisResolveInviteSlot.
+async function gmrpgResolveInviteSlot(gameId, userId, patch) {
+  const { data, error } = await supabaseClient.from('gmrpg_games').select('grupo').eq('id', gameId).single();
+  if (error || !data) return;
+  const grupo = data.grupo.map(m => (m.user_id === userId && m.tipo === 'pending') ? { ...m, ...patch } : m);
+  const allResolved = grupo.every(m => m.tipo !== 'pending');
+  await supabaseClient.from('gmrpg_games')
+    .update(allResolved ? { grupo, status: 'active' } : { grupo, status: 'waiting' })
+    .eq('id', gameId);
+}
+
+async function gmrpgJoinGroupGame(personaje) {
+  const invite = gmrpgJoiningInvite;
+  if (!invite) return;
+  await supabaseClient.from('game_invites').update({ status: 'accepted' }).eq('id', invite.id);
+  await gmrpgResolveInviteSlot(invite.game_id, currentUserId, {
+    tipo: 'human', nombre: personaje.nombre, raza: personaje.raza,
+    atributos: personaje.atributos, vida: personaje.vida, vida_max: personaje.vida_max, inventario: personaje.inventario
+  });
+  closeGmrpgEntryModal();
+  gmrpgJoiningInvite = null;
+  openGmrpgGame(invite.game_id);
+}
+
+/* El anfitrión puede rellenar con bots las plazas todavía pendientes y
+   empezar ya, sin esperar más a que alguien acepte. */
+async function gmrpgStartNow() {
+  if (!gmrpgState || gmrpgState.user_id !== currentUserId) return;
+  const grupo = gmrpgState.grupo.map(m => m.tipo === 'pending'
+    ? { ...m, tipo: 'bot', user_id: null, dificultad: gmrpgState.bot_difficulty || 'normal', atributos: gmrpgBotAttributes(gmrpgState.bot_difficulty || 'normal') }
+    : m);
+  const { error } = await supabaseClient.from('gmrpg_games').update({ grupo, status: 'active' }).eq('id', gmrpgState.id);
+  if (error) toast('❌ No se pudo empezar la partida.');
+}
+
+/* -------- Modo grupo: sala de espera y partida en curso (Realtime) -------- */
+
+function gmrpgSubscribeChannel(gameId) {
+  if (gmrpgChannel) supabaseClient.removeChannel(gmrpgChannel);
+  gmrpgChannel = supabaseClient
+    .channel('gmrpg-' + gameId)
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'gmrpg_games', filter: `id=eq.${gameId}` },
+      (payload) => {
+        const wasWaiting = gmrpgState && gmrpgState.status === 'waiting';
+        gmrpgState = payload.new;
+        gmrpgRenderWaitingOrGame();
+        if (wasWaiting && gmrpgState.status === 'active') toast('🎲 ¡Ya estáis todos! Empieza la partida.');
+      }
+    )
+    .subscribe();
+}
+
+async function openGmrpgGame(gameId) {
+  showPage('gmrpgGame');
+  document.getElementById('gmrpgStatus').textContent = 'Cargando partida…';
+  const { data, error } = await supabaseClient.from('gmrpg_games').select('*').eq('id', gameId).single();
+  if (error || !data) { toast('❌ No se pudo cargar la partida.'); return; }
+  gmrpgState = data;
+  gmrpgPendingDice = null;
+  gmrpgRenderWaitingOrGame();
+  gmrpgSubscribeChannel(gameId);
+}
+
+function gmrpgRenderWaitingRoom() {
+  document.getElementById('gmrpgWaitingList').innerHTML = gmrpgState.grupo.map(m => {
+    const statusText = m.tipo === 'bot' ? '🤖 Bot'
+      : m.tipo === 'pending' ? '⏳ Invitado, esperando…'
+      : (m.user_id === currentUserId ? '✅ Tú' : '✅ Se ha unido');
+    return `<div class="pc-waiting-slot">
+      <span class="pc-waiting-slot-name">${gmEsc(m.nombre)}</span>
+      <span class="pc-waiting-slot-status">${statusText}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('gmrpgStartNowBtn').style.display = (gmrpgState.user_id === currentUserId) ? 'inline-flex' : 'none';
+}
+
+// Punto único de entrada para pintar la página de partida: decide si
+// toca ver la sala de espera o la partida en sí (equivalente a
+// parchisRenderWaitingOrBoard).
+function gmrpgRenderWaitingOrGame() {
+  if (!gmrpgState) return;
+  document.getElementById('gmrpgWaitingRoom').style.display = 'none';
+  document.getElementById('gmrpgPlayArea').style.display = 'none';
+
+  if (gmrpgState.mode === 'grupo' && gmrpgState.status === 'waiting') {
+    document.getElementById('gmrpgCharBar').innerHTML = '';
+    document.getElementById('gmrpgStatus').textContent = 'Esperando a que se complete el grupo…';
+    document.getElementById('gmrpgWaitingRoom').style.display = 'block';
+    gmrpgRenderWaitingRoom();
+  } else {
+    document.getElementById('gmrpgPlayArea').style.display = 'block';
+    gmrpgRender();
+    if (gmrpgState.mode === 'grupo') gmrpgGroupMaybeAutoAdvance();
+  }
 }
 
 /* -------- Turno: envío de acción (texto libre o tirada resuelta) -------- */
@@ -4932,6 +5341,7 @@ async function gmrpgSendAction(accionTexto) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (session?.access_token || '') },
       body: JSON.stringify({
+        modo: 'solo',
         estado: {
           personaje: gmrpgState.personaje,
           mapa: gmrpgState.mapa,
@@ -4999,10 +5409,11 @@ function gmrpgSendTypedAction() {
 
 /* -------- Tirada de dado: el número lo decide este cliente, nunca el
    modelo (ver cabecera del bloque). Reutiliza el dibujo de puntos de
-   dado ya usado en Parchís (parchisDicePipsHtml), con su propio
-   contenedor de caída (#gmrpgDiceDrop) porque vive en otra página. -------- */
-function gmrpgAnimateDiceDrop(value) {
-  const el = document.getElementById('gmrpgDiceDrop');
+   dado ya usado en Parchís (parchisDicePipsHtml); gmrpgAnimateDiceDropOn
+   recibe el id del contenedor porque modo solo y modo grupo tienen
+   cada uno el suyo (#gmrpgDiceDrop / #gmrpgGroupDiceDrop). -------- */
+function gmrpgAnimateDiceDropOn(elId, value) {
+  const el = document.getElementById(elId);
   if (!el) return;
   el.classList.remove('falling');
   void el.offsetWidth; // reinicia la animación aunque salga la misma cara dos veces seguidas
@@ -5016,6 +5427,7 @@ function gmrpgAnimateDiceDrop(value) {
   }, 90);
   setTimeout(() => { el.classList.remove('falling'); }, 1200);
 }
+function gmrpgAnimateDiceDrop(value) { gmrpgAnimateDiceDropOn('gmrpgDiceDrop', value); }
 
 async function gmrpgRollDice() {
   if (!gmrpgPendingDice || gmrpgSending) return;
@@ -5035,19 +5447,178 @@ async function gmrpgRollDice() {
   await gmrpgSendAction(`[TIRADA] atributo=${atributo} dado=${dado} total=${total} banda=${banda} natural=${natural}`);
 }
 
+/* -------- Modo grupo: envío de la acción de mi turno dentro de la
+   ronda (texto libre, con tirada opcional que decido yo mismo — el GM
+   no puede pedirla a mitad de ronda, ver cabecera del bloque) -------- */
+
+function gmrpgMyGroupMember() {
+  if (!gmrpgState || gmrpgState.mode !== 'grupo' || !gmrpgState.grupo) return null;
+  return gmrpgState.grupo.find(m => m.id === currentUserId) || null;
+}
+
+// Escribe mi acción en acciones_ronda y paso el turno al siguiente de
+// orden_turno (o me quedo en el último si ya han actuado todos —
+// gmrpgGroupMaybeAutoAdvance es quien resuelve la ronda y repone
+// turno_actual al principio para la siguiente). Cualquier participante
+// puede llamar esto para SU PROPIA acción o, con el botón "Jugar por…",
+// para otro miembro humano inactivo — la RLS de gmrpg_games permite
+// escribir a cualquiera del grupo, no solo al anfitrión.
+async function gmrpgSubmitGroupAction(actorId, texto) {
+  if (!gmrpgState) return;
+  try {
+    const { data, error } = await supabaseClient.from('gmrpg_games').select('acciones_ronda, orden_turno').eq('id', gmrpgState.id).single();
+    if (error || !data) { toast('❌ No se pudo enviar la acción.'); return; }
+    const acciones = { ...(data.acciones_ronda || {}), [actorId]: texto };
+    const orden = data.orden_turno || gmrpgState.orden_turno;
+    const idx = orden.indexOf(actorId);
+    const allDone = orden.every(id => acciones[id] !== undefined);
+    const next = allDone ? gmrpgState.turno_actual : (idx >= 0 && idx < orden.length - 1 ? orden[idx + 1] : orden[orden.length - 1]);
+    await supabaseClient.from('gmrpg_games').update({
+      acciones_ronda: acciones, turno_actual: next, updated_at: new Date().toISOString()
+    }).eq('id', gmrpgState.id);
+  } catch (e) { toast('❌ No se pudo enviar la acción.'); }
+}
+
+async function gmrpgSendGroupAction(atributo) {
+  const me = gmrpgMyGroupMember();
+  if (!me || !gmrpgState || gmrpgState.turno_actual !== currentUserId || gmrpgSending) return;
+  const input = document.getElementById('gmrpgGroupActionInput');
+  let texto = input.value.trim();
+  if (!texto) { toast('Escribe qué haces antes de enviar.'); return; }
+
+  if (atributo) {
+    gmrpgSending = true;
+    const dado = randInt(1, 6);
+    const dropWrap = document.getElementById('gmrpgGroupDiceWrap');
+    dropWrap.style.display = 'block';
+    gmrpgAnimateDiceDropOn('gmrpgGroupDiceDrop', dado);
+    await new Promise(r => setTimeout(r, 1300));
+    const attrValue = (me.atributos && me.atributos[atributo]) || 0;
+    const total = dado + attrValue;
+    const banda = total <= 3 ? 'fallo' : total <= 5 ? 'parcial' : 'exito';
+    const natural = dado === 6 ? '6' : dado === 1 ? '1' : 'no';
+    texto += ` [TIRADA] atributo=${atributo} dado=${dado} total=${total} banda=${banda} natural=${natural}`;
+    dropWrap.style.display = 'none';
+    gmrpgSending = false;
+  }
+
+  input.value = '';
+  await gmrpgSubmitGroupAction(currentUserId, texto);
+}
+
+// Botón "🤖 Jugar por [nombre]": visible para el resto del grupo
+// cuando le toca a otro humano y no responde. Usa sus propios
+// atributos reales (no una plantilla genérica de bot).
+async function gmrpgPlayForCurrentMember() {
+  if (!gmrpgState || gmrpgState.mode !== 'grupo') return;
+  const member = gmrpgState.grupo.find(m => m.id === gmrpgState.turno_actual);
+  if (!member) return;
+  await gmrpgSubmitGroupAction(member.id, gmrpgHeuristicAction(member));
+}
+
+/* -------- Modo grupo: motor reactivo — se llama tras cada render o eco
+   de Realtime (igual que parchisMaybeAutoAdvance). Solo el anfitrión
+   hace avanzar a los bots y resuelve la ronda contra el GM, para que
+   dos clientes conectados no dupliquen la misma llamada. -------- */
+function gmrpgGroupMaybeAutoAdvance() {
+  if (!gmrpgState || gmrpgState.mode !== 'grupo' || gmrpgState.status !== 'active' || gmrpgState.resultado) return;
+  if (gmrpgState.user_id !== currentUserId) return;
+  if (gmrpgResolving) return;
+
+  const acciones = gmrpgState.acciones_ronda || {};
+  const orden = gmrpgState.orden_turno || [];
+  const allDone = orden.length > 0 && orden.every(id => acciones[id] !== undefined);
+
+  if (allDone) {
+    gmrpgResolving = true;
+    setTimeout(() => { gmrpgResolveRound().finally(() => { gmrpgResolving = false; }); }, 900);
+    return;
+  }
+
+  const turnMember = gmrpgState.grupo.find(m => m.id === gmrpgState.turno_actual);
+  if (turnMember && turnMember.tipo === 'bot' && acciones[turnMember.id] === undefined) {
+    gmrpgResolving = true;
+    setTimeout(() => {
+      gmrpgSubmitGroupAction(turnMember.id, gmrpgHeuristicAction(turnMember)).finally(() => { gmrpgResolving = false; });
+    }, 1200);
+  }
+}
+
+// Llama al GM con las acciones ya recogidas de toda la ronda, aplica
+// el resultado a grupo/mapa, y repone la ronda siguiente. Solo lo
+// ejecuta el anfitrión (ver gmrpgGroupMaybeAutoAdvance).
+async function gmrpgResolveRound() {
+  if (!gmrpgState) return;
+  gmrpgSetLoading(true);
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const resp = await fetch('/api/gmrpg/turn', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (session?.access_token || '') },
+      body: JSON.stringify({
+        modo: 'grupo',
+        estado: {
+          grupo: gmrpgState.grupo, orden_turno: gmrpgState.orden_turno,
+          mapa: gmrpgState.mapa, turno: gmrpgState.turno, turno_max: gmrpgState.turno_max
+        },
+        acciones: gmrpgState.acciones_ronda
+      })
+    });
+    const result = await resp.json().catch(() => ({}));
+    if (!result.ok) { toast('❌ El Game Master no ha podido narrar esta ronda. Se reintentará.'); return; }
+
+    const patch = {
+      grupo: result.estado.grupo || gmrpgState.grupo,
+      mapa: result.estado.mapa || gmrpgState.mapa,
+      turno: result.estado.turno || (gmrpgState.turno + 1),
+      historial: [...gmrpgState.historial, { turno: gmrpgState.turno, narracion: result.narracion }],
+      resultado: result.estado.resultado || null,
+      status: result.estado.resultado ? 'finished' : 'active',
+      acciones_ronda: {},
+      turno_actual: gmrpgState.orden_turno[0],
+      updated_at: new Date().toISOString()
+    };
+    const { error } = await supabaseClient.from('gmrpg_games').update(patch).eq('id', gmrpgState.id);
+    if (error) { toast('❌ No se pudo guardar el resultado de la ronda.'); return; }
+
+    gmrpgState = { ...gmrpgState, ...patch };
+    gmrpgRenderWaitingOrGame();
+
+    if (gmrpgState.resultado) {
+      recordGameResult({ game: 'gmrpg', outcome: gmrpgState.resultado === 'victoria' ? 'win' : 'loss' });
+    }
+  } catch (e) {
+    toast('❌ No se pudo contactar con el Game Master.');
+  } finally {
+    gmrpgSetLoading(false);
+  }
+}
+
 /* -------- Render de la página de partida -------- */
 
 function gmrpgRenderCharBar() {
-  const p = gmrpgState.personaje;
-  const race = GMRPG_RACES.find(r => r.id === p.raza);
-  const raceLabel = race ? `${race.emoji} ${race.label}` : gmEsc(p.raza);
-  let hearts = '';
-  for (let i = 0; i < p.vida_max; i++) hearts += `<span>${i < p.vida ? '❤️' : '🖤'}</span>`;
-  document.getElementById('gmrpgCharBar').innerHTML = `
-    <strong>${gmEsc(p.nombre)}</strong> · ${raceLabel}
-    <span class="gm-char-life">${hearts}</span>
-    <span>💪${p.atributos.fuerza} 🧠${p.atributos.astucia} 🦁${p.atributos.coraje}</span>
-  `;
+  if (gmrpgState.mode === 'grupo') {
+    document.getElementById('gmrpgCharBar').innerHTML = `<div class="gm-group-bar">${gmrpgState.grupo.map(m => {
+      const isTurn = gmrpgState.turno_actual === m.id;
+      let hearts = '';
+      for (let i = 0; i < m.vida_max; i++) hearts += (i < m.vida ? '❤️' : '🖤');
+      return `<div class="gm-group-card${isTurn ? ' gm-group-turn' : ''}">
+        <span class="gm-group-name">${m.tipo === 'bot' ? '🤖 ' : ''}${gmEsc(m.nombre)}</span>
+        <span class="gm-group-life">${hearts}</span>
+      </div>`;
+    }).join('')}</div>`;
+  } else {
+    const p = gmrpgState.personaje;
+    const race = GMRPG_RACES.find(r => r.id === p.raza);
+    const raceLabel = race ? `${race.emoji} ${race.label}` : gmEsc(p.raza);
+    let hearts = '';
+    for (let i = 0; i < p.vida_max; i++) hearts += `<span>${i < p.vida ? '❤️' : '🖤'}</span>`;
+    document.getElementById('gmrpgCharBar').innerHTML = `
+      <strong>${gmEsc(p.nombre)}</strong> · ${raceLabel}
+      <span class="gm-char-life">${hearts}</span>
+      <span>💪${p.atributos.fuerza} 🧠${p.atributos.astucia} 🦁${p.atributos.coraje}</span>
+    `;
+  }
   document.getElementById('gmrpgStatus').innerHTML = `<span class="gm-char-turn">Turno ${gmrpgState.turno}/${gmrpgState.turno_max}</span>`;
 }
 
@@ -5062,22 +5633,37 @@ function gmrpgRender() {
 
   document.getElementById('gmrpgPostGameActions').style.display = gmrpgState.resultado ? 'flex' : 'none';
 
+  // Se ocultan todas las barras de acción posibles y solo se muestra
+  // la que toca según el modo y el estado de la partida.
+  document.getElementById('gmrpgActionBar').style.display = 'none';
+  document.getElementById('gmrpgDiceBar').style.display = 'none';
+  document.getElementById('gmrpgGroupActionBar').style.display = 'none';
+  document.getElementById('gmrpgWaitingTurn').style.display = 'none';
+
   if (gmrpgState.resultado) {
-    document.getElementById('gmrpgActionBar').style.display = 'none';
-    document.getElementById('gmrpgDiceBar').style.display = 'none';
     const banner = document.createElement('div');
     banner.className = 'gm-end-banner ' + gmrpgState.resultado;
     banner.innerHTML = gmrpgState.resultado === 'victoria'
       ? '<strong>🏆 ¡Victoria!</strong><p>Has recuperado la reliquia y vuelto a la taberna.</p>'
       : '<strong>💀 Derrota</strong><p>La aventura termina aquí… por esta vez.</p>';
     log.appendChild(banner);
+  } else if (gmrpgState.mode === 'grupo') {
+    if (gmrpgState.turno_actual === currentUserId) {
+      document.getElementById('gmrpgGroupActionBar').style.display = 'flex';
+    } else {
+      const turnMember = gmrpgState.grupo.find(m => m.id === gmrpgState.turno_actual);
+      document.getElementById('gmrpgWaitingTurn').style.display = 'flex';
+      document.getElementById('gmrpgWaitingTurnText').textContent = `⏳ Esperando la acción de ${turnMember ? turnMember.nombre : '…'}…`;
+      // Si a quien le toca ya es un bot, se resuelve solo (ver
+      // gmrpgGroupMaybeAutoAdvance) — el botón solo tiene sentido
+      // cuando le toca a OTRO humano que no responde.
+      document.getElementById('gmrpgPlayForBtn').style.display = (turnMember && turnMember.tipo === 'human') ? 'inline-flex' : 'none';
+    }
   } else if (gmrpgPendingDice) {
-    document.getElementById('gmrpgActionBar').style.display = 'none';
     document.getElementById('gmrpgDiceBar').style.display = 'flex';
     document.getElementById('gmrpgDicePrompt').textContent = `Tira 1d6 + ${gmrpgPendingDice}`;
   } else {
     document.getElementById('gmrpgActionBar').style.display = 'flex';
-    document.getElementById('gmrpgDiceBar').style.display = 'none';
   }
 
   log.scrollTop = log.scrollHeight;
@@ -6324,7 +6910,7 @@ document.getElementById('chatModalBg').addEventListener('click', function (event
 /* =========================
    INVITAR A JUGAR (tiempo real)
 ========================= */
-const GAME_NAMES = { connect4: 'Conecta 4', parchis: 'Parchís' };
+const GAME_NAMES = { connect4: 'Conecta 4', parchis: 'Parchís', gmrpg: 'Aventura con GM IA' };
 let inviteChannel = null;
 
 async function getUsername(id) {
@@ -6404,10 +6990,15 @@ async function respondGameInvite(invite, accept) {
   if (!accept) {
     const { error } = await supabaseClient.from('game_invites').update({ status: 'declined' }).eq('id', invite.id);
     if (error) toast('❌ No se pudo responder a la invitación.');
-    // En Parchís, rechazar libera esa plaza como bot al momento: quien
-    // creó la partida no se queda esperando a alguien que no va a venir.
+    // En Parchís y en la Aventura con GM IA, rechazar libera esa plaza
+    // como bot al momento: quien creó la partida no se queda esperando
+    // a alguien que no va a venir.
     if (invite.game === 'parchis' && invite.game_id) {
       await parchisResolveInviteSlot(invite.game_id, currentUserId, { type: 'bot', user_id: null, name: '🤖 Bot' });
+    } else if (invite.game === 'gmrpg' && invite.game_id) {
+      await gmrpgResolveInviteSlot(invite.game_id, currentUserId, {
+        tipo: 'bot', user_id: null, dificultad: 'normal', atributos: gmrpgBotAttributes('normal')
+      });
     }
     return;
   }
@@ -6432,6 +7023,22 @@ async function respondGameInvite(invite, accept) {
     await supabaseClient.from('game_invites').update({ status: 'accepted' }).eq('id', invite.id);
     await parchisResolveInviteSlot(invite.game_id, currentUserId, { type: 'human', user_id: currentUserId, name: myName });
     openParchisGame(invite.game_id);
+  } else if (invite.game === 'gmrpg') {
+    // A diferencia de Parchís, aquí hace falta crear personaje propio
+    // antes de ocupar la plaza (nombre/raza/atributos) — se reutiliza
+    // el mismo modal de creación, en modo 'joining', y solo al confirmar
+    // el personaje se marca la invitación como aceptada (ver
+    // gmrpgJoinGroupGame).
+    gmrpgEntryMode = 'joining';
+    gmrpgJoiningInvite = invite;
+    gmrpgSelectedRace = null;
+    gmrpgAttrs = { fuerza: 0, astucia: 0, coraje: 0 };
+    document.getElementById('gmrpgNameInput').value = '';
+    gmrpgRenderRaces();
+    gmrpgRenderAttrs();
+    gmrpgUpdateStartButton();
+    gmrpgShowCharCreation();
+    document.getElementById('gmrpgEntryModalBg').style.display = 'flex';
   } else {
     // Resguardo por si llegara una invitación vieja de un juego ya retirado.
     toast('❌ Ese juego ya no está disponible.');
