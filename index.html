@@ -4975,6 +4975,8 @@ let gmrpgSelectedFriends = []; // [{id,name}]
 let gmrpgSelectedBotDifficulty = 'normal';
 let gmrpgEconomyAppliedFor = null; // id de la última partida cuya recompensa/penalización ya se aplicó (evita duplicarla en cada re-render)
 let rpgOnboardingPendingAction = null; // función a retomar tras crear el personaje (abrir el modal de juego, aceptar una invitación...), o null
+let gmrpgPendingEvitarMisionId = null; // ultima_mision_id del anfitrión, para que gmrpgSendGroupIntro no repita misión (ver gmrpgCreateGroupGame)
+let gmrpgMisionNivel = null; // "Misión N" a mostrar en la ficha — se fija al crear la partida, ver rpg_characters.nivel
 
 function gmEsc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
@@ -5240,10 +5242,14 @@ function gmrpgUpdateStartButton() {
   btn.textContent = '⚔️ Crear personaje';
 }
 
+// Ya no hay una única premisa fija (Fase 4: variedad de misiones, ver
+// MISIONES en turn.js) — "mision_id" empieza vacío y lo rellena la
+// Function en el turno de inicio, eligiendo al azar; "escena_actual"
+// la escribe el propio GM al narrar la apertura, no hace falta un
+// texto de relleno aquí.
 function gmrpgBuildInitialMapa() {
   return {
-    escena_actual: 'La entrada de unas ruinas donde se han refugiado los trasgos que robaron la reliquia.',
-    combate_final: false, enemigos: [], objetos_visibles: []
+    escena_actual: '', combate_final: false, enemigos: [], objetos_visibles: [], mision_id: null
   };
 }
 
@@ -5255,6 +5261,7 @@ async function gmrpgStartSoloGame() {
   const character = await rpgFetchMyCharacter();
   if (!character) { closeGmrpgEntryModal(); openRpgCharOnboardingModal(() => gmrpgStartSoloGame()); return; }
 
+  gmrpgMisionNivel = character.nivel || 1;
   const personaje = {
     nombre: character.nombre, raza: character.raza,
     vida: character.vida_max, vida_max: character.vida_max,
@@ -5280,7 +5287,7 @@ async function gmrpgStartSoloGame() {
   closeGmrpgEntryModal();
   showPage('gmrpgGame');
   gmrpgRenderWaitingOrGame();
-  await gmrpgSendAction('(inicio de la partida)', true);
+  await gmrpgSendAction('(inicio de la partida)', true, character.ultima_mision_id);
 }
 
 // BUG corregido: "Salir de la partida" solo limpiaba el estado local,
@@ -5434,6 +5441,7 @@ async function gmrpgCreateGroupGame() {
     return;
   }
 
+  gmrpgMisionNivel = character.nivel || 1;
   const grupo = [gmrpgBuildGroupMember({
     id: currentUserId, user_id: currentUserId, nombre: character.nombre,
     raza: character.raza, tipo: 'human', atributos: character.atributos,
@@ -5469,6 +5477,12 @@ async function gmrpgCreateGroupGame() {
     status: allResolved ? 'active' : 'waiting'
   }).select().single();
   if (error || !data) { toast('❌ No se pudo crear la partida.'); return; }
+
+  // openGmrpgGame recarga la fila entera desde Supabase, así que
+  // cualquier campo que se colgara aquí de gmrpgState se perdería —
+  // se guarda aparte para que gmrpgSendGroupIntro (disparada sola por
+  // el motor reactivo) sepa qué misión evitar repetir.
+  gmrpgPendingEvitarMisionId = character.ultima_mision_id;
 
   await Promise.all(gmrpgSelectedFriends.map(f => sendGameInvite(f.id, f.name, 'gmrpg', data.id)));
   closeGmrpgEntryModal();
@@ -5644,7 +5658,7 @@ function gmrpgHistorialForSave(historial) {
   return historial.map(h => ({ turno: h.turno, narracion: h.narracion }));
 }
 
-async function gmrpgSendAction(accionTexto, esInicio) {
+async function gmrpgSendAction(accionTexto, esInicio, evitarMisionId) {
   if (!gmrpgState || gmrpgSending) return;
   gmrpgSending = true;
   gmrpgSetLoading(true);
@@ -5656,6 +5670,7 @@ async function gmrpgSendAction(accionTexto, esInicio) {
       body: JSON.stringify({
         modo: 'solo',
         inicio: !!esInicio,
+        evitarMisionId: typeof evitarMisionId === 'number' ? evitarMisionId : null,
         estado: {
           personaje: gmrpgState.personaje,
           mapa: gmrpgState.mapa,
@@ -5919,6 +5934,11 @@ async function gmrpgResolveRound() {
 // (ver escena_visual / WORKERS_AI_IMAGE_MODEL en turn.js).
 async function gmrpgSendGroupIntro() {
   if (!gmrpgState) return;
+  // Solo el anfitrión tiene este dato a mano (lo dejó gmrpgCreateGroupGame
+  // antes de recargar la fila) — para cualquier otro miembro se manda
+  // null, que en la Function simplemente significa "elige cualquiera".
+  const evitarMisionId = gmrpgPendingEvitarMisionId;
+  gmrpgPendingEvitarMisionId = null;
   gmrpgSetLoading(true);
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
@@ -5929,6 +5949,7 @@ async function gmrpgSendGroupIntro() {
         modo: 'grupo',
         inicio: true,
         dificultad: gmrpgState.bot_difficulty || 'normal',
+        evitarMisionId: typeof evitarMisionId === 'number' ? evitarMisionId : null,
         estado: {
           grupo: gmrpgState.grupo, orden_turno: gmrpgState.orden_turno,
           mapa: gmrpgState.mapa, turno: gmrpgState.turno, turno_max: gmrpgState.turno_max
@@ -6008,20 +6029,26 @@ function gmrpgApplyGameEndEconomy() {
   toast(reward > 0 ? `🏆 +${reward} monedas por la aventura.` : `💀 ${reward} monedas — tu personaje sigue en pie.`);
 
   const mine = gmrpgState.mode === 'grupo' ? gmrpgMyGroupMember() : gmrpgState.personaje;
-  if (mine) rpgSyncCharacterAfterGame(mine);
+  const misionId = gmrpgState.mapa && typeof gmrpgState.mapa.mision_id === 'number' ? gmrpgState.mapa.mision_id : null;
+  if (mine) rpgSyncCharacterAfterGame(mine, gmrpgState.resultado, misionId);
 }
 
 // Guarda el inventario conseguido en esta aventura en el personaje
 // persistente (la vida no hace falta guardarla: cada aventura nueva
 // empieza siempre con la vida al máximo, ver gmrpgStartSoloGame/
-// gmrpgCreateGroupGame).
-async function rpgSyncCharacterAfterGame(personaje) {
+// gmrpgCreateGroupGame). También avanza el progreso "estilo niveles"
+// que pidió el usuario: nivel+1 solo si se ganó, y se recuerda la
+// misión jugada para que la próxima partida evite repetirla (ver
+// evitarMisionId / pickMision en turn.js).
+async function rpgSyncCharacterAfterGame(personaje, resultado, misionId) {
   if (!currentUserId || !personaje) return;
   try {
-    await supabaseClient.from('rpg_characters').update({
-      inventario: personaje.inventario || [], updated_at: new Date().toISOString()
-    }).eq('user_id', currentUserId);
-  } catch (e) { /* no crítico: como mucho no se guarda el inventario de esta partida */ }
+    const actual = await rpgFetchMyCharacter();
+    const patch = { inventario: personaje.inventario || [], updated_at: new Date().toISOString() };
+    if (typeof misionId === 'number') patch.ultima_mision_id = misionId;
+    if (resultado === 'victoria') patch.nivel = ((actual && actual.nivel) || 1) + 1;
+    await supabaseClient.from('rpg_characters').update(patch).eq('user_id', currentUserId);
+  } catch (e) { /* no crítico: como mucho no se guarda el progreso de esta partida */ }
 }
 
 function gmrpgRender() {
@@ -6101,6 +6128,7 @@ function gmrpgRenderSidePanels() {
       <div class="gm-char-sheet-avatar"><div class="avatar-stage size-lg frame-ring" id="gmrpgAvatarStage"></div></div>
       <h3>${gmEsc(mine.nombre)}</h3>
       <p>${raceLabel}</p>
+      ${gmrpgMisionNivel ? `<p>📜 Misión ${gmrpgMisionNivel}</p>` : ''}
       <div class="gm-attr-list" style="margin-top:10px;">
         ${GMRPG_ATTR_KEYS.map(k => {
           const val = (mine.atributos && mine.atributos[k]) || 0;

@@ -26,14 +26,36 @@ const WORKERS_AI_MAX_TOKENS_GRUPO = 900; // resolver 2-4 personajes a la vez nec
 const WORKERS_AI_IMAGE_MODEL = '@cf/black-forest-labs/flux-1-schnell';
 const ACCION_MAX_LEN = 500;
 
-// Escenario fijo del MVP (Fase 1): una sola aventura preescrita. Vive
-// aquí, no en el cliente, para poder cambiarla sin tocar index.html.
 const LISTA_RAZAS = 'Humano, Elfo, Enano, Orco, Trasgo';
 const TURNOS_MAX = 12;
 const TONO = 'Aventurero, con humor ligero, nunca oscuro ni grimdark. Apto para todos los públicos.';
-const CONDICION_VICTORIA = 'recuperar la reliquia robada y volver con ella a la taberna de Dragonbarbudo';
-const CONDICION_DERROTA = 'la vida del personaje llega a 0 durante el combate final, o se agotan los 12 turnos sin recuperar la reliquia';
-const PREMISA = 'Una banda de trasgos ha robado una reliquia de la taberna de Dragonbarbudo durante la noche y ha huido hacia unas ruinas cercanas. El personaje sale tras ellos para recuperarla.';
+
+// Catálogo de misiones (a petición del usuario: la Fase 1 solo tenía
+// una única premisa fija —trasgos + reliquia + ruinas—, siempre la
+// misma). Cada partida elige una al azar, evitando repetir la última
+// jugada por ese personaje (ver estado.mapa.mision_id / pickMision).
+// El "estilo Mario Bros" de ir superando misiones vive en el cliente
+// (rpg_characters.nivel, se muestra como "Misión N") — aquí solo hace
+// falta que el contenido de cada una sea distinto de verdad.
+const MISIONES = [
+  { premisa: 'Una banda de trasgos ha robado una reliquia de la taberna de Dragonbarbudo durante la noche y ha huido hacia unas ruinas cercanas.', victoria: 'recuperar la reliquia robada y volver con ella a la taberna', derrota: 'la vida del grupo llega a 0 durante el combate final, o se agotan los turnos sin recuperar la reliquia' },
+  { premisa: 'Una partida de bandidos ha secuestrado al hijo del tabernero para pedir un rescate, y se ha refugiado en un campamento escondido en el bosque cercano.', victoria: 'rescatar al hijo del tabernero sano y salvo', derrota: 'la vida del grupo llega a 0 durante el combate final, o se agotan los turnos sin rescatarlo' },
+  { premisa: 'Unos no-muertos han profanado el cementerio del pueblo y algo se ha despertado en la cripta principal, sembrando el pánico entre los vecinos.', victoria: 'sellar la cripta y detener a los no-muertos', derrota: 'la vida del grupo llega a 0 durante el combate final, o se agotan los turnos sin sellar la cripta' },
+  { premisa: 'Una secta encapuchada ha estado secuestrando aldeanos de los alrededores para un ritual nocturno en una torre abandonada en las colinas.', victoria: 'rescatar a los aldeanos antes de que termine el ritual', derrota: 'la vida del grupo llega a 0 durante el combate final, o se agotan los turnos sin rescatarlos' },
+  { premisa: 'Un mercader corrupto lleva meses traficando con mercancía robada, y guarda las pruebas de sus tratos en unas alcantarillas abandonadas bajo la ciudad.', victoria: 'conseguir las pruebas y salir de las alcantarillas', derrota: 'la vida del grupo llega a 0 durante el combate final, o se agotan los turnos sin conseguir las pruebas' },
+  { premisa: 'Una manada de lobos gigantes, mucho más agresivos de lo normal, acecha los caminos que llevan a Dragonbarbudo — algo o alguien los está azuzando desde las montañas cercanas.', victoria: 'llegar hasta el origen del problema en la montaña y detenerlo', derrota: 'la vida del grupo llega a 0 durante el combate final, o se agotan los turnos sin detenerlo' },
+  { premisa: 'Un fantasma solitario lleva años atormentando una mansión abandonada en las afueras del pueblo, y las luces extrañas últimamente asustan a quien se acerca.', victoria: 'descubrir la historia del fantasma y ayudarlo a encontrar la paz', derrota: 'la vida del grupo llega a 0 durante el combate final, o se agotan los turnos sin resolver el misterio' },
+  { premisa: 'Un grupo de piratas de río ha tomado el pequeño muelle de Dragonbarbudo y retiene como rehenes a los pescadores del pueblo.', victoria: 'liberar a los pescadores y recuperar el muelle', derrota: 'la vida del grupo llega a 0 durante el combate final, o se agotan los turnos sin liberarlos' }
+];
+
+// Elige una misión al azar, evitando repetir "evitarId" si hay más de
+// una opción disponible (para no jugar dos veces seguidas lo mismo).
+function pickMision(evitarId) {
+  if (MISIONES.length <= 1) return 0;
+  let id;
+  do { id = Math.floor(Math.random() * MISIONES.length); } while (id === evitarId);
+  return id;
+}
 
 function json(body, status) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -70,11 +92,11 @@ const INICIO_ADENDA = `
 ## Inicio de la misión
 Esto es el arranque de la aventura: todavía no hay ninguna acción que resolver. Describe brevemente la historia y el lugar donde se encuentra el grupo (2-4 frases, como siempre). Además, en el JSON de estado añade el campo "escena_visual": una frase MUY breve en inglés describiendo la escena de forma visual, pensada para generar una ilustración (nunca se muestra al jugador, es solo para la imagen) — por ejemplo "escena_visual": "a torch-lit tavern at night, wooden beams, adventurers gathered around a table".`;
 
-function buildSystemPrompt(modo, dificultad, esInicio) {
+function buildSystemPrompt(modo, dificultad, esInicio, mision) {
   return `Eres el Game Master de una partida de rol corta dentro de Dragonbarbudo, un mundo de fantasía con razas jugables (${LISTA_RAZAS}). Narras, controlas enemigos y resuelves acciones — nunca decides por el jugador.
 
 ## Premisa de esta aventura
-${PREMISA}
+${mision.premisa}
 
 ## Duración y ritmo
 La partida debe cerrarse en un máximo de ${TURNOS_MAX} turnos. Llevas la cuenta en el campo "turno" del estado.
@@ -133,8 +155,8 @@ Aplica el ±1 extra de los naturales 6/1 al daño correspondiente.
 ${TONO}
 
 ## Victoria, derrota y recompensas
-- Victoria si ${CONDICION_VICTORIA}.
-- Derrota si ${CONDICION_DERROTA}.
+- Victoria si ${mision.victoria}.
+- Derrota si ${mision.derrota}.
 - Al terminar, sustituye NARRACIÓN por un cierre de 1-2 frases, y en el JSON añade "resultado": "victoria" | "derrota".${modo === 'grupo' ? MODO_GRUPO_ADENDA : ''}${DIFICULTAD_ADENDA[dificultad] || ''}${esInicio ? INICIO_ADENDA : ''}`;
 }
 
@@ -176,7 +198,7 @@ export async function onRequestPost(context) {
     });
     if (!meResp.ok) return json({ ok: false, error: 'invalid_session' }, 200);
 
-    const { modo, estado, accion, acciones, inicio, dificultad } = await request.json().catch(() => ({}));
+    const { modo, estado, accion, acciones, inicio, dificultad, evitarMisionId } = await request.json().catch(() => ({}));
     const modoSeguro = modo === 'grupo' ? 'grupo' : 'solo';
     const esInicio = !!inicio;
     if (!estado || typeof estado !== 'object') return json({ ok: false, error: 'missing_params' }, 200);
@@ -184,6 +206,18 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: 'missing_params' }, 200);
     }
     if (estado.turno > estado.turno_max) return json({ ok: false, error: 'partida_terminada' }, 200);
+
+    // Qué misión toca: si el estado ya trae un mision_id (turnos
+    // posteriores al de inicio) se respeta, para no cambiar de
+    // escenario a mitad de partida; si no (el propio turno de inicio),
+    // se elige una al azar evitando repetir la última jugada por este
+    // personaje (evitarMisionId, ver rpg_characters.ultima_mision_id
+    // en index.html). Se fuerza en la respuesta más abajo —nunca se
+    // confía en que el modelo se acuerde de devolver el número bien.
+    const misionId = (estado.mapa && typeof estado.mapa.mision_id === 'number')
+      ? estado.mapa.mision_id
+      : pickMision(typeof evitarMisionId === 'number' ? evitarMisionId : null);
+    const mision = MISIONES[misionId] || MISIONES[0];
 
     // No mandamos "historial" (ni el resto de campos de recolección de
     // turno, que ya no hacen falta una vez armado el mensaje) al
@@ -226,7 +260,7 @@ export async function onRequestPost(context) {
       aiResult = await env.AI.run(WORKERS_AI_MODEL, {
         max_tokens: modoSeguro === 'grupo' ? WORKERS_AI_MAX_TOKENS_GRUPO : WORKERS_AI_MAX_TOKENS,
         messages: [
-          { role: 'system', content: buildSystemPrompt(modoSeguro, dificultad, esInicio) },
+          { role: 'system', content: buildSystemPrompt(modoSeguro, dificultad, esInicio, mision) },
           { role: 'user', content: mensaje }
         ]
       });
@@ -263,7 +297,14 @@ export async function onRequestPost(context) {
         if (imgResult && imgResult.image) imagen = `data:image/jpeg;charset=utf-8;base64,${imgResult.image}`;
       } catch (e) { /* sin imagen, la misión sigue igual */ }
     }
-    if (parsed.estado) delete parsed.estado.escena_visual; // interno, no forma parte del esquema de la partida
+    if (parsed.estado) {
+      delete parsed.estado.escena_visual; // interno, no forma parte del esquema de la partida
+      // Se fuerza aquí, no se confía en que el modelo lo devuelva bien:
+      // así el mismo mision_id se mantiene turno a turno sin depender
+      // de que un modelo más pequeño que Claude recuerde un campo que
+      // ni siquiera tiene que usar para narrar.
+      if (parsed.estado.mapa && typeof parsed.estado.mapa === 'object') parsed.estado.mapa.mision_id = misionId;
+    }
 
     return json({ ok: true, narracion: parsed.narracion, estado: parsed.estado, imagen }, 200);
   } catch (e) {
