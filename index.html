@@ -773,20 +773,35 @@ main { padding: 30px; overflow: hidden; }
 .gm-char-life { display: flex; gap: 2px; }
 .gm-char-turn { color: var(--muted); font-size: 13px; }
 
+/* Aprovecha el ancho en pantallas grandes: ficha de personaje +
+   columna central + mochila. En pantallas estrechas se apilan solas
+   (una sola columna) — el contenido sigue todo ahí, no se oculta
+   nada, así que no hace falta una versión "móvil" aparte. */
+.gm-play-layout { display: grid; grid-template-columns: 1fr; gap: 18px; max-width: 1280px; margin: 0 auto; align-items: start; }
+@media (min-width: 980px) {
+    .gm-play-layout { grid-template-columns: 220px minmax(0, 1fr) 220px; }
+}
+.gm-side-panel { background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+.gm-side-panel:empty { display: none; }
+.gm-main-col { min-width: 0; }
+
 /* Zona de narración: historial de turnos, con scroll propio */
-.gm-log-wrap { max-width: 640px; margin: 0 auto 14px; }
-.gm-log { display: flex; flex-direction: column; gap: 12px; max-height: 46vh; overflow-y: auto; background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.gm-log-wrap { margin: 0 0 14px; }
+.gm-log { display: flex; flex-direction: column; gap: 12px; max-height: 60vh; overflow-y: auto; background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
 .gm-log-entry { font-size: 14px; line-height: 1.55; }
 .gm-log-entry .gm-log-turn { color: var(--gold); font-weight: 700; font-size: 12px; display: block; margin-bottom: 3px; }
-.gm-log-image { display: block; width: 100%; max-width: 420px; border-radius: 10px; margin: 4px 0 8px; }
+.gm-log-image { display: block; width: 100%; border-radius: 10px; margin: 4px 0 8px; }
 .gm-log-loading { color: var(--muted); font-style: italic; font-size: 13px; text-align: center; }
 
-/* Turno normal: texto libre */
-.gm-action-bar { display: flex; gap: 10px; max-width: 640px; margin: 0 auto 14px; align-items: flex-end; }
-.gm-action-bar textarea { flex: 1; padding: 12px; background: var(--input-bg); border: 1px solid var(--border); color: var(--input-text); border-radius: 8px; font-family: inherit; resize: vertical; }
+/* Turno normal: texto libre. Botones deliberadamente discretos —más
+   pequeños y separados del registro/imagen— para no competir en
+   protagonismo con la narración ni con la ilustración. */
+.gm-action-bar { display: flex; gap: 10px; margin: 22px 0 14px; align-items: flex-end; }
+.gm-action-bar textarea { flex: 1; padding: 10px; background: var(--input-bg); border: 1px solid var(--border); color: var(--input-text); border-radius: 8px; font-family: inherit; resize: vertical; }
+.gm-action-bar .btn, .gm-group-action-buttons .btn { padding: 8px 14px; font-size: 13px; }
 
 /* Turno de tirada: el GM ha pedido "Tira 1d6 + atributo" */
-.gm-dice-bar { display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 640px; margin: 0 auto 14px; }
+.gm-dice-bar { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 22px 0 14px; }
 .gm-dice-wrap { position: relative; width: 60px; height: 60px; }
 
 /* Fase 2 (grupo): fila de tarjetas, una por miembro, con indicador de
@@ -801,12 +816,29 @@ main { padding: 30px; overflow: hidden; }
    atributo elegido, en vez del turno reactivo de modo solo (ver
    comentario en index.html sobre por qué el GM nunca pide tirada
    dentro de una ronda de grupo) */
-.gm-group-action-bar { display: flex; flex-direction: column; gap: 10px; max-width: 640px; margin: 0 auto 14px; }
-.gm-group-action-bar textarea { padding: 12px; background: var(--input-bg); border: 1px solid var(--border); color: var(--input-text); border-radius: 8px; font-family: inherit; resize: vertical; }
+.gm-group-action-bar { display: flex; flex-direction: column; gap: 10px; margin: 22px 0 14px; }
+.gm-group-action-bar textarea { padding: 10px; background: var(--input-bg); border: 1px solid var(--border); color: var(--input-text); border-radius: 8px; font-family: inherit; resize: vertical; }
 .gm-group-action-buttons { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 
 /* Fase 2 (grupo): no es mi turno */
-.gm-waiting-turn { display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 640px; margin: 0 auto 14px; color: var(--muted); font-size: 14px; }
+.gm-waiting-turn { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 22px 0 14px; color: var(--muted); font-size: 14px; }
+
+/* Ficha de personaje / mochila (barra lateral de la partida) */
+.gm-char-sheet-avatar { display: flex; justify-content: center; margin-bottom: 10px; }
+.gm-char-sheet h3 { font-size: 15px; text-align: center; margin-bottom: 2px; }
+.gm-char-sheet p { text-align: center; font-size: 13px; color: var(--muted); margin: 2px 0; }
+.gm-side-panel .gm-attr-row { padding: 6px 10px; font-size: 12px; }
+.gm-side-panel h4 { font-size: 13px; color: var(--gold); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .04em; }
+.gm-side-panel .rpg-char-inventory { display: flex; flex-direction: column; gap: 6px; }
+
+/* Chat de la ronda (modo grupo): lo que va escribiendo cada uno, en
+   un icono aparte para no ocupar sitio permanente en pantalla. */
+.gm-chat-toggle-btn { position: fixed; right: 20px; bottom: 84px; width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--border); background: var(--gold); color: #171817; font-size: 20px; cursor: pointer; z-index: 150; box-shadow: 0 4px 14px rgba(0,0,0,.3); align-items: center; justify-content: center; }
+.gm-chat-panel { position: fixed; right: 20px; bottom: 138px; width: 280px; max-height: 320px; overflow-y: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px; z-index: 150; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+.gm-chat-panel h4 { font-size: 13px; color: var(--gold); margin-bottom: 8px; }
+.gm-chat-line { font-size: 13px; margin-bottom: 8px; line-height: 1.4; }
+.gm-chat-line strong { color: var(--gold); }
+.gm-chat-line.gm-chat-pending { color: var(--muted); font-style: italic; }
 
 /* Fase 3: personaje persistente, panel dentro de la página Perfil */
 .rpg-char-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 15px; padding: 24px; }
@@ -1784,53 +1816,72 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                     <button class="btn btn-dark c4-postgame-btn" onclick="leaveGmrpgGame()" title="Volver a Juegos">🚪 Volver a Juegos</button>
                 </div>
 
-                <div class="gm-log-wrap">
-                    <div class="gm-log" id="gmrpgLog"></div>
-                </div>
+                <!-- Aprovecha el espacio en pantallas anchas: ficha de
+                     personaje (avatar + atributos) a la izquierda, mochila a
+                     la derecha — en pantallas estrechas se apilan solas
+                     (ver .gm-play-layout), no hace falta ocultarlas. -->
+                <div class="gm-play-layout">
+                    <div class="gm-side-panel" id="gmrpgCharSheet"></div>
 
-                <!-- Modo solo: acción libre -->
-                <div class="gm-action-bar" id="gmrpgActionBar">
-                    <textarea id="gmrpgActionInput" placeholder="¿Qué haces?" maxlength="300" rows="2"></textarea>
-                    <button class="btn btn-primary" id="gmrpgSendBtn" onclick="gmrpgSendTypedAction()">Enviar</button>
-                </div>
+                    <div class="gm-main-col">
+                        <div class="gm-log-wrap">
+                            <div class="gm-log" id="gmrpgLog"></div>
+                        </div>
 
-                <!-- Modo solo: turno de tirada, el GM ha pedido "Tira 1d6 +
-                     atributo" (ver gmrpgDetectDiceRequest / gmrpgRollDice) -->
-                <div class="gm-dice-bar" id="gmrpgDiceBar" style="display:none;">
-                    <p id="gmrpgDicePrompt">Tira 1d6 + fuerza</p>
-                    <div class="gm-dice-wrap">
-                        <div class="pc-dice-drop" id="gmrpgDiceDrop"></div>
+                        <!-- Modo solo: acción libre -->
+                        <div class="gm-action-bar" id="gmrpgActionBar">
+                            <textarea id="gmrpgActionInput" placeholder="¿Qué haces?" maxlength="300" rows="2"></textarea>
+                            <button class="btn btn-primary" id="gmrpgSendBtn" onclick="gmrpgSendTypedAction()">Enviar</button>
+                        </div>
+
+                        <!-- Modo solo: turno de tirada, el GM ha pedido "Tira
+                             1d6 + atributo" (ver gmrpgDetectDiceRequest /
+                             gmrpgRollDice) -->
+                        <div class="gm-dice-bar" id="gmrpgDiceBar" style="display:none;">
+                            <p id="gmrpgDicePrompt">Tira 1d6 + fuerza</p>
+                            <div class="gm-dice-wrap">
+                                <div class="pc-dice-drop" id="gmrpgDiceDrop"></div>
+                            </div>
+                            <button class="btn btn-primary" id="gmrpgRollBtn" onclick="gmrpgRollDice()">🎲 Tirar</button>
+                        </div>
+
+                        <!-- Modo grupo, mi turno: el GM nunca pide tirada a
+                             mitad de ronda (no hay margen para el ida y
+                             vuelta), así que aquí decides tú de antemano si
+                             tu acción la acompañas de una tirada — ver
+                             gmrpgSendGroupAction. -->
+                        <div class="gm-group-action-bar" id="gmrpgGroupActionBar" style="display:none;">
+                            <textarea id="gmrpgGroupActionInput" placeholder="¿Qué haces?" maxlength="300" rows="2"></textarea>
+                            <div class="gm-group-action-buttons">
+                                <button class="btn btn-primary" onclick="gmrpgSendGroupAction(null)">Enviar</button>
+                                <button class="btn btn-dark" onclick="gmrpgSendGroupAction('fuerza')">🎲 Fuerza</button>
+                                <button class="btn btn-dark" onclick="gmrpgSendGroupAction('astucia')">🎲 Astucia</button>
+                                <button class="btn btn-dark" onclick="gmrpgSendGroupAction('coraje')">🎲 Coraje</button>
+                            </div>
+                            <div class="gm-dice-wrap" id="gmrpgGroupDiceWrap" style="display:none;">
+                                <div class="pc-dice-drop" id="gmrpgGroupDiceDrop"></div>
+                            </div>
+                        </div>
+
+                        <!-- Modo grupo, no es mi turno -->
+                        <div class="gm-waiting-turn" id="gmrpgWaitingTurn" style="display:none;">
+                            <p id="gmrpgWaitingTurnText">⏳ Esperando la acción de…</p>
+                            <button class="btn btn-dark" id="gmrpgPlayForBtn" onclick="gmrpgPlayForCurrentMember()">🤖 Jugar por él/ella</button>
+                        </div>
                     </div>
-                    <button class="btn btn-primary" id="gmrpgRollBtn" onclick="gmrpgRollDice()">🎲 Tirar</button>
-                </div>
 
-                <!-- Modo grupo, mi turno: el GM nunca pide tirada a mitad de
-                     ronda (no hay margen para el ida y vuelta), así que aquí
-                     decides tú de antemano si tu acción la acompañas de una
-                     tirada — ver gmrpgSendGroupAction. -->
-                <div class="gm-group-action-bar" id="gmrpgGroupActionBar" style="display:none;">
-                    <textarea id="gmrpgGroupActionInput" placeholder="¿Qué haces?" maxlength="300" rows="2"></textarea>
-                    <div class="gm-group-action-buttons">
-                        <button class="btn btn-primary" onclick="gmrpgSendGroupAction(null)">Enviar</button>
-                        <button class="btn btn-dark" onclick="gmrpgSendGroupAction('fuerza')">🎲 Fuerza</button>
-                        <button class="btn btn-dark" onclick="gmrpgSendGroupAction('astucia')">🎲 Astucia</button>
-                        <button class="btn btn-dark" onclick="gmrpgSendGroupAction('coraje')">🎲 Coraje</button>
-                    </div>
-                    <div class="gm-dice-wrap" id="gmrpgGroupDiceWrap" style="display:none;">
-                        <div class="pc-dice-drop" id="gmrpgGroupDiceDrop"></div>
-                    </div>
-                </div>
-
-                <!-- Modo grupo, no es mi turno -->
-                <div class="gm-waiting-turn" id="gmrpgWaitingTurn" style="display:none;">
-                    <p id="gmrpgWaitingTurnText">⏳ Esperando la acción de…</p>
-                    <button class="btn btn-dark" id="gmrpgPlayForBtn" onclick="gmrpgPlayForCurrentMember()">🤖 Jugar por él/ella</button>
+                    <div class="gm-side-panel" id="gmrpgInventoryPanel"></div>
                 </div>
 
                 <div class="c4-actions">
                     <button class="btn btn-dark" onclick="leaveGmrpgGame()">← Salir de la partida</button>
                 </div>
             </div>
+
+            <!-- Modo grupo: ver lo que van escribiendo los demás en la ronda
+                 en curso, sin ocupar sitio permanente en pantalla. -->
+            <button class="gm-chat-toggle-btn" id="gmrpgChatToggleBtn" onclick="gmrpgToggleChatPanel()" style="display:none;" title="Ver lo que escriben los demás" aria-label="Ver lo que escriben los demás">💬</button>
+            <div class="gm-chat-panel" id="gmrpgChatPanel" style="display:none;"></div>
         </div>
 
         <!-- PROFILE -->
@@ -6014,6 +6065,85 @@ function gmrpgRender() {
   }
 
   log.scrollTop = log.scrollHeight;
+  gmrpgRenderSidePanels();
+  gmrpgRenderChatPanel();
+}
+
+// Ficha de personaje (avatar + atributos) y mochila: barras laterales
+// que aprovechan el espacio libre en pantallas anchas (en estrechas se
+// apilan solas, ver .gm-play-layout). Se recalculan en cada render
+// porque la vida/inventario pueden cambiar turno a turno.
+function gmrpgRenderSidePanels() {
+  const sheet = document.getElementById('gmrpgCharSheet');
+  const inv = document.getElementById('gmrpgInventoryPanel');
+  if (!sheet || !inv) return;
+
+  const mine = gmrpgState.mode === 'grupo' ? gmrpgMyGroupMember() : gmrpgState.personaje;
+  if (!mine) { sheet.innerHTML = ''; inv.innerHTML = ''; return; }
+
+  const race = GMRPG_RACES.find(r => r.id === mine.raza);
+  const raceLabel = race ? `${race.emoji} ${race.label}` : gmEsc(mine.raza || '');
+  sheet.innerHTML = `
+    <div class="gm-char-sheet">
+      <div class="gm-char-sheet-avatar"><div class="avatar-stage size-lg frame-ring" id="gmrpgAvatarStage"></div></div>
+      <h3>${gmEsc(mine.nombre)}</h3>
+      <p>${raceLabel}</p>
+      <div class="gm-attr-list" style="margin-top:10px;">
+        ${GMRPG_ATTR_KEYS.map(k => {
+          const val = (mine.atributos && mine.atributos[k]) || 0;
+          let dots = '';
+          for (let i = 0; i < GMRPG_ATTR_CAP; i++) dots += `<span class="gm-attr-dot${i < val ? ' on' : ''}"></span>`;
+          return `<div class="gm-attr-row"><span class="gm-attr-name">${k}</span><div class="gm-attr-dots">${dots}</div></div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+  renderStage(document.getElementById('gmrpgAvatarStage'), state.equipped);
+
+  const items = mine.inventario || [];
+  inv.innerHTML = `
+    <h4>🎒 Mochila</h4>
+    <div class="rpg-char-inventory">
+      ${items.length ? items.map(it => `<span class="rpg-item-chip">${gmEsc(typeof it === 'string' ? it : (it.nombre || 'objeto'))}</span>`).join('') : '<span class="friend-empty">Vacía por ahora.</span>'}
+    </div>
+  `;
+}
+
+// Chat de la ronda en curso (solo modo grupo): un icono aparte —a
+// petición del usuario, para no ocupar sitio permanente— que muestra
+// lo que ya ha escrito cada uno esta ronda (acciones_ronda ya viaja
+// sincronizado por Realtime, no hace falta guardar nada nuevo).
+let gmrpgChatOpen = false;
+function gmrpgToggleChatPanel() {
+  gmrpgChatOpen = !gmrpgChatOpen;
+  gmrpgRenderChatPanel();
+}
+function gmrpgRenderChatPanel() {
+  const box = document.getElementById('gmrpgChatPanel');
+  const toggle = document.getElementById('gmrpgChatToggleBtn');
+  if (!box || !toggle) return;
+
+  if (!gmrpgState || gmrpgState.mode !== 'grupo' || gmrpgState.resultado) {
+    toggle.style.display = 'none';
+    box.style.display = 'none';
+    gmrpgChatOpen = false;
+    return;
+  }
+  toggle.style.display = 'flex';
+  box.style.display = gmrpgChatOpen ? 'block' : 'none';
+  if (!gmrpgChatOpen) return;
+
+  const acciones = gmrpgState.acciones_ronda || {};
+  const orden = gmrpgState.orden_turno || [];
+  const nombrePorId = {};
+  gmrpgState.grupo.forEach(m => { nombrePorId[m.id] = m.nombre; });
+  box.innerHTML = '<h4>💬 Esta ronda</h4>' + orden.map(id => {
+    const texto = acciones[id];
+    const nombre = gmEsc(nombrePorId[id] || id);
+    return texto
+      ? `<div class="gm-chat-line"><strong>${nombre}:</strong> ${gmEsc(texto)}</div>`
+      : `<div class="gm-chat-line gm-chat-pending"><strong>${nombre}:</strong> aún no ha actuado…</div>`;
+  }).join('');
 }
 
 /* =========================
