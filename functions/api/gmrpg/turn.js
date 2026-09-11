@@ -17,7 +17,7 @@
 const SUPABASE_URL = 'https://yptdxphximblpzlrgjpg.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdGR4cGh4aW1ibHB6bHJnanBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1MTI2ODIsImV4cCI6MjEwNDA4ODY4Mn0.aA2jm-SC6xRI1_klg-17M-Po81RZP6dnpDfRBDQq_gc';
 
-const WORKERS_AI_MODEL = '@cf/meta/llama-3.3-70b-instruct';
+const WORKERS_AI_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const WORKERS_AI_MAX_TOKENS = 600;
 const WORKERS_AI_MAX_TOKENS_GRUPO = 900; // resolver 2-4 personajes a la vez necesita más espacio de respuesta
 const ACCION_MAX_LEN = 500;
