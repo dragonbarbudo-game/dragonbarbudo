@@ -741,19 +741,30 @@ main { padding: 30px; overflow: hidden; }
 
 /* AVENTURA GM IA (modo solo, Fase 1 + modo grupo, Fase 2) */
 
-/* Creación de personaje, dentro del modal de entrada */
+/* Creación de personaje, dentro del modal de entrada. Cada raza trae
+   sus atributos fijos "de serie" (ver GMRPG_RACES) — el jugador ya no
+   reparte puntos, solo elige raza. */
 .gm-race-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; margin-bottom: 8px; }
-.gm-race-card { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 6px; cursor: pointer; font-size: 12px; color: var(--text); }
-.gm-race-card span { font-size: 22px; }
+.gm-race-card { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 6px; cursor: pointer; font-size: 12px; color: var(--text); position: relative; }
+.gm-race-card .gm-race-emoji { font-size: 22px; }
 .gm-race-card.selected { border-color: var(--gold); background: rgba(217,164,65,.12); }
+
+/* Selector de raza en carrusel horizontal (creación de personaje):
+   tarjetas más grandes con el emoji a modo de "foto" —mientras no
+   haya arte propio por raza— y un botón de info aparte que muestra su
+   descripción sin seleccionarla (ver gmrpgShowRaceDesc). */
+.gm-race-carousel { display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 10px; margin-bottom: 8px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.gm-race-carousel .gm-race-card { flex: 0 0 110px; scroll-snap-align: start; padding: 16px 8px 10px; }
+.gm-race-carousel .gm-race-card .gm-race-emoji { font-size: 42px; }
+.gm-race-info-btn { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%; border: none; background: var(--panel); color: var(--muted); font-size: 11px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.gm-race-desc { background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+
 .gm-attr-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
 .gm-attr-row { display: flex; align-items: center; gap: 10px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; }
 .gm-attr-row .gm-attr-name { flex: 1; font-weight: 600; text-transform: capitalize; }
 .gm-attr-row .gm-attr-dots { display: flex; gap: 4px; }
 .gm-attr-dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--border); background: transparent; }
 .gm-attr-dot.on { background: var(--gold); border-color: var(--gold); }
-.gm-attr-row button { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border); background: var(--panel); color: var(--text); font-weight: 700; cursor: pointer; }
-.gm-attr-row button:disabled { opacity: .35; cursor: default; }
 
 /* Cabecera de la partida: vida y atributos del personaje */
 .gm-char-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center; font-size: 14px; }
@@ -2224,10 +2235,11 @@ body.light-mode .auth-tabs button.active { color: #fff; }
 
         <input type="text" id="gmrpgNameInput" placeholder="Nombre del personaje" maxlength="20" oninput="gmrpgUpdateStartButton()">
 
-        <p class="friend-msg" style="margin:14px 0 8px;">Raza:</p>
-        <div class="gm-race-grid" id="gmrpgRaceGrid"></div>
+        <p class="friend-msg" style="margin:14px 0 8px;">Raza (desliza para ver todas — pulsa la ℹ️ de cada una para leer su descripción):</p>
+        <div class="gm-race-carousel" id="gmrpgRaceGrid"></div>
+        <div class="gm-race-desc" id="gmrpgRaceDescBox" style="display:none;"></div>
 
-        <p class="friend-msg" style="margin:14px 0 8px;">Reparto de atributos (<span id="gmrpgPointsLeft">4</span> puntos por repartir):</p>
+        <p class="friend-msg" style="margin:14px 0 8px;">Atributos de tu raza (de serie, no se reparten):</p>
         <div class="gm-attr-list" id="gmrpgAttrList"></div>
 
         <button class="btn btn-primary" id="gmrpgStartBtn" onclick="rpgCharOnboardingConfirm()" style="margin-top:14px; width:100%;" disabled>Ponle nombre a tu personaje</button>
@@ -4864,15 +4876,22 @@ function parchisZoom(direction) {
    bots y resuelve la ronda contra el GM — igual que Parchís, para que
    dos clientes conectados no acaben actuando dos veces por lo mismo.
 ========================= */
+// Cada raza trae sus atributos "de serie" (no se reparten puntos):
+// el reparto está inspirado en las bonificaciones raciales clásicas
+// de D&D 5e adaptadas a nuestros 3 atributos (fuerza≈Fuerza/Constitución,
+// astucia≈Destreza/Inteligencia, coraje≈Sabiduría/Carisma) — enanos
+// fuertes y resistentes, elfos ágiles y sabios, orcos con fuerza
+// bruta, trasgos escurridizos, humanos versátiles. Suman siempre 4
+// puntos entre los tres, con un tope de 2 en cada uno, igual que el
+// presupuesto que antes repartía el jugador a mano.
 const GMRPG_RACES = [
-  { id: 'humano', label: 'Humano', emoji: '🧑' },
-  { id: 'elfo', label: 'Elfo', emoji: '🧝' },
-  { id: 'enano', label: 'Enano', emoji: '🧔' },
-  { id: 'orco', label: 'Orco', emoji: '👹' },
-  { id: 'trasgo', label: 'Trasgo', emoji: '👺' }
+  { id: 'humano', label: 'Humano', emoji: '🧑', atributos: { fuerza: 1, astucia: 1, coraje: 2 }, desc: 'Adaptables y decididos: no destacan en nada en concreto, pero su coraje compensa lo que les falta en fuerza bruta o astucia.' },
+  { id: 'elfo', label: 'Elfo', emoji: '🧝', atributos: { fuerza: 1, astucia: 2, coraje: 1 }, desc: 'Ágiles, longevos y observadores. Los elfos confían en su astucia antes que en la fuerza física.' },
+  { id: 'enano', label: 'Enano', emoji: '🧔', atributos: { fuerza: 2, astucia: 1, coraje: 1 }, desc: 'Recios y tercos como la roca. Resisten donde otros caerían, aunque no destacan por su sutileza.' },
+  { id: 'orco', label: 'Orco', emoji: '👹', atributos: { fuerza: 2, astucia: 0, coraje: 2 }, desc: 'Pura fuerza bruta y una temeridad feroz en el campo de batalla — la paciencia y la sutileza no son lo suyo.' },
+  { id: 'trasgo', label: 'Trasgo', emoji: '👺', atributos: { fuerza: 0, astucia: 2, coraje: 2 }, desc: 'Pequeños y escurridizos. Compensan su escasa fuerza con astucia y un descaro sorprendente.' }
 ];
 const GMRPG_ATTR_KEYS = ['fuerza', 'astucia', 'coraje'];
-const GMRPG_ATTR_BUDGET = 4;
 const GMRPG_ATTR_CAP = 2;
 const GMRPG_BOT_NAMES = ['Grim el Silencioso', 'Vela la Rápida', 'Bruno el Fuerte', 'Nix la Astuta', 'Kael el Temerario', 'Sable la Sigilosa', 'Orin el Firme', 'Luna la Perspicaz'];
 const GMRPG_BOT_ACTIONS_COMBATE = ['ataca sin dudar al enemigo más cercano', 'busca un punto débil en el enemigo', 'se lanza a proteger al grupo', 'golpea con todo lo que tiene'];
@@ -4922,8 +4941,7 @@ function closeRpgCharOnboardingModal() {
 }
 async function rpgCharOnboardingConfirm() {
   const nombre = document.getElementById('gmrpgNameInput').value.trim();
-  const spent = GMRPG_ATTR_KEYS.reduce((s, k) => s + gmrpgAttrs[k], 0);
-  if (!nombre || !gmrpgSelectedRace || spent !== GMRPG_ATTR_BUDGET) return;
+  if (!nombre || !gmrpgSelectedRace) return;
 
   const { error } = await supabaseClient.from('rpg_characters').insert({
     user_id: currentUserId, nombre, raza: gmrpgSelectedRace,
@@ -5098,53 +5116,54 @@ async function gmrpgChooseMode(mode) {
   await loadGmrpgFriendPicker();
 }
 
+// Carrusel horizontal de razas: cada tarjeta lleva su emoji a modo de
+// "foto" (mientras no haya arte propio) y un botón ℹ️ aparte que
+// muestra la descripción sin seleccionarla (stopPropagation para que
+// el click en el icono no cuente como click en la tarjeta).
 function gmrpgRenderRaces() {
   document.getElementById('gmrpgRaceGrid').innerHTML = GMRPG_RACES.map(r => `
     <div class="gm-race-card${gmrpgSelectedRace === r.id ? ' selected' : ''}" onclick="gmrpgSelectRace('${r.id}')">
-      <span>${r.emoji}</span>${r.label}
+      <button type="button" class="gm-race-info-btn" onclick="event.stopPropagation(); gmrpgShowRaceDesc('${r.id}')" title="Descripción" aria-label="Descripción de ${r.label}">ℹ️</button>
+      <span class="gm-race-emoji">${r.emoji}</span>${r.label}
     </div>
   `).join('');
 }
+function gmrpgShowRaceDesc(id) {
+  const race = GMRPG_RACES.find(r => r.id === id);
+  if (!race) return;
+  const box = document.getElementById('gmrpgRaceDescBox');
+  box.innerHTML = `<strong>${race.emoji} ${race.label}:</strong> ${gmEsc(race.desc)}`;
+  box.style.display = 'block';
+}
 function gmrpgSelectRace(id) {
   gmrpgSelectedRace = id;
+  const race = GMRPG_RACES.find(r => r.id === id);
+  gmrpgAttrs = race ? { ...race.atributos } : { fuerza: 0, astucia: 0, coraje: 0 };
   gmrpgRenderRaces();
+  gmrpgRenderAttrs();
   gmrpgUpdateStartButton();
 }
 
+// Los atributos vienen fijos por raza (ver GMRPG_RACES): aquí solo se
+// muestran, ya no se reparten a mano.
 function gmrpgRenderAttrs() {
-  const spent = GMRPG_ATTR_KEYS.reduce((s, k) => s + gmrpgAttrs[k], 0);
-  const left = GMRPG_ATTR_BUDGET - spent;
-  document.getElementById('gmrpgPointsLeft').textContent = left;
   document.getElementById('gmrpgAttrList').innerHTML = GMRPG_ATTR_KEYS.map(k => {
-    const val = gmrpgAttrs[k];
+    const val = gmrpgAttrs[k] || 0;
     let dots = '';
     for (let i = 0; i < GMRPG_ATTR_CAP; i++) dots += `<span class="gm-attr-dot${i < val ? ' on' : ''}"></span>`;
     return `
       <div class="gm-attr-row">
         <span class="gm-attr-name">${k}</span>
         <div class="gm-attr-dots">${dots}</div>
-        <button type="button" onclick="gmrpgAdjustAttr('${k}',-1)" ${val <= 0 ? 'disabled' : ''}>−</button>
-        <button type="button" onclick="gmrpgAdjustAttr('${k}',1)" ${(val >= GMRPG_ATTR_CAP || left <= 0) ? 'disabled' : ''}>+</button>
       </div>
     `;
   }).join('');
 }
-function gmrpgAdjustAttr(key, delta) {
-  const spent = GMRPG_ATTR_KEYS.reduce((s, k) => s + gmrpgAttrs[k], 0);
-  const next = gmrpgAttrs[key] + delta;
-  if (next < 0 || next > GMRPG_ATTR_CAP) return;
-  if (delta > 0 && spent >= GMRPG_ATTR_BUDGET) return;
-  gmrpgAttrs[key] = next;
-  gmrpgRenderAttrs();
-  gmrpgUpdateStartButton();
-}
 function gmrpgUpdateStartButton() {
   const btn = document.getElementById('gmrpgStartBtn');
   const nombre = document.getElementById('gmrpgNameInput').value.trim();
-  const spent = GMRPG_ATTR_KEYS.reduce((s, k) => s + gmrpgAttrs[k], 0);
   if (!nombre) { btn.disabled = true; btn.textContent = 'Ponle nombre a tu personaje'; return; }
   if (!gmrpgSelectedRace) { btn.disabled = true; btn.textContent = 'Elige una raza'; return; }
-  if (spent !== GMRPG_ATTR_BUDGET) { btn.disabled = true; btn.textContent = `Reparte los ${GMRPG_ATTR_BUDGET} puntos de atributos`; return; }
   btn.disabled = false;
   btn.textContent = '⚔️ Crear personaje';
 }
