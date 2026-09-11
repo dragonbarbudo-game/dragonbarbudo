@@ -2178,21 +2178,22 @@ body.light-mode .auth-tabs button.active { color: #fff; }
     </div>
 </div>
 
-<!-- AVENTURA GM IA › MODAL DE ENTRADA. Tres paneles: elegir solo/con
-     amigos, crear tu personaje (común a ambos modos), y —solo en modo
-     grupo— tamaño de grupo + invitar amigos + dificultad de bots. -->
+<!-- AVENTURA GM IA › MODAL DE ENTRADA. Siempre se elige entre "solo con
+     bots" o "con amigos" — en los dos casos se completa el grupo con
+     bots y se elige su dificultad; la única diferencia es si se
+     muestra o no el selector de amigos (ver gmrpgChooseMode). -->
 <div class="modal-bg" id="gmrpgEntryModalBg">
     <div class="modal">
         <h2>📜 Aventura con GM IA</h2>
 
         <div id="gmrpgEntryChoices">
-            <button class="c4-entry-option" onclick="gmrpgStartSoloGame()">
-                <span class="c4-entry-icon">🧙</span>
-                <span><strong>Jugar solo</strong><br><small>Tú contra el Game Master</small></span>
+            <button class="c4-entry-option" onclick="gmrpgChooseMode('solo_bots')">
+                <span class="c4-entry-icon">🤖</span>
+                <span><strong>Jugar solo con bots</strong><br><small>Tú y el resto del grupo lo completan bots</small></span>
             </button>
-            <button class="c4-entry-option" onclick="gmrpgChooseMode('grupo')">
+            <button class="c4-entry-option" onclick="gmrpgChooseMode('amigos')">
                 <span class="c4-entry-icon">👥</span>
-                <span><strong>Jugar con amigos</strong><br><small>De 2 a 4 jugadores; el resto se rellena con bots</small></span>
+                <span><strong>Jugar con amigos</strong><br><small>De 2 a 4 jugadores; lo que no se rellene, con bots</small></span>
             </button>
         </div>
 
@@ -2204,10 +2205,12 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                 <button type="button" class="btn btn-dark" data-size="4" onclick="gmrpgSelectGroupSize(4)">👥 4</button>
             </div>
 
-            <p class="friend-msg" style="margin:14px 0 8px;">Invita a tus amigos (hasta <span id="gmrpgMaxFriendsLabel">2</span>; el resto de plazas se rellena con bots):</p>
-            <div id="gmrpgFriendPickerList"><p class="friend-empty">Cargando…</p></div>
+            <div id="gmrpgFriendPickerSection">
+                <p class="friend-msg" style="margin:14px 0 8px;">Invita a tus amigos (hasta <span id="gmrpgMaxFriendsLabel">2</span>; el resto de plazas se rellena con bots):</p>
+                <div id="gmrpgFriendPickerList"><p class="friend-empty">Cargando…</p></div>
+            </div>
 
-            <p class="friend-msg" style="margin:14px 0 8px;">Dificultad de las plazas que se rellenen con bots:</p>
+            <p class="friend-msg" style="margin:14px 0 8px;">Dificultad de los bots:</p>
             <div class="c4-difficulty-options" id="gmrpgBotDifficultyOptions">
                 <button type="button" class="btn btn-dark" data-difficulty="easy" onclick="gmrpgSelectBotDifficulty('easy')">😊 Fácil</button>
                 <button type="button" class="btn btn-dark on" data-difficulty="normal" onclick="gmrpgSelectBotDifficulty('normal')">🙂 Normal</button>
@@ -4904,6 +4907,7 @@ let gmrpgPendingDice = null; // modo solo: atributo pedido por el GM en la últi
 let gmrpgSending = false;    // evita doble envío mientras se espera al modelo
 let gmrpgResolving = false;  // modo grupo: evita resolver la misma ronda dos veces
 let gmrpgChannel = null;     // modo grupo: canal Realtime de la partida
+let gmrpgGroupFlowMode = 'amigos'; // 'solo_bots' | 'amigos' — elegido en gmrpgChooseMode
 let gmrpgGroupSize = 3;
 let gmrpgSelectedFriends = []; // [{id,name}]
 let gmrpgSelectedBotDifficulty = 'normal';
@@ -5104,16 +5108,22 @@ function gmrpgShowGroupSetup() {
   document.getElementById('gmrpgEntryChoices').style.display = 'none';
   document.getElementById('gmrpgEntryGroupSetup').style.display = 'block';
 }
+// 'solo_bots': tú + bots hasta completar el grupo, sin invitar a
+// nadie (se oculta el selector de amigos por completo). 'amigos':
+// igual, pero con selector de amigos — lo que no se rellene, también
+// se completa con bots. En AMBOS casos se elige tamaño y dificultad
+// de los bots (a petición del usuario: nunca debe faltar esa opción).
 async function gmrpgChooseMode(mode) {
-  if (mode !== 'grupo') return; // "Jugar solo" llama a gmrpgStartSoloGame() directamente
+  gmrpgGroupFlowMode = mode;
   gmrpgGroupSize = 3;
   gmrpgSelectedFriends = [];
   gmrpgSelectedBotDifficulty = 'normal';
   document.querySelectorAll('#gmrpgGroupSizeOptions .btn').forEach(b => b.classList.toggle('on', b.dataset.size === '3'));
   document.querySelectorAll('#gmrpgBotDifficultyOptions .btn').forEach(b => b.classList.toggle('on', b.dataset.difficulty === 'normal'));
   document.getElementById('gmrpgMaxFriendsLabel').textContent = gmrpgGroupSize - 1;
+  document.getElementById('gmrpgFriendPickerSection').style.display = mode === 'amigos' ? 'block' : 'none';
   gmrpgShowGroupSetup();
-  await loadGmrpgFriendPicker();
+  if (mode === 'amigos') await loadGmrpgFriendPicker();
 }
 
 // Carrusel horizontal de razas: cada tarjeta lleva su emoji a modo de
@@ -5224,6 +5234,7 @@ function gmrpgSelectGroupSize(n) {
   gmrpgGroupSize = n;
   document.querySelectorAll('#gmrpgGroupSizeOptions .btn').forEach(b => b.classList.toggle('on', Number(b.dataset.size) === n));
   document.getElementById('gmrpgMaxFriendsLabel').textContent = n - 1;
+  if (gmrpgGroupFlowMode !== 'amigos') return; // "solo con bots": no hay selector de amigos que actualizar
   if (gmrpgSelectedFriends.length > n - 1) gmrpgSelectedFriends = gmrpgSelectedFriends.slice(0, n - 1);
   loadGmrpgFriendPicker();
 }
