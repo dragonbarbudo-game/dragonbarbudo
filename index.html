@@ -4851,8 +4851,9 @@ function parchisZoom(direction) {
      gmrpgSendGroupAction) y el GM narra sobre el resultado ya resuelto.
 
    Cada turno/ronda llama a /api/gmrpg/turn (Cloudflare Function), que
-   a su vez llama a la API de Anthropic con el system prompt fijo de
-   docs/gm-system-prompt-final.md y devuelve {narracion, estado}. El
+   a su vez llama a Workers AI (gratis, sin API key) con el system
+   prompt fijo de docs/gm-system-prompt-final.md y devuelve
+   {narracion, estado}. El
    dado SIEMPRE lo tira este cliente (randInt), nunca el modelo: se le
    manda el resultado ya resuelto como una acción con el prefijo
    "[TIRADA]" para que narre sobre un hecho consumado.

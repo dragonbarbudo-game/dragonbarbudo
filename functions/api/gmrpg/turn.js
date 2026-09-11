@@ -1,7 +1,11 @@
 // Cloudflare Pages Function: resuelve un turno de la Aventura con Game
-// Master IA (modo solo, Fase 1). El navegador nunca ve la API key de
-// Anthropic — solo esta Function la usa, igual que las funciones de
-// admin usan SUPABASE_SERVICE_ROLE_KEY sin exponerla nunca al cliente.
+// Master IA. Usa Workers AI (env.AI) en vez de una API de pago: es
+// gratis dentro de la cuota diaria de Cloudflare y no hace falta
+// ninguna clave — solo activar el binding "AI" en el panel del
+// proyecto (Settings → Functions → Bindings → Add → "AI", nombre de
+// variable "AI") y volver a desplegar. El modelo es más pequeño que
+// Claude (es un Llama de código abierto), así que puede seguir el
+// formato algo peor, pero para esta mecánica sencilla debería bastar.
 //
 // El cliente manda el JSON de estado de la partida + la acción del
 // jugador (o una tirada ya resuelta, ver gmrpgRollDice en index.html);
@@ -9,16 +13,13 @@
 // aventura, separa NARRACIÓN de ESTADO en la respuesta, y devuelve
 // ambos. El cliente es quien guarda el resultado en Supabase
 // (gmrpg_games) — esta Function no toca la base de datos.
-//
-// Variable de entorno nueva (añadir en Cloudflare Pages → Settings →
-// Environment variables): ANTHROPIC_API_KEY
 
 const SUPABASE_URL = 'https://yptdxphximblpzlrgjpg.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdGR4cGh4aW1ibHB6bHJnanBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1MTI2ODIsImV4cCI6MjEwNDA4ODY4Mn0.aA2jm-SC6xRI1_klg-17M-Po81RZP6dnpDfRBDQq_gc';
 
-const ANTHROPIC_MODEL = 'claude-sonnet-5';
-const ANTHROPIC_MAX_TOKENS = 600;
-const ANTHROPIC_MAX_TOKENS_GRUPO = 900; // resolver 2-4 personajes a la vez necesita más espacio de respuesta
+const WORKERS_AI_MODEL = '@cf/meta/llama-3.3-70b-instruct';
+const WORKERS_AI_MAX_TOKENS = 600;
+const WORKERS_AI_MAX_TOKENS_GRUPO = 900; // resolver 2-4 personajes a la vez necesita más espacio de respuesta
 const ACCION_MAX_LEN = 500;
 
 // Escenario fijo del MVP (Fase 1): una sola aventura preescrita. Vive
@@ -141,7 +142,7 @@ export async function onRequestPost(context) {
   // propia página de error genérica, ocultando el motivo real del fallo.
   try {
     const { request, env } = context;
-    if (!env.ANTHROPIC_API_KEY) return json({ ok: false, error: 'missing_config' }, 200);
+    if (!env.AI) return json({ ok: false, error: 'missing_config' }, 200);
 
     const authHeader = request.headers.get('Authorization') || '';
     if (!authHeader.startsWith('Bearer ')) return json({ ok: false, error: 'missing_params' }, 200);
@@ -185,28 +186,20 @@ export async function onRequestPost(context) {
       mensaje = `Estado actual (JSON):\n${JSON.stringify(estadoParaModelo)}\n\nAcción del jugador: "${accionSegura}"`;
     }
 
-    const apiResp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: ANTHROPIC_MODEL,
-        max_tokens: modoSeguro === 'grupo' ? ANTHROPIC_MAX_TOKENS_GRUPO : ANTHROPIC_MAX_TOKENS,
-        system: buildSystemPrompt(modoSeguro),
-        messages: [{ role: 'user', content: mensaje }]
-      })
-    });
-
-    if (!apiResp.ok) {
-      const detail = await apiResp.text().catch(() => '');
-      return json({ ok: false, error: 'llm_failed', status: apiResp.status, detail }, 200);
+    let aiResult;
+    try {
+      aiResult = await env.AI.run(WORKERS_AI_MODEL, {
+        max_tokens: modoSeguro === 'grupo' ? WORKERS_AI_MAX_TOKENS_GRUPO : WORKERS_AI_MAX_TOKENS,
+        messages: [
+          { role: 'system', content: buildSystemPrompt(modoSeguro) },
+          { role: 'user', content: mensaje }
+        ]
+      });
+    } catch (e) {
+      return json({ ok: false, error: 'llm_failed', detail: String(e) }, 200);
     }
 
-    const apiBody = await apiResp.json();
-    const rawText = (apiBody.content || []).map(b => b.text || '').join('').trim();
+    const rawText = String((aiResult && aiResult.response) || '').trim();
     if (!rawText) return json({ ok: false, error: 'respuesta_vacia' }, 200);
 
     let parsed;
