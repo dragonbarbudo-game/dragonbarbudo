@@ -5221,7 +5221,34 @@ async function gmrpgStartSoloGame() {
   await gmrpgSendAction('(inicio de la partida)');
 }
 
+// BUG corregido: "Salir de la partida" solo limpiaba el estado local,
+// nunca tocaba la fila en Supabase — así que la próxima vez que se
+// abría la Aventura, openGmrpgEntryModal() la seguía encontrando como
+// "en curso" (status 'waiting'/'active') y la retomaba sola sin
+// dejar elegir nunca más "solo con bots" / "con amigos". Ahora, si la
+// partida no ha terminado todavía (sin resultado), se pide confirmar
+// el abandono y se marca status:'abandoned' —fuera de 'waiting'/
+// 'active', así el resume-check ya no la encuentra— antes de salir.
+// Si ya hay resultado (victoria/derrota), no hace falta nada de esto:
+// el estado ya quedó en 'finished' al terminar la partida.
 function leaveGmrpgGame() {
+  if (!gmrpgState || gmrpgState.resultado) { gmrpgLeaveNow(); return; }
+  const avisoAmigos = (gmrpgState.mode === 'grupo' && gmrpgState.grupo.some(m => m.tipo === 'human' && m.user_id !== currentUserId))
+    ? ' Si estás jugando con amigos, la partida también terminará para ellos.'
+    : '';
+  showConfirmModal(
+    '🚪 Abandonar la aventura',
+    `Se da por terminada esta aventura y no podrás retomarla — la próxima vez podrás elegir de nuevo si jugar solo con bots o con amigos.${avisoAmigos} ¿Seguro?`,
+    () => gmrpgAbandonAndLeave()
+  );
+}
+async function gmrpgAbandonAndLeave() {
+  if (gmrpgState && gmrpgState.persisted !== false && gmrpgState.id && !String(gmrpgState.id).startsWith('local-')) {
+    try { await supabaseClient.from('gmrpg_games').update({ status: 'abandoned' }).eq('id', gmrpgState.id); } catch (e) { /* no crítico: como mucho vuelve a aparecer la próxima vez */ }
+  }
+  gmrpgLeaveNow();
+}
+function gmrpgLeaveNow() {
   if (gmrpgChannel) { supabaseClient.removeChannel(gmrpgChannel); gmrpgChannel = null; }
   gmrpgState = null;
   gmrpgPendingDice = null;
@@ -5438,6 +5465,13 @@ function gmrpgSubscribeChannel(gameId) {
       (payload) => {
         const wasWaiting = gmrpgState && gmrpgState.status === 'waiting';
         gmrpgState = payload.new;
+        if (gmrpgState.status === 'abandoned') {
+          // Alguien del grupo (o tú mismo, en otra pestaña) abandonó la
+          // partida: no tiene sentido seguir mostrándola.
+          toast('🚪 Esta aventura ha sido abandonada.');
+          gmrpgLeaveNow();
+          return;
+        }
         gmrpgRenderWaitingOrGame();
         if (wasWaiting && gmrpgState.status === 'active') toast('🎲 ¡Ya estáis todos! Empieza la partida.');
       }
