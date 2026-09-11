@@ -794,6 +794,15 @@ main { padding: 30px; overflow: hidden; }
 /* Fase 2 (grupo): no es mi turno */
 .gm-waiting-turn { display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 640px; margin: 0 auto 14px; color: var(--muted); font-size: 14px; }
 
+/* Fase 3: personaje persistente, panel dentro de la página Perfil */
+.rpg-char-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 15px; padding: 24px; }
+.rpg-char-info p { margin: 2px 0; }
+.rpg-char-name-row { display: flex; align-items: center; gap: 6px; font-size: 18px; }
+.rpg-char-edit-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px; }
+.rpg-char-inventory { display: flex; flex-wrap: wrap; gap: 8px; }
+.rpg-item-chip { background: var(--panel-2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 13px; }
+.rpg-char-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+
 /* Fin de partida */
 .gm-end-banner { max-width: 640px; margin: 0 auto 14px; text-align: center; padding: 18px; border-radius: 12px; border: 1px solid var(--border); }
 .gm-end-banner.victoria { background: rgba(76,175,80,.12); border-color: #4caf50; }
@@ -1830,6 +1839,12 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                     <div class="equip-list" id="profileEquipList"></div>
                 </div>
             </div>
+
+            <!-- PERSONAJE DE LA AVENTURA CON GM IA (Fase 3): único por
+                 cuenta, se crea una vez (ver rpgCharOnboardingModalBg) y
+                 progresa con el inventario que se va consiguiendo. -->
+            <div class="section-title" style="margin-top:24px;"><h2>🐉 Tu personaje de aventura</h2></div>
+            <div class="rpg-char-panel" id="rpgCharPanel"></div>
         </div>
 
         <!-- AVATAR -->
@@ -2160,7 +2175,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
         <h2>📜 Aventura con GM IA</h2>
 
         <div id="gmrpgEntryChoices">
-            <button class="c4-entry-option" onclick="gmrpgChooseMode('solo')">
+            <button class="c4-entry-option" onclick="gmrpgStartSoloGame()">
                 <span class="c4-entry-icon">🧙</span>
                 <span><strong>Jugar solo</strong><br><small>Tú contra el Game Master</small></span>
             </button>
@@ -2168,21 +2183,6 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                 <span class="c4-entry-icon">👥</span>
                 <span><strong>Jugar con amigos</strong><br><small>De 2 a 4 jugadores; el resto se rellena con bots</small></span>
             </button>
-        </div>
-
-        <div id="gmrpgEntryCharCreation" style="display:none;">
-            <p class="friend-msg" style="margin-bottom:10px;">Crea tu personaje para esta aventura:</p>
-
-            <input type="text" id="gmrpgNameInput" placeholder="Nombre del personaje" maxlength="20" oninput="gmrpgUpdateStartButton()">
-
-            <p class="friend-msg" style="margin:14px 0 8px;">Raza:</p>
-            <div class="gm-race-grid" id="gmrpgRaceGrid"></div>
-
-            <p class="friend-msg" style="margin:14px 0 8px;">Reparto de atributos (<span id="gmrpgPointsLeft">4</span> puntos por repartir):</p>
-            <div class="gm-attr-list" id="gmrpgAttrList"></div>
-
-            <button class="btn btn-primary" id="gmrpgStartBtn" onclick="gmrpgConfirmCharacter()" style="margin-top:14px; width:100%;" disabled>Ponle nombre a tu personaje</button>
-            <button class="page-back-btn" onclick="gmrpgShowEntryChoices()" style="margin-top:16px;">← Volver</button>
         </div>
 
         <div id="gmrpgEntryGroupSetup" style="display:none;">
@@ -2204,11 +2204,36 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             </div>
 
             <button class="btn btn-primary" id="gmrpgCreateGroupBtn" onclick="gmrpgCreateGroupGame()" style="margin-top:12px; width:100%;">Crear partida</button>
-            <button class="page-back-btn" onclick="gmrpgShowCharCreation()" style="margin-top:16px;">← Volver</button>
+            <button class="page-back-btn" onclick="gmrpgShowEntryChoices()" style="margin-top:16px;">← Volver</button>
         </div>
 
         <div class="modal-actions">
             <button class="btn btn-dark" onclick="closeGmrpgEntryModal()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<!-- AVENTURA GM IA › PERSONAJE (Fase 3): se crea UNA VEZ por cuenta, no
+     por partida — se ofrece la primera vez que hay sesión (ver
+     enterApp) y, si se pospone, la primera vez que se intenta abrir
+     la Aventura sin tener personaje todavía (ver openGmrpgEntryModal). -->
+<div class="modal-bg" id="rpgCharOnboardingModalBg">
+    <div class="modal">
+        <h2>🐉 Crea tu personaje</h2>
+        <p class="friend-msg" style="margin-bottom:10px;">Este personaje es tuyo para siempre: progresa contigo en todas tus aventuras (puedes cambiarle el nombre, la raza o la apariencia más adelante desde tu Perfil).</p>
+
+        <input type="text" id="gmrpgNameInput" placeholder="Nombre del personaje" maxlength="20" oninput="gmrpgUpdateStartButton()">
+
+        <p class="friend-msg" style="margin:14px 0 8px;">Raza:</p>
+        <div class="gm-race-grid" id="gmrpgRaceGrid"></div>
+
+        <p class="friend-msg" style="margin:14px 0 8px;">Reparto de atributos (<span id="gmrpgPointsLeft">4</span> puntos por repartir):</p>
+        <div class="gm-attr-list" id="gmrpgAttrList"></div>
+
+        <button class="btn btn-primary" id="gmrpgStartBtn" onclick="rpgCharOnboardingConfirm()" style="margin-top:14px; width:100%;" disabled>Ponle nombre a tu personaje</button>
+
+        <div class="modal-actions">
+            <button class="btn btn-dark" onclick="closeRpgCharOnboardingModal()">Más tarde</button>
         </div>
     </div>
 </div>
@@ -3754,6 +3779,9 @@ document.getElementById('parchisEntryModalBg').addEventListener('click', functio
 document.getElementById('gmrpgEntryModalBg').addEventListener('click', function (event) {
   if (event.target === this) closeGmrpgEntryModal();
 });
+document.getElementById('rpgCharOnboardingModalBg').addEventListener('click', function (event) {
+  if (event.target === this) closeRpgCharOnboardingModal();
+});
 
 /* =========================
    PARCHÍS (4 jugadores: con amigos —hasta 3—, con bots, o mezclando
@@ -4856,16 +4884,162 @@ let gmrpgPendingDice = null; // modo solo: atributo pedido por el GM en la últi
 let gmrpgSending = false;    // evita doble envío mientras se espera al modelo
 let gmrpgResolving = false;  // modo grupo: evita resolver la misma ronda dos veces
 let gmrpgChannel = null;     // modo grupo: canal Realtime de la partida
-let gmrpgEntryMode = 'solo'; // 'solo' | 'grupo' | 'joining' (aceptando una invitación), elegido en el modal
-let gmrpgJoiningInvite = null; // invitación de game_invites que se está aceptando (modo 'joining')
-let gmrpgPendingCharacter = null; // {nombre,raza,atributos} ya creado, a la espera de configurar el grupo
 let gmrpgGroupSize = 3;
 let gmrpgSelectedFriends = []; // [{id,name}]
 let gmrpgSelectedBotDifficulty = 'normal';
+let gmrpgEconomyAppliedFor = null; // id de la última partida cuya recompensa/penalización ya se aplicó (evita duplicarla en cada re-render)
+let rpgOnboardingPendingAction = null; // función a retomar tras crear el personaje (abrir el modal de juego, aceptar una invitación...), o null
 
 function gmEsc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
-/* -------- Creación de personaje (modal de entrada) -------- */
+/* -------- Personaje persistente (Fase 3): se crea UNA VEZ por cuenta,
+   no por partida — ver rpgCharOnboardingModalBg y su uso en enterApp
+   (primer login) y aquí (si se pospuso, al intentar jugar). -------- */
+
+async function rpgFetchMyCharacter() {
+  if (!currentUserId) return null;
+  try {
+    const { data, error } = await supabaseClient.from('rpg_characters').select('*').eq('user_id', currentUserId).maybeSingle();
+    if (error) return null;
+    return data || null;
+  } catch (e) { return null; }
+}
+
+function openRpgCharOnboardingModal(afterCreate) {
+  rpgOnboardingPendingAction = afterCreate || null;
+  gmrpgSelectedRace = null;
+  gmrpgAttrs = { fuerza: 0, astucia: 0, coraje: 0 };
+  document.getElementById('gmrpgNameInput').value = '';
+  gmrpgRenderRaces();
+  gmrpgRenderAttrs();
+  gmrpgUpdateStartButton();
+  document.getElementById('rpgCharOnboardingModalBg').style.display = 'flex';
+}
+function closeRpgCharOnboardingModal() {
+  document.getElementById('rpgCharOnboardingModalBg').style.display = 'none';
+  rpgOnboardingPendingAction = null;
+}
+async function rpgCharOnboardingConfirm() {
+  const nombre = document.getElementById('gmrpgNameInput').value.trim();
+  const spent = GMRPG_ATTR_KEYS.reduce((s, k) => s + gmrpgAttrs[k], 0);
+  if (!nombre || !gmrpgSelectedRace || spent !== GMRPG_ATTR_BUDGET) return;
+
+  const { error } = await supabaseClient.from('rpg_characters').insert({
+    user_id: currentUserId, nombre, raza: gmrpgSelectedRace,
+    atributos: { ...gmrpgAttrs }, vida_max: 3, inventario: []
+  });
+  if (error) { toast('❌ No se pudo crear el personaje. Inténtalo de nuevo.'); return; }
+
+  document.getElementById('rpgCharOnboardingModalBg').style.display = 'none';
+  toast(`✅ ${nombre} está listo para la aventura.`);
+  await rpgRenderCharacterPanel();
+  const next = rpgOnboardingPendingAction;
+  rpgOnboardingPendingAction = null;
+  if (next) await next();
+}
+
+/* -------- Panel "Mi personaje" (página Perfil): nombre editable,
+   inventario persistente, enlace al editor de Avatar ya existente
+   para la apariencia, y la Poción de Metamorfosis para cambiar de
+   raza. -------- */
+
+// Sin argumento, se busca el personaje él solo; se le puede pasar ya
+// cargado (p.ej. desde enterApp, que ya lo tiene) o null explícito
+// (para el caso "ya se ha comprobado y no existe").
+async function rpgRenderCharacterPanel(character) {
+  if (character === undefined) character = await rpgFetchMyCharacter();
+  const panel = document.getElementById('rpgCharPanel');
+  if (!panel) return;
+
+  if (!character) {
+    panel.innerHTML = `
+      <p class="friend-empty">Todavía no tienes personaje para la Aventura con GM IA.</p>
+      <button class="btn btn-primary" onclick="openRpgCharOnboardingModal(() => rpgRenderCharacterPanel())">🐉 Crear personaje</button>
+    `;
+    return;
+  }
+
+  const race = GMRPG_RACES.find(r => r.id === character.raza);
+  const raceLabel = race ? `${race.emoji} ${race.label}` : gmEsc(character.raza);
+  const inventoryHtml = (character.inventario && character.inventario.length)
+    ? character.inventario.map(it => `<span class="rpg-item-chip">🎒 ${gmEsc(typeof it === 'string' ? it : (it.nombre || 'objeto'))}</span>`).join('')
+    : '<span class="friend-empty">Todavía no has conseguido objetos rolando.</span>';
+
+  panel.innerHTML = `
+    <div class="rpg-char-info">
+      <p class="rpg-char-name-row"><strong id="rpgCharName">${gmEsc(character.nombre)}</strong> <button class="rpg-char-edit-btn" onclick="rpgEditCharacterName()" title="Cambiar nombre">✏️</button></p>
+      <p>${raceLabel}</p>
+      <p>💪${character.atributos.fuerza} 🧠${character.atributos.astucia} 🦁${character.atributos.coraje}</p>
+    </div>
+    <p class="friend-msg" style="margin:14px 0 6px;">🎒 Inventario:</p>
+    <div class="rpg-char-inventory">${inventoryHtml}</div>
+    <div class="rpg-char-actions">
+      <button class="btn btn-dark" onclick="showPage('avatarPage')">🎨 Editar apariencia</button>
+      <button class="btn btn-dark" onclick="rpgBuyRaceChangePotion()">🧪 Poción de Metamorfosis (500 🪙)</button>
+    </div>
+    <div id="rpgRaceChangeBox" style="display:none; margin-top:14px;"></div>
+  `;
+}
+
+function rpgEditCharacterName() {
+  const row = document.querySelector('#rpgCharPanel .rpg-char-name-row');
+  if (!row) return;
+  const current = document.getElementById('rpgCharName').textContent;
+  row.innerHTML = `
+    <input type="text" id="rpgCharNameInput" value="${gmEsc(current)}" maxlength="20" style="display:inline-block; width:auto; margin:0;">
+    <button class="rpg-char-edit-btn" onclick="rpgSaveCharacterName()" title="Guardar">✅</button>
+  `;
+  document.getElementById('rpgCharNameInput').focus();
+}
+async function rpgSaveCharacterName() {
+  const nuevo = document.getElementById('rpgCharNameInput').value.trim().slice(0, 20);
+  if (!nuevo) return;
+  const { error } = await supabaseClient.from('rpg_characters')
+    .update({ nombre: nuevo, updated_at: new Date().toISOString() }).eq('user_id', currentUserId);
+  if (error) { toast('❌ No se pudo cambiar el nombre.'); return; }
+  toast('✅ Nombre actualizado.');
+  await rpgRenderCharacterPanel();
+}
+
+// Cambio de raza raro (vía mercader): consumible, se cobra solo al
+// confirmar la raza elegida (así se puede cancelar sin gastar nada).
+// La vía "muy poca probabilidad, rolando" queda para más adelante.
+function rpgBuyRaceChangePotion() {
+  const price = 500;
+  if (!state.cheatMode && state.coins < price) { toast('❌ No tienes suficientes monedas.'); return; }
+  const box = document.getElementById('rpgRaceChangeBox');
+  if (!box) return;
+  box.style.display = 'block';
+  box.innerHTML = `
+    <p class="friend-msg">Elige la nueva raza (esto consumirá la poción):</p>
+    <div class="gm-race-grid">${GMRPG_RACES.map(r => `
+      <div class="gm-race-card" onclick="rpgConfirmRaceChange('${r.id}')"><span>${r.emoji}</span>${r.label}</div>
+    `).join('')}</div>
+    <button class="page-back-btn" onclick="document.getElementById('rpgRaceChangeBox').style.display='none';">← Cancelar</button>
+  `;
+}
+async function rpgConfirmRaceChange(raza) {
+  const price = 500;
+  const character = await rpgFetchMyCharacter();
+  if (!character) return;
+  if (!state.cheatMode) {
+    if (state.coins < price) { toast('❌ No tienes suficientes monedas.'); return; }
+    state.coins -= price;
+    save();
+  }
+  const { error } = await supabaseClient.from('rpg_characters')
+    .update({ raza, race_changes: (character.race_changes || 0) + 1, updated_at: new Date().toISOString() })
+    .eq('user_id', currentUserId);
+  if (error) {
+    toast('❌ No se pudo cambiar de raza.');
+    if (!state.cheatMode) { state.coins += price; save(); }
+    return;
+  }
+  toast('🧪 ¡Tu personaje ha cambiado de raza!');
+  await rpgRenderCharacterPanel();
+}
+
+/* -------- Modal de entrada al juego (elegir solo/con amigos) -------- */
 
 async function openGmrpgEntryModal() {
   // Si ya hay una partida en curso —propia en solo, o de grupo donde
@@ -4887,14 +5061,16 @@ async function openGmrpgEntryModal() {
       gmrpgRenderWaitingOrGame();
       return;
     }
-  } catch (e) { /* si falla la comprobación, se sigue al formulario normal */ }
+  } catch (e) { /* si falla la comprobación, se sigue comprobando el personaje */ }
 
-  gmrpgEntryMode = 'solo';
-  gmrpgJoiningInvite = null;
-  gmrpgPendingCharacter = null;
-  gmrpgSelectedRace = null;
-  gmrpgAttrs = { fuerza: 0, astucia: 0, coraje: 0 };
-  document.getElementById('gmrpgNameInput').value = '';
+  // Sin partida en curso: hace falta tener ya el personaje creado
+  // (una vez por cuenta) antes de poder elegir solo/grupo.
+  const character = await rpgFetchMyCharacter();
+  if (!character) {
+    openRpgCharOnboardingModal(() => openGmrpgEntryModal());
+    return;
+  }
+
   gmrpgShowEntryChoices();
   document.getElementById('gmrpgEntryModalBg').style.display = 'flex';
 }
@@ -4903,28 +5079,22 @@ function closeGmrpgEntryModal() {
 }
 function gmrpgShowEntryChoices() {
   document.getElementById('gmrpgEntryChoices').style.display = 'block';
-  document.getElementById('gmrpgEntryCharCreation').style.display = 'none';
-  document.getElementById('gmrpgEntryGroupSetup').style.display = 'none';
-}
-function gmrpgShowCharCreation() {
-  document.getElementById('gmrpgEntryChoices').style.display = 'none';
-  document.getElementById('gmrpgEntryCharCreation').style.display = 'block';
   document.getElementById('gmrpgEntryGroupSetup').style.display = 'none';
 }
 function gmrpgShowGroupSetup() {
   document.getElementById('gmrpgEntryChoices').style.display = 'none';
-  document.getElementById('gmrpgEntryCharCreation').style.display = 'none';
   document.getElementById('gmrpgEntryGroupSetup').style.display = 'block';
 }
-function gmrpgChooseMode(mode) {
-  gmrpgEntryMode = mode;
-  gmrpgSelectedRace = null;
-  gmrpgAttrs = { fuerza: 0, astucia: 0, coraje: 0 };
-  document.getElementById('gmrpgNameInput').value = '';
-  gmrpgRenderRaces();
-  gmrpgRenderAttrs();
-  gmrpgUpdateStartButton();
-  gmrpgShowCharCreation();
+async function gmrpgChooseMode(mode) {
+  if (mode !== 'grupo') return; // "Jugar solo" llama a gmrpgStartSoloGame() directamente
+  gmrpgGroupSize = 3;
+  gmrpgSelectedFriends = [];
+  gmrpgSelectedBotDifficulty = 'normal';
+  document.querySelectorAll('#gmrpgGroupSizeOptions .btn').forEach(b => b.classList.toggle('on', b.dataset.size === '3'));
+  document.querySelectorAll('#gmrpgBotDifficultyOptions .btn').forEach(b => b.classList.toggle('on', b.dataset.difficulty === 'normal'));
+  document.getElementById('gmrpgMaxFriendsLabel').textContent = gmrpgGroupSize - 1;
+  gmrpgShowGroupSetup();
+  await loadGmrpgFriendPicker();
 }
 
 function gmrpgRenderRaces() {
@@ -4975,7 +5145,7 @@ function gmrpgUpdateStartButton() {
   if (!gmrpgSelectedRace) { btn.disabled = true; btn.textContent = 'Elige una raza'; return; }
   if (spent !== GMRPG_ATTR_BUDGET) { btn.disabled = true; btn.textContent = `Reparte los ${GMRPG_ATTR_BUDGET} puntos de atributos`; return; }
   btn.disabled = false;
-  btn.textContent = gmrpgEntryMode === 'grupo' ? 'Siguiente →' : (gmrpgEntryMode === 'joining' ? '🚪 Unirme a la partida' : '⚔️ Empezar aventura');
+  btn.textContent = '⚔️ Crear personaje';
 }
 
 function gmrpgBuildInitialMapa() {
@@ -4985,36 +5155,19 @@ function gmrpgBuildInitialMapa() {
   };
 }
 
-// Común a la creación de personaje en modo solo, modo grupo (el
-// anfitrión) y al aceptar una invitación (modo 'joining') — cada uno
-// decide qué hacer con el personaje ya construido.
-async function gmrpgConfirmCharacter() {
-  const nombre = document.getElementById('gmrpgNameInput').value.trim();
-  const spent = GMRPG_ATTR_KEYS.reduce((s, k) => s + gmrpgAttrs[k], 0);
-  if (!nombre || !gmrpgSelectedRace || spent !== GMRPG_ATTR_BUDGET) return;
+// El personaje ya existe siempre antes de llegar aquí (ver
+// openGmrpgEntryModal / rpgFetchMyCharacter): cada aventura nueva
+// empieza con la vida al máximo, y arrastra el inventario conseguido
+// en aventuras anteriores.
+async function gmrpgStartSoloGame() {
+  const character = await rpgFetchMyCharacter();
+  if (!character) { closeGmrpgEntryModal(); openRpgCharOnboardingModal(() => gmrpgStartSoloGame()); return; }
 
-  const personaje = { nombre, raza: gmrpgSelectedRace, vida: 3, vida_max: 3, atributos: { ...gmrpgAttrs }, inventario: [] };
-
-  if (gmrpgEntryMode === 'joining') {
-    await gmrpgJoinGroupGame(personaje);
-    return;
-  }
-  if (gmrpgEntryMode === 'grupo') {
-    gmrpgPendingCharacter = personaje;
-    gmrpgGroupSize = 3;
-    gmrpgSelectedFriends = [];
-    gmrpgSelectedBotDifficulty = 'normal';
-    document.querySelectorAll('#gmrpgGroupSizeOptions .btn').forEach(b => b.classList.toggle('on', b.dataset.size === '3'));
-    document.querySelectorAll('#gmrpgBotDifficultyOptions .btn').forEach(b => b.classList.toggle('on', b.dataset.difficulty === 'normal'));
-    document.getElementById('gmrpgMaxFriendsLabel').textContent = gmrpgGroupSize - 1;
-    gmrpgShowGroupSetup();
-    await loadGmrpgFriendPicker();
-    return;
-  }
-  await gmrpgStartSoloGame(personaje);
-}
-
-async function gmrpgStartSoloGame(personaje) {
+  const personaje = {
+    nombre: character.nombre, raza: character.raza,
+    vida: character.vida_max, vida_max: character.vida_max,
+    atributos: character.atributos, inventario: character.inventario || []
+  };
   const initial = { personaje, mapa: gmrpgBuildInitialMapa(), turno: 1, turno_max: 12, historial: [], status: 'active' };
   let row = null;
   try {
@@ -5153,11 +5306,18 @@ function gmrpgBuildGroupMember({ id, user_id, nombre, raza, tipo, atributos, dif
 }
 
 async function gmrpgCreateGroupGame() {
-  if (!gmrpgPendingCharacter || !currentUserId) return;
+  if (!currentUserId) return;
+  const character = await rpgFetchMyCharacter();
+  if (!character) {
+    closeGmrpgEntryModal();
+    openRpgCharOnboardingModal(() => openGmrpgEntryModal());
+    return;
+  }
 
   const grupo = [gmrpgBuildGroupMember({
-    id: currentUserId, user_id: currentUserId, nombre: gmrpgPendingCharacter.nombre,
-    raza: gmrpgPendingCharacter.raza, tipo: 'human', atributos: gmrpgPendingCharacter.atributos
+    id: currentUserId, user_id: currentUserId, nombre: character.nombre,
+    raza: character.raza, tipo: 'human', atributos: character.atributos,
+    vida: character.vida_max, vida_max: character.vida_max, inventario: character.inventario || []
   })];
 
   gmrpgSelectedFriends.forEach(f => {
@@ -5196,10 +5356,10 @@ async function gmrpgCreateGroupGame() {
 }
 
 // Ocupa la plaza reservada de quien acaba de aceptar una invitación,
-// ya con su propio personaje creado (patch trae nombre/raza/atributos
-// reales, no el placeholder de la plaza "pending"). Si con esto ya no
-// queda ninguna plaza pendiente, la partida pasa sola a 'active' —
-// igual que parchisResolveInviteSlot.
+// ya con su propio personaje persistente (patch trae nombre/raza/
+// atributos reales, no el placeholder de la plaza "pending"). Si con
+// esto ya no queda ninguna plaza pendiente, la partida pasa sola a
+// 'active' — igual que parchisResolveInviteSlot.
 async function gmrpgResolveInviteSlot(gameId, userId, patch) {
   const { data, error } = await supabaseClient.from('gmrpg_games').select('grupo').eq('id', gameId).single();
   if (error || !data) return;
@@ -5210,16 +5370,18 @@ async function gmrpgResolveInviteSlot(gameId, userId, patch) {
     .eq('id', gameId);
 }
 
-async function gmrpgJoinGroupGame(personaje) {
-  const invite = gmrpgJoiningInvite;
-  if (!invite) return;
+// Acepta una invitación de grupo: como el personaje ya existe siempre
+// (persistente), basta con leer el propio y ocupar la plaza reservada
+// — ya no hace falta crear personaje al aceptar (llamado desde
+// respondGameInvite, con reintento automático si aún no hay personaje).
+async function gmrpgAcceptInvite(invite) {
+  const character = await rpgFetchMyCharacter();
+  if (!character) { openRpgCharOnboardingModal(() => gmrpgAcceptInvite(invite)); return; }
   await supabaseClient.from('game_invites').update({ status: 'accepted' }).eq('id', invite.id);
   await gmrpgResolveInviteSlot(invite.game_id, currentUserId, {
-    tipo: 'human', nombre: personaje.nombre, raza: personaje.raza,
-    atributos: personaje.atributos, vida: personaje.vida, vida_max: personaje.vida_max, inventario: personaje.inventario
+    tipo: 'human', nombre: character.nombre, raza: character.raza,
+    atributos: character.atributos, vida: character.vida_max, vida_max: character.vida_max, inventario: character.inventario || []
   });
-  closeGmrpgEntryModal();
-  gmrpgJoiningInvite = null;
   openGmrpgGame(invite.game_id);
 }
 
@@ -5386,11 +5548,7 @@ async function gmrpgSendAction(accionTexto) {
     }
 
     gmrpgPendingDice = gmrpgState.resultado ? null : gmrpgDetectDiceRequest(result.narracion);
-    gmrpgRender();
-
-    if (gmrpgState.resultado) {
-      recordGameResult({ game: 'gmrpg', outcome: gmrpgState.resultado === 'victoria' ? 'win' : 'loss' });
-    }
+    gmrpgRender(); // la recompensa/penalización (si resultado ya no es null) se aplica sola aquí dentro, ver gmrpgApplyGameEndEconomy
   } catch (e) {
     toast('❌ No se pudo contactar con el Game Master.');
   } finally {
@@ -5582,11 +5740,7 @@ async function gmrpgResolveRound() {
     if (error) { toast('❌ No se pudo guardar el resultado de la ronda.'); return; }
 
     gmrpgState = { ...gmrpgState, ...patch };
-    gmrpgRenderWaitingOrGame();
-
-    if (gmrpgState.resultado) {
-      recordGameResult({ game: 'gmrpg', outcome: gmrpgState.resultado === 'victoria' ? 'win' : 'loss' });
-    }
+    gmrpgRenderWaitingOrGame(); // la recompensa/penalización (si resultado ya no es null) se aplica sola aquí dentro, ver gmrpgApplyGameEndEconomy
   } catch (e) {
     toast('❌ No se pudo contactar con el Game Master.');
   } finally {
@@ -5622,9 +5776,47 @@ function gmrpgRenderCharBar() {
   document.getElementById('gmrpgStatus').innerHTML = `<span class="gm-char-turn">Turno ${gmrpgState.turno}/${gmrpgState.turno_max}</span>`;
 }
 
+// Recompensa/penalización de la aventura (Fase 3): victoria da
+// monedas (más cuanto más se ha jugado/roleado, ver turno alcanzado),
+// derrota resta monedas — pero el personaje NUNCA se pierde ni se
+// reinicia. También sincroniza de vuelta a rpg_characters el
+// inventario conseguido (persiste entre aventuras). Se llama una sola
+// vez por partida desde gmrpgRender, sea cual sea el camino por el
+// que "resultado" pasó a no ser null (solo, anfitrión de grupo, o eco
+// de Realtime de otro participante).
+function gmrpgApplyGameEndEconomy() {
+  const outcome = gmrpgState.resultado === 'victoria' ? 'win' : 'loss';
+  const reward = gmrpgState.resultado === 'victoria' ? (50 + (gmrpgState.turno || 1) * 5) : -30;
+  if (reward > 0) { state.coins += reward; state.totalCoinsEarned += reward; }
+  else { state.coins = Math.max(0, state.coins + reward); }
+  recordGameResult({ game: 'gmrpg', outcome });
+  toast(reward > 0 ? `🏆 +${reward} monedas por la aventura.` : `💀 ${reward} monedas — tu personaje sigue en pie.`);
+
+  const mine = gmrpgState.mode === 'grupo' ? gmrpgMyGroupMember() : gmrpgState.personaje;
+  if (mine) rpgSyncCharacterAfterGame(mine);
+}
+
+// Guarda el inventario conseguido en esta aventura en el personaje
+// persistente (la vida no hace falta guardarla: cada aventura nueva
+// empieza siempre con la vida al máximo, ver gmrpgStartSoloGame/
+// gmrpgCreateGroupGame).
+async function rpgSyncCharacterAfterGame(personaje) {
+  if (!currentUserId || !personaje) return;
+  try {
+    await supabaseClient.from('rpg_characters').update({
+      inventario: personaje.inventario || [], updated_at: new Date().toISOString()
+    }).eq('user_id', currentUserId);
+  } catch (e) { /* no crítico: como mucho no se guarda el inventario de esta partida */ }
+}
+
 function gmrpgRender() {
   if (!gmrpgState) return;
   gmrpgRenderCharBar();
+
+  if (gmrpgState.resultado && gmrpgEconomyAppliedFor !== gmrpgState.id) {
+    gmrpgEconomyAppliedFor = gmrpgState.id;
+    gmrpgApplyGameEndEconomy();
+  }
 
   const log = document.getElementById('gmrpgLog');
   log.innerHTML = gmrpgState.historial.map(h => `
@@ -6534,6 +6726,15 @@ async function enterApp(user) {
   startFriendsSystem();
   flushPendingInviteBanner();
   flushPendingGameNotifications();
+
+  // Personaje de la Aventura con GM IA (Fase 3): se ofrece crear una
+  // sola vez, la primera vez que hay sesión válida y todavía no
+  // existe (si se pospone con "Más tarde", se vuelve a ofrecer al
+  // intentar abrir la Aventura — ver openGmrpgEntryModal).
+  rpgFetchMyCharacter().then(character => {
+    rpgRenderCharacterPanel(character);
+    if (!character) openRpgCharOnboardingModal(null);
+  });
 }
 
 /* =========================
@@ -7024,21 +7225,11 @@ async function respondGameInvite(invite, accept) {
     await parchisResolveInviteSlot(invite.game_id, currentUserId, { type: 'human', user_id: currentUserId, name: myName });
     openParchisGame(invite.game_id);
   } else if (invite.game === 'gmrpg') {
-    // A diferencia de Parchís, aquí hace falta crear personaje propio
-    // antes de ocupar la plaza (nombre/raza/atributos) — se reutiliza
-    // el mismo modal de creación, en modo 'joining', y solo al confirmar
-    // el personaje se marca la invitación como aceptada (ver
-    // gmrpgJoinGroupGame).
-    gmrpgEntryMode = 'joining';
-    gmrpgJoiningInvite = invite;
-    gmrpgSelectedRace = null;
-    gmrpgAttrs = { fuerza: 0, astucia: 0, coraje: 0 };
-    document.getElementById('gmrpgNameInput').value = '';
-    gmrpgRenderRaces();
-    gmrpgRenderAttrs();
-    gmrpgUpdateStartButton();
-    gmrpgShowCharCreation();
-    document.getElementById('gmrpgEntryModalBg').style.display = 'flex';
+    // El personaje es persistente (Fase 3): basta con ocupar la plaza
+    // reservada con el propio; si por lo que sea todavía no existe
+    // (p.ej. la primera invitación le llega antes de haber jugado
+    // nunca), gmrpgAcceptInvite ofrece crearlo y reintenta sola.
+    await gmrpgAcceptInvite(invite);
   } else {
     // Resguardo por si llegara una invitación vieja de un juego ya retirado.
     toast('❌ Ese juego ya no está disponible.');
