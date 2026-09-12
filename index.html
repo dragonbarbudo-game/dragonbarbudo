@@ -1396,6 +1396,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
     user-select: none; touch-action: manipulation;
 }
 .pf-btn-attack { width: 76px; height: 76px; font-size: 30px; }
+.pf-touch-right { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .pf-btn:active { transform: scale(.92); background: var(--gold); }
 </style>
 </head>
@@ -1969,7 +1970,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
             <div class="c4-header">
                 <h1>🗡️ El Caballero Errante</h1>
                 <div class="pf-hearts" id="platformerHearts">❤️❤️❤️</div>
-                <div class="c4-status" id="platformerStatus">Flechas/WASD o mando para moverte · X o botón A para atacar</div>
+                <div class="c4-status" id="platformerStatus">Flechas/WASD o mando para moverte · X/A atacar · Espacio/B saltar obstáculos</div>
             </div>
 
             <div class="pf-stage-wrap">
@@ -1981,7 +1982,10 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                         <button type="button" class="pf-btn pf-dpad-right" id="pfBtnRight" aria-label="Derecha">▶</button>
                         <button type="button" class="pf-btn pf-dpad-down" id="pfBtnDown" aria-label="Abajo">▼</button>
                     </div>
-                    <button type="button" class="pf-btn pf-btn-attack" id="pfBtnAttack" aria-label="Atacar">⚔️</button>
+                    <div class="pf-touch-right">
+                        <button type="button" class="pf-btn" id="pfBtnJump" aria-label="Saltar">⤴️</button>
+                        <button type="button" class="pf-btn pf-btn-attack" id="pfBtnAttack" aria-label="Atacar">⚔️</button>
+                    </div>
                 </div>
             </div>
 
@@ -7909,6 +7913,7 @@ const PF_ROWS = 16;
 const PF_WORLD_WIDTH = PF_TILE * PF_COLS;
 const PF_WORLD_HEIGHT = PF_TILE * PF_ROWS;
 const PF_MOVE_MS = 160; // duración del tween de cada paso (cuadrícula estilo Pokémon)
+const PF_DIR = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 
 // Estado de los controles táctiles (cruceta + botón de golpe bajo el
 // canvas, para móvil/tablet): se enlaza una sola vez aquí fuera de la
@@ -7916,7 +7921,7 @@ const PF_MOVE_MS = 160; // duración del tween de cada paso (cuadrícula estilo 
 // partida (que recrea la escena de Phaser desde cero, pero no estos
 // botones del DOM). El mando se lee directamente en el update() de la
 // escena (this.input.gamepad), no hace falta enlazarlo aquí.
-const pfTouch = { up: false, down: false, left: false, right: false, attackQueued: false };
+const pfTouch = { up: false, down: false, left: false, right: false, attackQueued: false, jumpQueued: false };
 function pfBindTouchControlsOnce() {
   if (pfTouch.bound) return;
   pfTouch.bound = true;
@@ -7934,8 +7939,12 @@ function pfBindTouchControlsOnce() {
   bindHold('pfBtnDown', 'down');
   bindHold('pfBtnLeft', 'left');
   bindHold('pfBtnRight', 'right');
-  const btnAttack = document.getElementById('pfBtnAttack');
-  if (btnAttack) btnAttack.addEventListener('pointerdown', (e) => { e.preventDefault(); pfTouch.attackQueued = true; });
+  const bindTap = (id, prop) => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener('pointerdown', (e) => { e.preventDefault(); pfTouch[prop] = true; });
+  };
+  bindTap('pfBtnAttack', 'attackQueued');
+  bindTap('pfBtnJump', 'jumpQueued');
 }
 
 function openPlatformerGame() {
@@ -7945,7 +7954,7 @@ function openPlatformerGame() {
 
 function startPlatformerGame() {
   pfBindTouchControlsOnce();
-  document.getElementById('platformerStatus').textContent = 'Flechas/WASD o mando para moverte · X o botón A para atacar';
+  document.getElementById('platformerStatus').textContent = 'Flechas/WASD o mando para moverte · X/A atacar · Espacio/B saltar obstáculos';
   document.getElementById('platformerRestartBtn').style.display = 'none';
   renderPlatformerHearts(3);
   destroyPlatformerGame();
@@ -7991,6 +8000,7 @@ class TopDownScene extends Phaser.Scene {
     this.hasLost = false;
     this.facing = 'down';
     this.gamepadAttackPrev = false;
+    this.gamepadJumpPrev = false;
 
     this.buildTextures();
     this.buildMap();
@@ -8002,7 +8012,7 @@ class TopDownScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
 
     this.cursors = this.input.keyboard.createCursorKeys();
-    this.keys = this.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D', x: 'X' });
+    this.keys = this.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D', x: 'X', space: 'SPACE' });
   }
 
   buildTextures() {
@@ -8192,12 +8202,41 @@ class TopDownScene extends Phaser.Scene {
   }
 
   doAttack() {
-    const d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[this.facing];
+    const d = PF_DIR[this.facing];
     const tx = this.playerGrid.x + d[0], ty = this.playerGrid.y + d[1];
     const enemy = this.enemyAt(tx, ty);
     if (!enemy) return;
     enemy.alive2 = false;
     this.tweens.add({ targets: enemy, alpha: 0, scale: 0.3, duration: 180, onComplete: () => enemy.destroy() });
+  }
+
+  // Salto libre: si tienes un árbol/roca justo delante, saltas por
+  // encima y caes en la casilla siguiente (no hace falta un tipo de
+  // casilla especial de "repisa"). Si delante no hay nada que saltar, o
+  // la casilla de aterrizaje también está bloqueada u ocupada, no pasa
+  // nada — el salto solo sirve para sortear obstáculos de una casilla.
+  doJump() {
+    if (this.player.moving || this.hasWon || this.hasLost) return;
+    const d = PF_DIR[this.facing];
+    const overX = this.playerGrid.x + d[0], overY = this.playerGrid.y + d[1];
+    if (!this.isBlocked(overX, overY)) return;
+    const landX = this.playerGrid.x + d[0] * 2, landY = this.playerGrid.y + d[1] * 2;
+    if (this.isBlocked(landX, landY) || this.enemyAt(landX, landY)) return;
+
+    this.playerGrid.x = landX; this.playerGrid.y = landY;
+    this.player.moving = true;
+    const duration = PF_MOVE_MS * 1.7;
+    this.tweens.add({
+      targets: this.player, x: landX * PF_TILE + PF_TILE / 2, y: landY * PF_TILE + PF_TILE / 2, duration,
+      onComplete: () => {
+        this.player.moving = false;
+        this.player.setScale(1);
+        if (this.playerGrid.x === this.goalGrid.x && this.playerGrid.y === this.goalGrid.y) this.winGame();
+      }
+    });
+    // Pequeño efecto visual de salto: el sprite crece un poco a mitad de
+    // camino y vuelve a su tamaño normal al aterrizar.
+    this.tweens.add({ targets: this.player, scale: 1.25, duration: duration / 2, yoyo: true });
   }
 
   damagePlayer() {
@@ -8245,6 +8284,12 @@ class TopDownScene extends Phaser.Scene {
     this.gamepadAttackPrev = padAttack;
     pfTouch.attackQueued = false;
     if (attackJustPressed) this.doAttack();
+
+    const padJump = !!(pad && pad.buttons[1] && pad.buttons[1].pressed);
+    const jumpJustPressed = Phaser.Input.Keyboard.JustDown(this.keys.space) || pfTouch.jumpQueued || (padJump && !this.gamepadJumpPrev);
+    this.gamepadJumpPrev = padJump;
+    pfTouch.jumpQueued = false;
+    if (jumpJustPressed) this.doJump();
   }
 }
 </script>
