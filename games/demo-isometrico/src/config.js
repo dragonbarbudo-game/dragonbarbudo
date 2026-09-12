@@ -17,13 +17,21 @@
 ========================= */
 
 var TILE_SIZE = 80;                 // lado de cada losa del suelo, en el plano del mundo
-var GRID_SIZE = 12;                 // mapa de GRID_SIZE x GRID_SIZE losas (>=10x10 pedido)
-var MAP_SIZE = TILE_SIZE * GRID_SIZE; // mundo cuadrado de MAP_SIZE x MAP_SIZE píxeles
+// El mapa es un único mundo que va creciendo (ver prompts/dragonbarbudo-
+// concepto-mapa.md): GRID_COLS/GRID_ROWS por separado (no un GRID_SIZE
+// cuadrado) porque las zonas nuevas se añaden hacia un lado, no en las
+// cuatro direcciones a la vez. Zona 1 (Claro del Bosque) eran las
+// primeras 12 columnas; Zona 2 (Camino de las Ruinas) añade 8 más.
+var GRID_COLS = 20;
+var GRID_ROWS = 12;
+var MAP_W = TILE_SIZE * GRID_COLS;  // mundo rectangular de MAP_W x MAP_H píxeles
+var MAP_H = TILE_SIZE * GRID_ROWS;  // (rectangular, nunca en rombo — ver worldToScreen)
 var ISO_SQUISH = 0.86;              // aplastado vertical al proyectar a pantalla (look 2.5D)
 
 var PLAYER_SPEED = 240;             // píxeles de mundo por segundo, en cualquier ángulo
 var PLAYER_RADIUS = 16;
 var TREE_RADIUS = 24;
+var RUIN_RADIUS = 28;
 var COIN_RADIUS = 26;
 
 // Proyección: el mundo es un plano normal, solo se aplasta la Y al

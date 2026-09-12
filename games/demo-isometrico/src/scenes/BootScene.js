@@ -9,12 +9,13 @@
      2) Sustituye buildPlaceholderTextures() por this.load.image(key,
         'assets/tiles/xxx.png') / this.load.spritesheet(...) dentro de
         preload().
-     3) Las claves de textura ('tile_a', 'tile_b', 'player', 'coin',
-        'tree') las usa GameScene tal cual — no hace falta tocar nada
-        más si mantienes los mismos nombres. Ojo: 'tile_a'/'tile_b' son
-        RECTÁNGULOS (TILE_SIZE x TILE_SIZE*ISO_SQUISH), no rombos — si
-        tu arte real es cuadrado de verdad, ajusta ISO_SQUISH en
-        config.js o genera la imagen ya con esa proporción.
+     3) Las claves de textura ('tile_a', 'tile_b', 'tile_path', 'water',
+        'player', 'coin', 'tree', 'ruin') las usa GameScene tal cual —
+        no hace falta tocar nada más si mantienes los mismos nombres.
+        Ojo: las losas de suelo son RECTÁNGULOS (TILE_SIZE x
+        TILE_SIZE*ISO_SQUISH), no rombos — si tu arte real es cuadrado
+        de verdad, ajusta ISO_SQUISH en config.js o genera la imagen ya
+        con esa proporción.
 ========================= */
 class BootScene extends Phaser.Scene {
   constructor() { super('BootScene'); }
@@ -80,6 +81,34 @@ class BootScene extends Phaser.Scene {
     g.fillStyle(0x3f9b4a, 1); g.fillCircle(28, 30, 26); g.fillCircle(11, 42, 16); g.fillCircle(45, 42, 16);
     g.lineStyle(3, 0x1c3d1f, 1); g.strokeCircle(28, 30, 26);
     g.generateTexture('tree', 56, 84);
+
+    // --- Zona 2: Camino de las Ruinas (ver prompts/dragonbarbudo-concepto-mapa.md) ---
+
+    // Losa de camino de tierra: mismo tamaño que las de hierba, para
+    // que encaje sin huecos en la misma cuadrícula.
+    g.clear();
+    g.fillStyle(0xab8a5e, 1); g.fillRect(0, 0, TILE_SIZE, tileH);
+    g.fillStyle(0x9c7c50, 0.6); g.fillCircle(20, tileH * 0.4, 7); g.fillCircle(55, tileH * 0.65, 6);
+    g.lineStyle(2, 0x7a6140, 0.4); g.strokeRect(1, 1, TILE_SIZE - 2, tileH - 2);
+    g.generateTexture('tile_path', TILE_SIZE, tileH);
+
+    // Losa de agua (río): también plana, para que se pueda "ver" desde
+    // arriba como el resto del suelo — lo que la hace intransitable es
+    // la lógica de GameScene (isWaterAt), no su aspecto.
+    g.clear();
+    g.fillStyle(0x2f6fb0, 1); g.fillRect(0, 0, TILE_SIZE, tileH);
+    g.fillStyle(0x4a8bd6, 0.6); g.fillEllipse(TILE_SIZE * 0.3, tileH * 0.3, 22, 6); g.fillEllipse(TILE_SIZE * 0.65, tileH * 0.6, 26, 6);
+    g.generateTexture('water', TILE_SIZE, tileH);
+
+    // Ruina (52x70): bloque de piedra rota, prop fijo con colisión igual
+    // que un árbol pero con su propio radio (RUIN_RADIUS).
+    g.clear();
+    g.fillStyle(0x000000, 0.25); g.fillEllipse(26, 62, 34, 12);
+    g.fillStyle(0x8a8a86, 1); g.fillRect(4, 22, 44, 40);
+    g.fillStyle(0x76766f, 1); g.fillRect(4, 22, 44, 10);
+    g.fillStyle(0x000000, 0.2); g.fillTriangle(30, 22, 44, 22, 44, 40); // esquina rota
+    g.lineStyle(3, 0x4d4d48, 1); g.strokeRect(4, 22, 44, 40);
+    g.generateTexture('ruin', 52, 70);
 
     g.destroy();
   }

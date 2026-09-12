@@ -3,10 +3,18 @@
    -----------------------------------------------------------------
    El jugador tiene una posición continua (this.worldX/this.worldY) que
    se mueve a PLAYER_SPEED en la dirección exacta que marquen
-   teclado/joystick, sea cual sea el ángulo. El mundo es un cuadrado
-   (MAP_SIZE x MAP_SIZE) y solo se aplasta verticalmente al proyectarlo
-   a pantalla (worldToScreen), así que el mapa se ve como un rectángulo,
-   nunca como un rombo.
+   teclado/joystick, sea cual sea el ángulo. El mundo es un rectángulo
+   (MAP_W x MAP_H, ver config.js) que solo se aplasta verticalmente al
+   proyectarlo a pantalla (worldToScreen), así que el mapa se ve como un
+   rectángulo, nunca como un rombo.
+
+   El mapa es un único mundo que va creciendo por zonas (ver prompts/
+   dragonbarbudo-concepto-mapa.md): Zona 1 = Claro del Bosque, Zona 2 =
+   Camino de las Ruinas (río con puente + ruinas), ambas en este mismo
+   archivo. Al añadir una Zona 3, seguir la misma regla: ampliar
+   GRID_COLS/GRID_ROWS y añadir SIEMPRE al final de COIN_SPOTS/
+   TREE_SPOTS/RUIN_SPOTS, nunca reordenar (el guardado referencia
+   monedas por índice de array).
 
    Recibe datos de arranque de main.js/BootScene (ver init()):
      { mode: 'solo'|'friends', continueSave, matchId, friendName }
@@ -15,8 +23,29 @@
      lo que retransmite la página padre — este archivo NUNCA habla con
      Supabase directamente, todo pasa por postMessage (ver main.js).
 ========================= */
-const COIN_SPOTS = [[4, 1], [10, 4], [1, 6], [6, 10], [10, 10]];
-const TREE_SPOTS = [[3, 3], [7, 2], [2, 8], [8, 8], [5, 6], [9, 3]];
+// Zona 1: Claro del Bosque (columnas 0-11). Zona 2: Camino de las
+// Ruinas (columnas 12-19) — ver prompts/dragonbarbudo-concepto-mapa.md.
+// Regla fija al ampliar el mapa: las listas SOLO crecen añadiendo al
+// final, nunca reordenando ni insertando en medio — el guardado en
+// solitario referencia las monedas recogidas por su índice en
+// COIN_SPOTS, así que cambiar el orden invalidaría partidas guardadas.
+const COIN_SPOTS = [
+  [4, 1], [10, 4], [1, 6], [6, 10], [10, 10], // Zona 1
+  [12, 1], [14, 10], [16, 3], [18, 7], [19, 10] // Zona 2
+];
+const TREE_SPOTS = [[3, 3], [7, 2], [2, 8], [8, 8], [5, 6], [9, 3]]; // Zona 1 (bosque)
+const RUIN_SPOTS = [[13, 2], [13, 9], [17, 2], [17, 9], [12, 8]]; // Zona 2
+
+// El río corta la Zona 2 de norte a sur en la columna RIVER_COL; solo
+// se puede cruzar por el puente (las filas en BRIDGE_ROWS, con losa de
+// camino en vez de agua). No es un obstáculo circular como los árboles
+// o las ruinas: bloquea por casilla completa (ver isWaterAt).
+const RIVER_COL = 15;
+const BRIDGE_ROWS = [5, 6];
+// Camino de tierra visible que conecta la Zona 1 con el puente.
+const PATH_COL_START = 10;
+const PATH_ROWS = BRIDGE_ROWS;
+
 const REMOTE_POS_INTERVAL_MS = 90; // cada cuánto se retransmite la posición propia en partidas con amigos
 
 class GameScene extends Phaser.Scene {
@@ -42,7 +71,7 @@ class GameScene extends Phaser.Scene {
     this.buildHud();
     if (this.mode === 'friends') this.buildRemotePlayer();
 
-    this.cameras.main.setBounds(0, 0, MAP_SIZE, MAP_SIZE * ISO_SQUISH);
+    this.cameras.main.setBounds(0, 0, MAP_W, MAP_H * ISO_SQUISH);
     this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
 
     this.cursors = this.input.keyboard.createCursorKeys();
@@ -70,30 +99,46 @@ class GameScene extends Phaser.Scene {
     emitToParent('dragonbarbudo:ready', {}); // no forma parte del contrato pedido, pero es inofensivo y útil para depurar
   }
 
+  // ¿La casilla (gx,gy) es agua? Solo la franja del río, y no en las
+  // filas del puente. Es una comprobación por casilla completa (no un
+  // círculo como los árboles/ruinas) porque así se puede dibujar una
+  // orilla recta y predecible.
+  isWaterTile(gx, gy) {
+    return gx === RIVER_COL && !BRIDGE_ROWS.includes(gy);
+  }
+
   buildGrid() {
-    // Suelo: una losa cuadrada por casilla, en dos tonos alternos.
-    // Depth fijo y bajo (0): siempre por debajo de jugador/props/monedas.
-    for (let gy = 0; gy < GRID_SIZE; gy++) {
-      for (let gx = 0; gx < GRID_SIZE; gx++) {
+    // Suelo: una losa cuadrada por casilla. Depth fijo y bajo (0):
+    // siempre por debajo de jugador/props/monedas.
+    for (let gy = 0; gy < GRID_ROWS; gy++) {
+      for (let gx = 0; gx < GRID_COLS; gx++) {
         const wx = gx * TILE_SIZE + TILE_SIZE / 2, wy = gy * TILE_SIZE + TILE_SIZE / 2;
         const p = worldToScreen(wx, wy);
-        const variant = (gx + gy) % 2 === 0 ? 'a' : 'b';
-        this.add.image(p.x, p.y, 'tile_' + variant).setOrigin(0.5, 0.5).setDepth(0);
+        let key;
+        if (this.isWaterTile(gx, gy)) key = 'water';
+        else if (gx >= PATH_COL_START && PATH_ROWS.includes(gy)) key = 'tile_path';
+        else key = (gx + gy) % 2 === 0 ? 'tile_a' : 'tile_b';
+        this.add.image(p.x, p.y, key).setOrigin(0.5, 0.5).setDepth(0);
       }
     }
   }
 
   buildProps() {
-    // Árboles: props fijos con colisión circular (this.trees, mirados
-    // contra PLAYER_RADIUS+TREE_RADIUS en tryMoveAxis) y son los que
-    // demuestran el depth sorting dinámico contra el jugador.
-    this.trees = TREE_SPOTS.map(([gx, gy]) => {
-      const wx = gx * TILE_SIZE + TILE_SIZE / 2, wy = gy * TILE_SIZE + TILE_SIZE / 2;
-      const p = worldToScreen(wx, wy);
-      const img = this.add.image(p.x, p.y, 'tree').setOrigin(0.5, 0.9);
-      img.setDepth(1000 + p.y);
-      return { worldX: wx, worldY: wy };
-    });
+    // Árboles y ruinas: props fijos con colisión circular (this.obstacles,
+    // mirados contra PLAYER_RADIUS+radio en tryMoveAxis) y son los que
+    // demuestran el depth sorting dinámico contra el jugador. El río se
+    // resuelve aparte, por casilla (ver isWaterTile), no como círculo.
+    const trees = TREE_SPOTS.map(([gx, gy]) => this.placeObstacle(gx, gy, 'tree', TREE_RADIUS));
+    const ruins = RUIN_SPOTS.map(([gx, gy]) => this.placeObstacle(gx, gy, 'ruin', RUIN_RADIUS));
+    this.obstacles = trees.concat(ruins);
+  }
+
+  placeObstacle(gx, gy, texture, radius) {
+    const wx = gx * TILE_SIZE + TILE_SIZE / 2, wy = gy * TILE_SIZE + TILE_SIZE / 2;
+    const p = worldToScreen(wx, wy);
+    const img = this.add.image(p.x, p.y, texture).setOrigin(0.5, 0.9);
+    img.setDepth(1000 + p.y);
+    return { worldX: wx, worldY: wy, radius };
   }
 
   buildPlayer() {
@@ -164,17 +209,24 @@ class GameScene extends Phaser.Scene {
     return '🪙 ' + this.collectedCount + ' / ' + this.coinsTotal;
   }
 
-  collidesTree(x, y) {
-    return this.trees.some(t => Phaser.Math.Distance.Between(x, y, t.worldX, t.worldY) < (PLAYER_RADIUS + TREE_RADIUS));
+  collidesObstacle(x, y) {
+    return this.obstacles.some(o => Phaser.Math.Distance.Between(x, y, o.worldX, o.worldY) < (PLAYER_RADIUS + o.radius));
+  }
+
+  // El río bloquea por casilla completa: se mira en qué casilla caería
+  // el centro del jugador, no un círculo — así la orilla queda recta.
+  blockedByWater(x, y) {
+    const gx = Math.floor(x / TILE_SIZE), gy = Math.floor(y / TILE_SIZE);
+    return this.isWaterTile(gx, gy);
   }
 
   // Mueve un solo eje a la vez (llamado una vez para X y otra para Y):
-  // así, si chocas contra un árbol moviéndote en diagonal, sigues
+  // así, si chocas contra un árbol/ruina moviéndote en diagonal, sigues
   // deslizándote por el eje libre en vez de quedarte pegado en seco.
   tryMoveAxis(dx, dy) {
-    const nx = Phaser.Math.Clamp(this.worldX + dx, PLAYER_RADIUS, MAP_SIZE - PLAYER_RADIUS);
-    const ny = Phaser.Math.Clamp(this.worldY + dy, PLAYER_RADIUS, MAP_SIZE - PLAYER_RADIUS);
-    if (this.collidesTree(nx, ny)) return;
+    const nx = Phaser.Math.Clamp(this.worldX + dx, PLAYER_RADIUS, MAP_W - PLAYER_RADIUS);
+    const ny = Phaser.Math.Clamp(this.worldY + dy, PLAYER_RADIUS, MAP_H - PLAYER_RADIUS);
+    if (this.collidesObstacle(nx, ny) || this.blockedByWater(nx, ny)) return;
     this.worldX = nx; this.worldY = ny;
   }
 
