@@ -8210,22 +8210,24 @@ class TopDownScene extends Phaser.Scene {
     this.tweens.add({ targets: enemy, alpha: 0, scale: 0.3, duration: 180, onComplete: () => enemy.destroy() });
   }
 
-  // Salto libre: si tienes un árbol/roca justo delante, saltas por
-  // encima y caes en la casilla siguiente (no hace falta un tipo de
-  // casilla especial de "repisa"). Si delante no hay nada que saltar, o
-  // la casilla de aterrizaje también está bloqueada u ocupada, no pasa
-  // nada — el salto solo sirve para sortear obstáculos de una casilla.
+  // Salto libre: responde siempre que pulsas el botón, haya o no algo
+  // delante. Si la casilla inmediata está libre, el salto avanza esa
+  // sola casilla (un simple salto hacia delante); si hay un árbol, roca
+  // o enemigo justo delante, salta dos casillas para caer al otro lado.
+  // Solo no hace nada si la casilla de aterrizaje resultante también
+  // está bloqueada u ocupada (no hay dónde caer).
   doJump() {
     if (this.player.moving || this.hasWon || this.hasLost) return;
     const d = PF_DIR[this.facing];
-    const overX = this.playerGrid.x + d[0], overY = this.playerGrid.y + d[1];
-    if (!this.isBlocked(overX, overY)) return;
-    const landX = this.playerGrid.x + d[0] * 2, landY = this.playerGrid.y + d[1] * 2;
+    const nearX = this.playerGrid.x + d[0], nearY = this.playerGrid.y + d[1];
+    const overObstacle = this.isBlocked(nearX, nearY) || !!this.enemyAt(nearX, nearY);
+    const landX = overObstacle ? this.playerGrid.x + d[0] * 2 : nearX;
+    const landY = overObstacle ? this.playerGrid.y + d[1] * 2 : nearY;
     if (this.isBlocked(landX, landY) || this.enemyAt(landX, landY)) return;
 
     this.playerGrid.x = landX; this.playerGrid.y = landY;
     this.player.moving = true;
-    const duration = PF_MOVE_MS * 1.7;
+    const duration = overObstacle ? PF_MOVE_MS * 1.7 : PF_MOVE_MS * 1.2;
     this.tweens.add({
       targets: this.player, x: landX * PF_TILE + PF_TILE / 2, y: landY * PF_TILE + PF_TILE / 2, duration,
       onComplete: () => {
@@ -8236,7 +8238,7 @@ class TopDownScene extends Phaser.Scene {
     });
     // Pequeño efecto visual de salto: el sprite crece un poco a mitad de
     // camino y vuelve a su tamaño normal al aterrizar.
-    this.tweens.add({ targets: this.player, scale: 1.25, duration: duration / 2, yoyo: true });
+    this.tweens.add({ targets: this.player, scale: 1.2, duration: duration / 2, yoyo: true });
   }
 
   damagePlayer() {
