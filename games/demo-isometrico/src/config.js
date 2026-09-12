@@ -50,3 +50,47 @@ function emitToParent(type, payload) {
     // Contextos muy restrictivos (raro, pero posible): no rompe el juego.
   }
 }
+
+/* =========================
+   MENÚ, GUARDADO EN SOLITARIO Y MULTIJUGADOR (v3)
+   -------------------------------------------------
+   uid: la página padre abre el iframe con ?uid=<id de usuario>, así el
+   guardado de la partida en solitario vive en localStorage bajo el
+   MISMO origen que el sitio principal (games/demo-isometrico/ se sirve
+   del mismo dominio, no hace falta postMessage para esto) y ligado a
+   cada cuenta, igual que el resto del progreso del sitio
+   (tablehostState_<uid>).
+========================= */
+function getUrlParam(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
+var ISO_UID = getUrlParam('uid') || 'guest';
+function isoSaveKey() { return 'isoSave_' + ISO_UID; }
+
+// Guarda posición + qué monedas van recogidas (por índice, ver
+// coinSpots en GameScene). Solo tiene sentido en solitario — las
+// partidas con amigos no se guardan (decisión explícita: "Continuar"
+// solo recupera tu propia partida).
+function isoSaveProgress(worldX, worldY, collectedIndexes) {
+  try {
+    localStorage.setItem(isoSaveKey(), JSON.stringify({ worldX, worldY, collectedIndexes, ts: Date.now() }));
+  } catch (e) { /* localStorage bloqueado (privado a tope, etc.): no pasa nada, simplemente no se guarda */ }
+}
+function isoLoadProgress() {
+  try {
+    const raw = localStorage.getItem(isoSaveKey());
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function isoClearProgress() {
+  try { localStorage.removeItem(isoSaveKey()); } catch (e) { /* nada que limpiar */ }
+}
+
+// Ajustes (silenciar sonido para cuando lo haya): un solo interruptor,
+// por dispositivo, no por cuenta.
+function isoIsMuted() {
+  try { return localStorage.getItem('isoMuted') === '1'; } catch (e) { return false; }
+}
+function isoSetMuted(muted) {
+  try { localStorage.setItem('isoMuted', muted ? '1' : '0'); } catch (e) { /* no pasa nada */ }
+}

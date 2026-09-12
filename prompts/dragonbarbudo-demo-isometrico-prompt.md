@@ -91,3 +91,16 @@ Documenta en el README del juego qué eventos emite y en qué momento exacto se 
 9. Verifica que todo funcione abriendo `index.html` en local sin errores de consola.
 
 Antes de escribir código, confirma conmigo los archivos que vas a crear o modificar.
+
+---
+
+## Siguiente tarea (después de completar el demo)
+
+Cuando el demo isométrico esté terminado y funcionando, la siguiente tarea es definir el **concepto del mapa** del juego, antes de construir ningún mapa final. No lo des por decidido tú solo: propón opciones y confírmalas con el usuario. Puntos a resolver:
+
+- **Tema y ambientación**: qué tipo de mundo es, qué transmite visualmente (esto todavía no está decidido).
+- **Escala**: ¿un único mapa grande, o varios mapas/niveles conectados que el jugador va desbloqueando y "pasando" a medida que avanza?
+- **Zonas y puntos de interés**: dónde van los recolectables, obstáculos, puntos de guardado dentro del mapa.
+- **Relación con el guardado en la nube** (tabla `game_saves`): qué datos del mapa hay que persistir para poder "continuar" — nivel/mapa actual, posición del jugador, elementos ya recolectados, mapas ya desbloqueados.
+
+El resultado de esta tarea debe ser un mini-documento de concepto (aunque sea breve) antes de tocar código del mapa final.

@@ -62,6 +62,21 @@ y abrir `http://localhost:5510/games/demo-isometrico/`.
 - Al recoger cada moneda se emite `dragonbarbudo:reward`; al recogerlas
   todas se emite `dragonbarbudo:game_over` y se muestra un cartel de
   "¡Completado!" en pantalla.
+- **Menú propio** (Nueva partida / Continuar / Ajustes) en HTML/CSS
+  normal, antes de que exista ni siquiera el `Phaser.Game` (se crea al
+  elegir una opción de jugar, no antes — ver `isoLaunch()` en `main.js`).
+- **Guardado en solitario**: posición y monedas recogidas se guardan en
+  `localStorage` (bajo el mismo origen que el sitio principal, ligado al
+  `uid` de la URL) al recoger cada moneda, cada 3s mientras juegas, y al
+  volver al menú. "Continuar" restaura exactamente eso. Al completar el
+  mapa se borra — no queda nada que continuar de una partida ya acabada.
+  Las partidas con amigos nunca se guardan (a propósito).
+- **Con amigos, en tiempo real**: el juego no sabe nada de tu lista de
+  amigos ni de Supabase — todo ese trabajo lo hace la página padre (ver
+  más abajo). Aquí solo hay una segunda figura (`remotePlayer`, teñida
+  de otro color, con su nombre encima) que se mueve según la posición
+  que llega por `postMessage`, con el mismo depth sorting dinámico que
+  el jugador local.
 
 ## Controles
 
@@ -72,22 +87,96 @@ y abrir `http://localhost:5510/games/demo-isometrico/`.
 ## Contrato `postMessage` con la página padre
 
 Todos los mensajes van a `window.parent` con `postMessage(data, '*')`
-(`emitToParent()` en `src/config.js`). Si no hay padre real (se abrió
-`index.html` suelto), el mensaje se manda a la propia ventana sin
-efecto — el juego funciona igual.
+(`emitToParent()` en `src/config.js`). En modo standalone (sin padre
+real) los mensajes de juego→padre no los escucha nadie y no pasa nada;
+los de padre→juego (`start_multiplayer`, `remote_position`, etc.)
+simplemente nunca llegan — "Con amigos" se puede abrir y cancelar sin
+problema, pero nunca empieza a jugarse de verdad sin una página padre
+real detrás.
 
+**Juego → padre:**
 ```js
 // Al recoger una moneda (una vez por moneda, 5 veces en total)
 { type: 'dragonbarbudo:reward', payload: { coins: 15, achievementId: null } }
 
 // Al recoger la última moneda (fin de la partida)
 { type: 'dragonbarbudo:game_over', payload: { score: 75 } } // score = monedas recogidas × 15
+
+// En cuanto arranca GameScene (no forma parte del contrato original,
+// pero es inofensivo: solo informa de que el juego ya cargó)
+{ type: 'dragonbarbudo:ready', payload: {} }
+
+// En cuanto el MENÚ está listo (antes incluso de elegir jugar): la
+// página padre lo usa para saber que ya puede mandar un
+// start_multiplayer si veníamos de aceptar una invitación
+{ type: 'dragonbarbudo:menu_ready', payload: {} }
+
+// El jugador pulsó "Con amigos": pide la lista de amigos (el juego no
+// tiene acceso a Supabase)
+{ type: 'dragonbarbudo:request_friends', payload: {} }
+
+// El jugador eligió a quién invitar de la lista que mandó el padre
+{ type: 'dragonbarbudo:invite_friend', payload: { friendId, friendName } }
+
+// Se pulsó "Cancelar" en la pantalla de "Esperando…", o "Volver al
+// menú" durante una partida con amigos: el padre puede cerrar el canal
+// de Supabase Realtime que tuviera abierto
+{ type: 'dragonbarbudo:cancel_multiplayer' | 'dragonbarbudo:leave_multiplayer', payload: {} }
+
+// Durante una partida con amigos, cada ~90ms: la posición propia, para
+// que el padre la retransmita al otro jugador
+{ type: 'dragonbarbudo:position', payload: { x, y } }
+
+// Al recoger una moneda estando en partida con amigos: para que
+// desaparezca también en la pantalla del otro (sin darle una
+// recompensa duplicada — la moneda solo da 'reward' a quien la toca)
+{ type: 'dragonbarbudo:coin_taken', payload: { index } }
 ```
 
-También emite `dragonbarbudo:ready` (sin payload) en cuanto arranca
-`GameScene`. No forma parte del contrato pedido originalmente — es
-opcional, solo para que la página padre sepa que el juego ya cargó si
-alguna vez le interesa saberlo; puede ignorarse sin problema.
+**Padre → juego** (`frame.contentWindow.postMessage(...)`):
+```js
+// Respuesta a request_friends: lista de amigos ya aceptados
+{ type: 'dragonbarbudo:friends_list', payload: { friends: [{ id, username, avatar }] } }
+
+// El jugador canceló el selector de amigos en el propio padre (si lo
+// tuviera) — el juego vuelve a su menú de "Nueva partida"
+{ type: 'dragonbarbudo:friends_cancelled', payload: {} }
+
+// La invitación se mandó de verdad: pasa de la lista a la pantalla de
+// "Esperando…"
+{ type: 'dragonbarbudo:invite_sent', payload: { friendName } }
+
+// El amigo aceptó (o nosotros aceptamos la suya): a partir de aquí el
+// juego arranca en modo 'friends' con este matchId
+{ type: 'dragonbarbudo:start_multiplayer', payload: { matchId, friendName } }
+
+// Posición del amigo, retransmitida por el padre
+{ type: 'dragonbarbudo:remote_position', payload: { x, y } }
+
+// El amigo recogió esta moneda (por su índice, 0-4) en su propia pantalla
+{ type: 'dragonbarbudo:coin_taken_remote', payload: { index } }
+
+// El amigo se desconectó/salió de la partida
+{ type: 'dragonbarbudo:friend_left', payload: {} }
+```
+
+### Cómo lo resuelve el sitio principal (referencia, no vive aquí)
+
+- `request_friends` → consulta `friendships`/`profiles` en Supabase y
+  responde con `friends_list`.
+- `invite_friend` → genera un `matchId` (`crypto.randomUUID()`) y lo
+  manda por el sistema de invitaciones ya existente
+  (`game_invites`, mismo mecanismo que Conecta 4/Parchís/GM IA),
+  guardándolo en `game_invites.game_id` (esa columna es polimórfica y
+  sin FK — aquí simplemente es el nombre del canal, no el id de una
+  fila en ninguna tabla nueva).
+- La posición/monedas en tiempo real NUNCA tocan la base de datos: se
+  retransmiten con un canal de Supabase Realtime en modo **Broadcast**
+  (`iso-match-<matchId>`, efímero) — `position`/`coin_taken` del juego
+  se reenvían como broadcast, y lo que llega por broadcast se reenvía
+  al juego como `remote_position`/`coin_taken_remote`.
+- La desconexión del amigo se detecta con **Presence** del mismo canal
+  (evento `leave`), sin necesitar heartbeats propios.
 
 ## Requisitos de assets (cuando haya arte final)
 

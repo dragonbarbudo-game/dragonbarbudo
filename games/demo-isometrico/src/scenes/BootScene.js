@@ -19,6 +19,13 @@
 class BootScene extends Phaser.Scene {
   constructor() { super('BootScene'); }
 
+  init(data) {
+    // Datos de arranque que pasó main.js (isoLaunch): modo solo/con
+    // amigos, partida guardada a restaurar, matchId si hay amigo, etc.
+    // Se limita a reenviarlos a GameScene — BootScene no los necesita.
+    this.startData = data || {};
+  }
+
   preload() {
     // Sin red que esperar (todo se genera en create), pero se deja el
     // hook de preload() ya escrito porque es donde irán los
@@ -27,7 +34,7 @@ class BootScene extends Phaser.Scene {
 
   create() {
     this.buildPlaceholderTextures();
-    this.scene.start('GameScene');
+    this.scene.start('GameScene', this.startData);
   }
 
   buildPlaceholderTextures() {

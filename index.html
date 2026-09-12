@@ -1720,7 +1720,7 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                     </div>
                     <div class="game-card-body">
                         <h3>🗡️ El Caballero Errante</h3>
-                        <p>Explora un mapa 2D en solitario, estilo Pokémon: muévete, salta obstáculos y golpea hasta llegar a la meta.</p>
+                        <p>Explora un mapa 2.5D, solo o con amigos en directo: muévete en cualquier ángulo y recoge todas las monedas.</p>
                         <span class="btn btn-primary game-card-cta">▶ Jugar</span>
                     </div>
                 </div>
@@ -7492,7 +7492,7 @@ document.getElementById('chatModalBg').addEventListener('click', function (event
 /* =========================
    INVITAR A JUGAR (tiempo real)
 ========================= */
-const GAME_NAMES = { connect4: 'Conecta 4', parchis: 'Parchís', gmrpg: 'Aventura con GM IA' };
+const GAME_NAMES = { connect4: 'Conecta 4', parchis: 'Parchís', gmrpg: 'Aventura con GM IA', 'demo-isometrico': 'El Caballero Errante' };
 let inviteChannel = null;
 
 async function getUsername(id) {
@@ -7611,6 +7611,14 @@ async function respondGameInvite(invite, accept) {
     // (p.ej. la primera invitación le llega antes de haber jugado
     // nunca), gmrpgAcceptInvite ofrece crearlo y reintenta sola.
     await gmrpgAcceptInvite(invite);
+  } else if (invite.game === 'demo-isometrico') {
+    // No hay partida que crear (el "game_id" ya es directamente el id
+    // del canal de Supabase Realtime, generado por quien invitó): basta
+    // con abrir el juego y sumarnos al mismo matchId.
+    const name = await getUsername(invite.sender_id);
+    await supabaseClient.from('game_invites').update({ status: 'accepted' }).eq('id', invite.id);
+    openPlatformerGame();
+    isoJoinMatch(invite.game_id, name);
   } else {
     // Resguardo por si llegara una invitación vieja de un juego ya retirado.
     toast('❌ Ese juego ya no está disponible.');
@@ -7643,6 +7651,12 @@ function subscribeGameInvites() {
             toast(`✅ ${name} ha aceptado tu invitación. ¡A jugar!`);
             if (invite.game === 'connect4' && invite.game_id) {
               openConnect4Game(invite.game_id);
+            } else if (invite.game === 'demo-isometrico' && invite.game_id) {
+              // El invitador ya tenía el iframe abierto (esperando) desde
+              // que mandó la invitación: solo hace falta avisarle de que
+              // ya puede empezar, con el mismo matchId que se guardó como
+              // game_id al invitar (ver isoInviteFriend).
+              isoJoinMatch(invite.game_id, name);
             }
           });
         } else if (invite.status === 'declined') {
@@ -7875,19 +7889,42 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
 ========================= */
 const PF_GAME_URL = 'games/demo-isometrico/index.html';
 
+// true en cuanto el iframe avisa de que su menú ya está listo para
+// recibir un dragonbarbudo:start_multiplayer (ver isoJoinMatch más
+// abajo); se reinicia a false cada vez que se le da un src nuevo.
+let isoFrameReady = false;
+// { matchId, friendName } a la espera de que el iframe avise
+// (dragonbarbudo:menu_ready) si isoJoinMatch se llamó antes de que
+// terminara de cargar — pasa siempre en el lado de quien ACEPTA una
+// invitación (el iframe ni existía todavía).
+let isoPendingStart = null;
+let isoMatchChannel = null; // canal de Supabase Realtime (Broadcast) de la partida con amigos en curso
+
+// Reasignar frame.src al mismo valor que ya tenía NO recarga el iframe
+// en la mayoría de navegadores (lo ignoran, al ser idéntico) — de ahí
+// el "&t=" con la hora actual, que solo sirve para forzar que la URL
+// cambie de verdad cada vez.
+function isoFrameUrl() {
+  const uid = currentUserId || 'guest';
+  return PF_GAME_URL + '?uid=' + encodeURIComponent(uid) + '&t=' + Date.now();
+}
+
 function openPlatformerGame() {
+  isoFrameReady = false;
   showPage('platformerGame');
-  document.getElementById('platformerFrame').src = PF_GAME_URL; // partida nueva cada vez que se abre
+  document.getElementById('platformerFrame').src = isoFrameUrl();
 }
 
 function restartPlatformerGame() {
-  const frame = document.getElementById('platformerFrame');
-  frame.src = PF_GAME_URL; // recarga el iframe entero: el juego arranca de cero
+  isoFrameReady = false;
+  document.getElementById('platformerFrame').src = isoFrameUrl(); // recarga el iframe entero: vuelve a su propio menú
 }
 
 function stopPlatformerGame() {
   const frame = document.getElementById('platformerFrame');
   if (frame) frame.src = 'about:blank'; // corta el juego en segundo plano al salir
+  isoLeaveMatch();
+  isoPendingStart = null;
 }
 
 function leavePlatformerGame() {
@@ -7895,11 +7932,90 @@ function leavePlatformerGame() {
   showPage('lobby');
 }
 
+/* =========================
+   "CON AMIGOS": lista de amigos, invitación y retransmisión en directo
+   -------------------------------------------------------------------
+   El juego (dentro del iframe) no tiene acceso a Supabase ni a tu lista
+   de amigos — todo esto vive aquí y se le manda por postMessage. La
+   posición en sí NUNCA se guarda en la base de datos (sería muchísima
+   escritura, muchas veces por segundo): se retransmite en directo con
+   un canal de Supabase Realtime en modo "Broadcast" (efímero, no
+   persiste nada), usando como nombre el mismo id que ya se guarda en
+   game_invites.game_id al invitar.
+========================= */
+async function isoSendFriendsList() {
+  const frame = document.getElementById('platformerFrame');
+  if (!frame || !currentUserId) { frame.contentWindow.postMessage({ type: 'dragonbarbudo:friends_list', payload: { friends: [] } }, '*'); return; }
+  const { data: rows } = await supabaseClient
+    .from('friendships')
+    .select('*')
+    .or(`user_id.eq.${currentUserId},friend_id.eq.${currentUserId}`)
+    .eq('status', 'accepted');
+  const otherIds = (rows || []).map(r => r.user_id === currentUserId ? r.friend_id : r.user_id);
+  let friends = [];
+  if (otherIds.length) {
+    const { data: profs } = await supabaseClient.from('profiles').select('id, username, avatar').in('id', otherIds);
+    friends = (profs || []).map(p => ({ id: p.id, username: p.username || '...', avatar: p.avatar || '🧙' }));
+  }
+  frame.contentWindow.postMessage({ type: 'dragonbarbudo:friends_list', payload: { friends } }, '*');
+}
+
+async function isoInviteFriendFromGame(friendId, friendName) {
+  const matchId = crypto.randomUUID();
+  await sendGameInvite(friendId, friendName, 'demo-isometrico', matchId);
+  const frame = document.getElementById('platformerFrame');
+  frame.contentWindow.postMessage({ type: 'dragonbarbudo:invite_sent', payload: { friendName } }, '*');
+  isoJoinMatch(matchId, friendName);
+}
+
+// Se llama tanto al mandar la invitación (para no esperar de brazos
+// cruzados: ya nos conectamos al canal) como al aceptarla (ver
+// respondGameInvite) y cuando el otro lado acepta la nuestra (ver
+// subscribeGameInvites). Es seguro llamarla más de una vez con el mismo
+// matchId — vuelve a suscribirse sin duplicar nada.
+function isoJoinMatch(matchId, friendName) {
+  isoSubscribeMatchChannel(matchId);
+  const payload = { matchId, friendName };
+  const frame = document.getElementById('platformerFrame');
+  if (isoFrameReady) {
+    frame.contentWindow.postMessage({ type: 'dragonbarbudo:start_multiplayer', payload }, '*');
+  } else {
+    isoPendingStart = payload;
+  }
+}
+
+function isoSubscribeMatchChannel(matchId) {
+  isoLeaveMatch();
+  isoMatchChannel = supabaseClient.channel('iso-match-' + matchId, { config: { presence: { key: currentUserId || 'guest' } } });
+  isoMatchChannel
+    .on('broadcast', { event: 'position' }, ({ payload }) => {
+      const frame = document.getElementById('platformerFrame');
+      if (frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'dragonbarbudo:remote_position', payload }, '*');
+    })
+    .on('broadcast', { event: 'coin_taken' }, ({ payload }) => {
+      const frame = document.getElementById('platformerFrame');
+      if (frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'dragonbarbudo:coin_taken_remote', payload }, '*');
+    })
+    .on('presence', { event: 'leave' }, () => {
+      const frame = document.getElementById('platformerFrame');
+      if (frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'dragonbarbudo:friend_left', payload: {} }, '*');
+    })
+    .subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') await isoMatchChannel.track({ online: true });
+    });
+}
+
+function isoLeaveMatch() {
+  if (isoMatchChannel) { supabaseClient.removeChannel(isoMatchChannel); isoMatchChannel = null; }
+}
+
 // Contrato postMessage de games/demo-isometrico/ (ver su README): suma
-// monedas al recoger cada una, y cuenta la partida como jugada/ganada al
-// terminar. event.source se compara contra el propio iframe para no
-// procesar mensajes de cualquier otra cosa que pueda mandar postMessage
-// (otras extensiones, iframes de terceros si los hubiera, etc.).
+// monedas al recoger cada una, cuenta la partida como jugada/ganada al
+// terminar, y gestiona la parte de "con amigos" (pedir la lista,
+// invitar, retransmitir posición/monedas). event.source se compara
+// contra el propio iframe para no procesar mensajes de cualquier otra
+// cosa que pueda mandar postMessage (otras extensiones, iframes de
+// terceros si los hubiera, etc.).
 window.addEventListener('message', (event) => {
   const frame = document.getElementById('platformerFrame');
   if (!frame || event.source !== frame.contentWindow) return;
@@ -7920,6 +8036,24 @@ window.addEventListener('message', (event) => {
     const score = (data.payload && data.payload.score) || 0;
     document.getElementById('platformerStatus').textContent = `🏆 ¡Completado! Puntuación: ${score}`;
     recordGameResult({ game: 'demo-isometrico', outcome: 'win' });
+  } else if (data.type === 'dragonbarbudo:menu_ready') {
+    isoFrameReady = true;
+    if (isoPendingStart) {
+      frame.contentWindow.postMessage({ type: 'dragonbarbudo:start_multiplayer', payload: isoPendingStart }, '*');
+      isoPendingStart = null;
+    }
+  } else if (data.type === 'dragonbarbudo:request_friends') {
+    isoSendFriendsList();
+  } else if (data.type === 'dragonbarbudo:invite_friend') {
+    const p = data.payload || {};
+    isoInviteFriendFromGame(p.friendId, p.friendName);
+  } else if (data.type === 'dragonbarbudo:cancel_multiplayer' || data.type === 'dragonbarbudo:leave_multiplayer') {
+    isoLeaveMatch();
+  } else if (data.type === 'dragonbarbudo:position' || data.type === 'dragonbarbudo:coin_taken') {
+    if (isoMatchChannel) {
+      const event = data.type === 'dragonbarbudo:position' ? 'position' : 'coin_taken';
+      isoMatchChannel.send({ type: 'broadcast', event, payload: data.payload });
+    }
   }
   // 'dragonbarbudo:ready' no necesita acción por ahora.
 });

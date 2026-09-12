@@ -9,6 +9,7 @@
   html, body {
     margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
     background: #1a1f2b; touch-action: none;
+    font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; color: #f1ede4;
   }
   #game-root { position: relative; width: 100%; height: 100%; }
   #game-root canvas { display: block; }
@@ -21,7 +22,7 @@
     position: fixed; left: 24px; bottom: 24px; z-index: 10;
     width: 120px; height: 120px; border-radius: 50%;
     background: rgba(20, 22, 30, 0.4); border: 2px solid rgba(255,255,255,0.25);
-    touch-action: none; cursor: pointer;
+    touch-action: none; cursor: pointer; display: none;
   }
   #isoJoystickThumb {
     position: absolute; left: 50%; top: 50%; width: 52px; height: 52px;
@@ -29,6 +30,66 @@
     background: rgba(217, 164, 65, 0.85); box-shadow: 0 4px 10px rgba(0,0,0,.35);
     pointer-events: none; transition: background .15s;
   }
+
+  /* MENÚ (Nueva partida / Continuar / Ajustes) — pantalla propia del
+     juego, se ve antes de arrancar Phaser (que ni se crea hasta que se
+     elige una opción de jugar). */
+  .iso-overlay {
+    position: fixed; inset: 0; z-index: 20;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 50% 30%, #2a3550, #12151d 75%);
+  }
+  .iso-panel { width: min(360px, 88vw); text-align: center; }
+  .iso-title { font-size: 26px; font-weight: 800; margin: 0 0 6px; letter-spacing: .5px; }
+  .iso-subtitle { font-size: 14px; color: #b7b2a6; margin: 0 0 26px; }
+  .iso-btn-menu {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    background: #262b38; border: 1px solid #3a3f4d; color: #f1ede4;
+    border-radius: 12px; padding: 14px 18px; margin-bottom: 12px;
+    font-size: 16px; font-weight: 600; cursor: pointer; text-align: left;
+  }
+  .iso-btn-menu:hover { border-color: #d9a441; }
+  .iso-btn-menu:disabled { opacity: .4; cursor: not-allowed; }
+  .iso-btn-menu:disabled:hover { border-color: #3a3f4d; }
+  .iso-btn-menu .iso-btn-icon { font-size: 22px; }
+  .iso-btn-menu small { display: block; font-weight: 400; color: #98948a; font-size: 12px; margin-top: 2px; }
+  .iso-btn-primary { background: #d9a441; border-color: #d9a441; color: #1a1208; }
+  .iso-back { background: none; border: none; color: #b7b2a6; font-size: 14px; cursor: pointer; margin-top: 8px; }
+  .iso-back:hover { color: #f1ede4; }
+
+  .iso-friend-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #262b38; border: 1px solid #3a3f4d; border-radius: 10px;
+    padding: 10px 14px; margin-bottom: 8px; text-align: left;
+  }
+  .iso-friend-row button {
+    background: #d9a441; border: none; color: #1a1208; font-weight: 700;
+    border-radius: 8px; padding: 7px 14px; cursor: pointer; font-size: 13px;
+  }
+  .iso-empty { color: #98948a; font-size: 14px; padding: 10px 0; }
+
+  .iso-toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #262b38; border: 1px solid #3a3f4d; border-radius: 10px;
+    padding: 12px 16px; margin-bottom: 16px; text-align: left; font-size: 15px;
+  }
+  .iso-switch {
+    width: 44px; height: 26px; border-radius: 20px; background: #3a3f4d;
+    position: relative; cursor: pointer; flex-shrink: 0; border: none;
+  }
+  .iso-switch::after {
+    content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+    border-radius: 50%; background: #f1ede4; transition: left .15s;
+  }
+  .iso-switch.on { background: #d9a441; }
+  .iso-switch.on::after { left: 21px; background: #1a1208; }
+  .iso-controls-hint { font-size: 13px; color: #b7b2a6; line-height: 1.6; text-align: left; background: #1e222c; border-radius: 10px; padding: 12px 14px; }
+
+  .iso-waiting { font-size: 15px; color: #d9a441; margin-top: 10px; }
+  .iso-spin { display: inline-block; animation: iso-spin 1s linear infinite; }
+  @keyframes iso-spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+  [hidden] { display: none !important; }
 </style>
 </head>
 <body>
@@ -36,6 +97,83 @@
 
 <div id="isoJoystick" aria-label="Mover (arrastra en cualquier dirección)">
   <div id="isoJoystickThumb"></div>
+</div>
+
+<!-- MENÚ PRINCIPAL -->
+<div class="iso-overlay" id="isoMenuMain">
+  <div class="iso-panel">
+    <h1 class="iso-title">🗡️ El Caballero Errante</h1>
+    <p class="iso-subtitle">Demo isométrica — Dragonbarbudo</p>
+
+    <button class="iso-btn-menu iso-btn-primary" onclick="isoShowNewGameChoices()">
+      <span class="iso-btn-icon">🆕</span>
+      <span>Nueva partida<small>Empieza desde el principio</small></span>
+    </button>
+    <button class="iso-btn-menu" id="isoBtnContinue" onclick="isoContinueSolo()" disabled>
+      <span class="iso-btn-icon">▶️</span>
+      <span>Continuar<small>Retoma tu partida en solitario</small></span>
+    </button>
+    <button class="iso-btn-menu" onclick="isoShowSettings()">
+      <span class="iso-btn-icon">⚙️</span>
+      <span>Ajustes</span>
+    </button>
+  </div>
+</div>
+
+<!-- NUEVA PARTIDA: solo o con amigos -->
+<div class="iso-overlay" id="isoMenuNewGame" hidden>
+  <div class="iso-panel">
+    <h1 class="iso-title">🆕 Nueva partida</h1>
+    <p class="iso-subtitle">¿Cómo quieres jugar?</p>
+
+    <button class="iso-btn-menu iso-btn-primary" onclick="isoStartSolo(false)">
+      <span class="iso-btn-icon">🧍</span>
+      <span>Solo<small>A tu ritmo, se guarda sola</small></span>
+    </button>
+    <button class="iso-btn-menu" onclick="isoShowFriendPicker()">
+      <span class="iso-btn-icon">👥</span>
+      <span>Con amigos<small>En tiempo real, mismo mapa</small></span>
+    </button>
+    <button class="iso-back" onclick="isoShowMainMenu()">← Volver</button>
+  </div>
+</div>
+
+<!-- CON AMIGOS: elegir a quién invitar (la lista la manda la página
+     padre — el juego no tiene acceso directo a tus amigos ni a Supabase,
+     ver README.md) -->
+<div class="iso-overlay" id="isoMenuFriends" hidden>
+  <div class="iso-panel">
+    <h1 class="iso-title">👥 Invitar a un amigo</h1>
+    <p class="iso-subtitle">Jugaréis en el mismo mapa, en directo</p>
+    <div id="isoFriendList"><p class="iso-empty">Cargando…</p></div>
+    <button class="iso-back" onclick="isoShowNewGameChoices()">← Volver</button>
+  </div>
+</div>
+
+<!-- ESPERANDO a que el amigo acepte -->
+<div class="iso-overlay" id="isoMenuWaiting" hidden>
+  <div class="iso-panel">
+    <h1 class="iso-title"><span class="iso-spin">⏳</span> Esperando…</h1>
+    <p class="iso-subtitle" id="isoWaitingText">Esperando a que tu amigo acepte la invitación.</p>
+    <button class="iso-back" onclick="isoCancelWaiting()">← Cancelar</button>
+  </div>
+</div>
+
+<!-- AJUSTES -->
+<div class="iso-overlay" id="isoMenuSettings" hidden>
+  <div class="iso-panel">
+    <h1 class="iso-title">⚙️ Ajustes</h1>
+    <div class="iso-toggle-row">
+      <span>🔇 Silenciar sonido</span>
+      <button class="iso-switch" id="isoMuteSwitch" onclick="isoToggleMute()"></button>
+    </div>
+    <p class="iso-controls-hint">
+      🎮 <strong>Controles</strong><br>
+      Teclado: flechas o WASD (8 direcciones)<br>
+      Táctil/ratón: joystick en pantalla (cualquier ángulo)
+    </p>
+    <button class="iso-back" onclick="isoShowMainMenu()">← Volver</button>
+  </div>
 </div>
 
 <!-- Phaser 3 vía CDN (ver README.md: se eligió CDN, sin npm/bundler, para
