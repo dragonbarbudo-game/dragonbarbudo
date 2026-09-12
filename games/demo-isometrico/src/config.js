@@ -1,41 +1,44 @@
 /* =========================
    CONFIGURACIÓN COMPARTIDA — demo-isometrico
    -------------------------------------------
-   Constantes y helpers que usan tanto BootScene como GameScene. Va en su
-   propio archivo (no estaba en el árbol de carpetas original del
-   documento) para no duplicar números mágicos entre escenas; se carga
-   antes que ellas en index.html. Todo aquí son `var` a propósito (no
-   `const`/`let`): sin bundler ni módulos, así quedan colgadas de
-   `window` y cualquier otro script del juego puede leerlas.
+   Constantes y helpers que usan tanto BootScene como GameScene. Todo
+   son `var` a propósito (no `const`/`let`): sin bundler ni módulos, así
+   quedan colgadas de `window` y cualquier script del juego puede leerlas.
+
+   MOVIMIENTO LIBRE + MAPA CUADRADO (v2): el usuario pidió poder moverse
+   en cualquier ángulo (no solo 4 direcciones en cuadrícula) y que el
+   mapa se vea cuadrado/rectangular, no en rombo. Así que el mundo es un
+   plano 2D normal (worldX, worldY en píxeles, con movimiento continuo)
+   y solo se "aplasta" verticalmente al proyectarlo a pantalla
+   (ISO_SQUISH) para conservar algo de sensación 2.5D — ese aplastado es
+   uniforme, así que el mapa sigue siendo un rectángulo perfecto, nunca
+   un rombo (un rombo solo aparece si además rotas los ejes 45°, que es
+   lo que hacía la versión isométrica "de verdad" anterior).
 ========================= */
 
-// Tamaño de una losa isométrica en pantalla (proporción 2:1, la habitual
-// en este tipo de proyección).
-var ISO_TILE_W = 128;
-var ISO_TILE_H = 64;
+var TILE_SIZE = 80;                 // lado de cada losa del suelo, en el plano del mundo
+var GRID_SIZE = 12;                 // mapa de GRID_SIZE x GRID_SIZE losas (>=10x10 pedido)
+var MAP_SIZE = TILE_SIZE * GRID_SIZE; // mundo cuadrado de MAP_SIZE x MAP_SIZE píxeles
+var ISO_SQUISH = 0.86;              // aplastado vertical al proyectar a pantalla (look 2.5D)
 
-// Mapa cuadrado de GRID_SIZE x GRID_SIZE casillas (el encargo pide 10x10
-// como mínimo).
-var GRID_SIZE = 12;
+var PLAYER_SPEED = 240;             // píxeles de mundo por segundo, en cualquier ángulo
+var PLAYER_RADIUS = 16;
+var TREE_RADIUS = 24;
+var COIN_RADIUS = 26;
 
-// Duración del tween de cada paso del jugador (cuadrícula, un paso por
-// pulsación — igual de sensación que El Caballero Errante anterior).
-var ISO_MOVE_MS = 160;
-
-// Proyección de una casilla de cuadrícula (gx, gy) a coordenadas de
-// pantalla (centro de su rombo). Es la única fórmula que hace falta
-// para todo el posicionamiento isométrico del juego.
-function gridToScreen(gx, gy) {
-  return {
-    x: (gx - gy) * (ISO_TILE_W / 2),
-    y: (gx + gy) * (ISO_TILE_H / 2)
-  };
+// Proyección: el mundo es un plano normal, solo se aplasta la Y al
+// dibujar. Es la única fórmula que hace falta para todo el
+// posicionamiento en pantalla (suelo, jugador, árboles, monedas).
+function worldToScreen(wx, wy) {
+  return { x: wx, y: wy * ISO_SQUISH };
 }
 
-// Estado de los controles táctiles (cruceta en pantalla, ver index.html
-// y main.js): un objeto global sencillo que GameScene lee en su
-// update(), igual que el teclado.
-window.isoTouch = { up: false, down: false, left: false, right: false };
+// Estado del joystick táctil (ver index.html/main.js): dx/dy en
+// [-1, 1], GameScene los lee en su update() igual que el teclado. Un
+// joystick por arrastre permite cualquier ángulo, no solo 4/8
+// direcciones — el teclado sigue limitado a como muerdan las teclas,
+// pero al menos ya no obliga a girar antes de andar ni fuerza los 4 ejes.
+window.isoJoystick = { active: false, dx: 0, dy: 0 };
 
 // Contrato de comunicación con la página padre (ver README.md). Sigue
 // funcionando en modo standalone: si no hay padre real, postMessage

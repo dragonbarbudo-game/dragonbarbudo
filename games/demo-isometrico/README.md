@@ -34,27 +34,40 @@ y abrir `http://localhost:5510/games/demo-isometrico/`.
 
 ## Qué hace la demo
 
-- Mapa isométrico de 12x12 casillas (`GRID_SIZE` en `src/config.js`),
-  proyección 2:1 (`gridToScreen()`).
-- Personaje controlable con flechas o WASD, movimiento en cuadrícula
-  (un paso por pulsación; mantener la tecla sigue andando).
-- **Depth sorting dinámico**: la profundidad del jugador se recalcula en
-  cada frame de su propio movimiento según su Y real en pantalla
-  (`this.player.setDepth(1000 + this.player.y)`), así se dibuja delante
-  o detrás de los árboles según por dónde pasa exactamente.
+- Mapa **cuadrado** de 12x12 losas (`GRID_SIZE`/`TILE_SIZE` en
+  `src/config.js`): el mundo es un plano 2D normal
+  (`worldX`/`worldY` en píxeles) que solo se aplasta verticalmente al
+  proyectarlo a pantalla (`ISO_SQUISH`, en `worldToScreen()`) para dar
+  sensación 2.5D — ese aplastado es uniforme, así que el mapa se ve
+  siempre como un rectángulo, nunca como un rombo (un rombo solo sale
+  si además rotas los ejes 45°, que es lo que hace un isométrico "de
+  verdad"; aquí se optó por el look cuadrado a propósito).
+- Personaje controlable con **flechas/WASD o el joystick táctil**, con
+  **movimiento libre en cualquier ángulo** (no encajado a una
+  cuadrícula): tiene una posición continua y avanza a `PLAYER_SPEED`
+  píxeles/segundo en la dirección exacta que marques. El teclado da 8
+  direcciones (las que permiten combinar 2 teclas a la vez, normalizado
+  para que la diagonal no vaya más rápido); el joystick da cualquier
+  ángulo intermedio, arrastrándolo con el dedo o el ratón.
+- Colisión contra los árboles por distancia (círculos), resuelta eje a
+  eje para poder deslizarte por su lado en vez de quedarte pegado en
+  diagonal.
+- **Depth sorting dinámico**: la profundidad del jugador se recalcula
+  en cada frame según su Y real en pantalla
+  (`this.player.setDepth(1000 + p.y)`), así se dibuja delante o detrás
+  de los árboles según por dónde pasa exactamente.
 - 6 árboles como props que bloquean el paso y sirven para demostrar el
-  depth sorting; 5 monedas recolectables con animación de flotación.
+  depth sorting; 5 monedas recolectables (recogida por distancia) con
+  animación de flotación.
 - Al recoger cada moneda se emite `dragonbarbudo:reward`; al recogerlas
   todas se emite `dragonbarbudo:game_over` y se muestra un cartel de
   "¡Completado!" en pantalla.
-- Cruceta táctil en pantalla (esquina inferior izquierda) además de
-  teclado — pensado para tablet/móvil, no solo PC.
 
 ## Controles
 
-| Acción    | Teclado       | Táctil            |
-|-----------|---------------|-------------------|
-| Moverse   | Flechas / WASD | Cruceta en pantalla |
+| Acción    | Teclado        | Táctil / ratón                          |
+|-----------|----------------|------------------------------------------|
+| Moverse   | Flechas / WASD (8 direcciones) | Joystick en pantalla (cualquier ángulo, arrastre libre) |
 
 ## Contrato `postMessage` con la página padre
 
@@ -93,21 +106,24 @@ de ningún archivo. Para sustituirlo por arte real:
 3. Borra la llamada a `buildPlaceholderTextures()` en
    `BootScene.create()` (o déjala como *fallback* si prefieres detectar
    si la imagen cargó).
-4. Ajusta `ISO_TILE_W`/`ISO_TILE_H` en `src/config.js` si el tamaño real
-   de tus losas no es 128x64.
+4. Las losas del suelo (`tile_a`/`tile_b`) deben medir `TILE_SIZE x
+   TILE_SIZE*ISO_SQUISH` píxeles (ver `src/config.js`) para que sigan
+   encajando sin huecos; el jugador/árboles/monedas pueden tener
+   cualquier proporción, solo se posicionan con `worldToScreen()`, no
+   se aplastan.
 
 ## Estructura de carpetas
 
 ```
 games/demo-isometrico/
-  index.html          — shell HTML + cruceta táctil + carga de scripts
+  index.html          — shell HTML + joystick táctil + carga de scripts
   README.md           — este archivo
   src/
-    config.js         — constantes compartidas + gridToScreen() + emitToParent()
-    main.js            — arranque de Phaser.Game + controles táctiles
+    config.js         — constantes compartidas + worldToScreen() + emitToParent()
+    main.js            — arranque de Phaser.Game + joystick táctil
     scenes/
       BootScene.js     — genera (o cargará) las texturas
-      GameScene.js     — grid, jugador, props, monedas, depth sorting
+      GameScene.js     — mundo, jugador, props, monedas, depth sorting
   assets/
     tiles/             — vacío por ahora (ver "Requisitos de assets")
     sprites/           — vacío por ahora
