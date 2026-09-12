@@ -48,6 +48,16 @@ const PATH_ROWS = BRIDGE_ROWS;
 
 const REMOTE_POS_INTERVAL_MS = 90; // cada cuánto se retransmite la posición propia en partidas con amigos
 
+// Entrada de La Taberna del Cuervo (zona interior, ver TavernScene.js):
+// un edificio decorativo (sin colisión propia, ver buildTavernEntrance)
+// con un punto de entrada — acercarse a él entra directamente, no hace
+// falta pulsar nada para ENTRAR (para salir sí, ver TavernScene). Solo
+// disponible en solitario: sincronizar una escena interior aparte con
+// un amigo en directo se queda fuera del alcance de esta primera
+// versión.
+const TAVERN_DOOR_SPOT = [6, 2];
+const TAVERN_ENTER_RADIUS = 40;
+
 class GameScene extends Phaser.Scene {
   constructor() { super('GameScene'); }
 
@@ -56,6 +66,10 @@ class GameScene extends Phaser.Scene {
     this.continueSave = (data && data.continueSave) || null;
     this.matchId = data && data.matchId;
     this.friendName = data && data.friendName;
+    // Al volver de La Taberna del Cuervo (ver TavernScene.exitTavern):
+    // aparecemos justo fuera de la puerta en vez de en el punto de
+    // guardado o el spawn por defecto.
+    this.resumeAt = data && data.resumeAt;
   }
 
   create() {
@@ -63,9 +77,11 @@ class GameScene extends Phaser.Scene {
     this.collectedCount = 0;
     this.lastSentPos = 0;
     this.remoteJoined = false;
+    this.enteringTavern = false;
 
     this.buildGrid();
     this.buildProps();
+    this.buildTavernEntrance();
     this.buildPlayer();
     this.buildCoins();
     this.buildHud();
@@ -141,8 +157,23 @@ class GameScene extends Phaser.Scene {
     return { worldX: wx, worldY: wy, radius };
   }
 
+  // Edificio decorativo, sin colisión propia (ver TAVERN_DOOR_SPOT más
+  // arriba): entrar es solo cuestión de acercarse, la puerta ya está
+  // dibujada en la propia textura como el hueco oscuro de la base.
+  buildTavernEntrance() {
+    const [gx, gy] = TAVERN_DOOR_SPOT;
+    const wx = gx * TILE_SIZE + TILE_SIZE / 2, wy = gy * TILE_SIZE + TILE_SIZE / 2;
+    const p = worldToScreen(wx, wy);
+    const img = this.add.image(p.x, p.y, 'tavern_building').setOrigin(0.5, 0.93);
+    img.setDepth(1000 + p.y);
+    this.tavernDoor = { worldX: wx, worldY: wy };
+  }
+
   buildPlayer() {
-    if (this.continueSave) {
+    if (this.resumeAt) {
+      this.worldX = this.resumeAt.x;
+      this.worldY = this.resumeAt.y;
+    } else if (this.continueSave) {
       this.worldX = this.continueSave.worldX;
       this.worldY = this.continueSave.worldY;
     } else {
@@ -288,6 +319,19 @@ class GameScene extends Phaser.Scene {
     if (this.remoteLabel) this.remoteLabel.setText((this.friendName || 'Amigo') + ' (desconectado)');
   }
 
+  // Solo en solitario (ver comentario de TAVERN_DOOR_SPOT): guarda la
+  // posición justo fuera de la puerta y cambia a la escena interior.
+  enterTavern() {
+    if (this.enteringTavern || this.mode !== 'solo') return;
+    this.enteringTavern = true;
+    this.saveNow();
+    // Al volver hay que reaparecer FUERA del radio de entrada
+    // (TAVERN_ENTER_RADIUS): si no, el primer paso que dieras volvería
+    // a meterte dentro sin querer, en bucle.
+    const returnAt = { x: this.tavernDoor.worldX, y: this.tavernDoor.worldY + TAVERN_ENTER_RADIUS + 20 };
+    this.scene.start('TavernScene', { returnAt });
+  }
+
   saveNow() {
     if (this.mode !== 'solo' || this.gameEnded) return;
     const collectedIndexes = this.coins.filter(c => c.collected).map(c => c.index);
@@ -346,6 +390,11 @@ class GameScene extends Phaser.Scene {
       this.player.setPosition(p.x, p.y);
       this.player.setDepth(1000 + p.y);
       this.checkCoinPickup();
+
+      if (this.mode === 'solo' && Phaser.Math.Distance.Between(this.worldX, this.worldY, this.tavernDoor.worldX, this.tavernDoor.worldY) < TAVERN_ENTER_RADIUS) {
+        this.enterTavern();
+        return;
+      }
     }
 
     if (this.mode === 'friends' && time - this.lastSentPos > REMOTE_POS_INTERVAL_MS) {

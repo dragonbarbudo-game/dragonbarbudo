@@ -77,6 +77,21 @@ y abrir `http://localhost:5510/games/demo-isometrico/`.
   de otro color, con su nombre encima) que se mueve según la posición
   que llega por `postMessage`, con el mismo depth sorting dinámico que
   el jugador local.
+- **Estilo gótico** (`GOTHIC_PALETTE` en `BootScene.js`): piedra fría en
+  vez del cartoon verde brillante original, con acentos cálidos
+  puntuales (monedas, ventanas, fuego) como único color vivo — a partir
+  de una escena de referencia que mandó el usuario, confirmada como el
+  tono de todo el juego, no de una zona suelta.
+- **La Taberna del Cuervo**: la primera zona interior. Un edificio en el
+  Claro del Bosque (`TAVERN_DOOR_SPOT` en `GameScene.js`) que se entra
+  solo con acercarse — sin pulsar nada — y carga una escena aparte
+  (`TavernScene.js`): una sala pequeña y cerrada con barra, mesas,
+  barriles y una chimenea, reutilizando el mismo motor de movimiento
+  libre a otra escala. Salir sí exige una acción explícita: caminar
+  hasta la puerta marcada en el suelo, o el botón "🚪 Salir de la
+  taberna" — cualquiera de las dos te devuelve al exterior justo donde
+  estaba la entrada (con un margen de seguridad para no volver a entrar
+  sin querer en el primer paso). Solo disponible en solitario.
 
 ## Controles
 
@@ -190,8 +205,11 @@ de ningún archivo. Para sustituirlo por arte real:
 2. En `BootScene.preload()`, añade `this.load.image('tile_a',
    'assets/tiles/xxx.png')` (o `this.load.spritesheet(...)` si el
    personaje necesita animación) usando las **mismas claves** que ya
-   consume `GameScene` (`tile_a`, `tile_b`, `player`, `coin`, `tree`) —
-   así no hace falta tocar `GameScene.js` para nada.
+   consumen `GameScene`/`TavernScene` (`tile_a`, `tile_b`, `tile_path`,
+   `water`, `player`, `coin`, `tree`, `ruin`, `tavern_building`,
+   `tavern_floor_a`/`b`, `tavern_wall`, `tavern_wall_fireplace`,
+   `tavern_bar`, `tavern_table`, `tavern_barrel`, `tavern_door_mark`) —
+   así no hace falta tocar el resto de archivos para nada.
 3. Borra la llamada a `buildPlaceholderTextures()` en
    `BootScene.create()` (o déjala como *fallback* si prefieres detectar
    si la imagen cargó).
@@ -211,8 +229,9 @@ games/demo-isometrico/
     config.js         — constantes compartidas + worldToScreen() + emitToParent()
     main.js            — arranque de Phaser.Game + joystick táctil
     scenes/
-      BootScene.js     — genera (o cargará) las texturas
-      GameScene.js     — mundo, jugador, props, monedas, depth sorting
+      BootScene.js     — genera (o cargará) las texturas + GOTHIC_PALETTE
+      GameScene.js     — mundo exterior, jugador, props, monedas, depth sorting
+      TavernScene.js   — interior de La Taberna del Cuervo (Zona 2)
   assets/
     tiles/             — vacío por ahora (ver "Requisitos de assets")
     sprites/           — vacío por ahora

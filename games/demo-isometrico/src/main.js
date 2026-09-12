@@ -73,7 +73,7 @@ function isoLaunch(startData) {
     height: window.innerHeight,
     backgroundColor: '#1a1f2b',
     scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
-    scene: [BootScene, GameScene]
+    scene: [BootScene, GameScene, TavernScene]
   });
   currentGame.scene.start('BootScene', startData);
 }
