@@ -42,11 +42,18 @@ function isoHideAllMenus() {
   document.querySelectorAll('.iso-overlay').forEach(el => { el.hidden = true; });
 }
 
+// Solo se muestra el joystick en pantalla si el dispositivo se maneja
+// principalmente por tacto (tablet/móvil) — en PC nadie va a arrastrar
+// un joystick con el ratón, ya tiene teclado, así que ni aparece.
+function isoUpdateJoystickVisibility() {
+  document.getElementById('isoJoystick').style.display = isoIsTouchDevice() ? 'block' : 'none';
+}
+
 /* ---- Empezar a jugar (solo) ---- */
 function isoStartSolo(continueSaved) {
   if (!continueSaved) isoSetHasMap(false); // partida nueva de verdad: hay que volver a encontrar el mapa
   isoHideAllMenus();
-  document.getElementById('isoJoystick').style.display = 'block';
+  isoUpdateJoystickVisibility();
   isoLaunch({ mode: 'solo', continueSave: continueSaved ? isoLoadProgress() : null });
 }
 function isoContinueSolo() { isoStartSolo(true); }
@@ -116,7 +123,7 @@ window.addEventListener('message', (event) => {
     isoShowOnly('isoMenuWaiting');
   } else if (data.type === 'dragonbarbudo:start_multiplayer') {
     isoHideAllMenus();
-    document.getElementById('isoJoystick').style.display = 'block';
+    isoUpdateJoystickVisibility();
     isoLaunch({ mode: 'friends', matchId: data.payload.matchId, friendName: data.payload.friendName });
   } else if (data.type === 'dragonbarbudo:remote_position') {
     window.dispatchEvent(new CustomEvent('iso:remote_position', { detail: data.payload }));
@@ -298,6 +305,12 @@ function bindJoystick() {
 
 bindJoystick();
 isoShowMainMenu();
+// Por si el dispositivo cambia de "modo" a media partida (un portátil
+// convertible, sobre todo): se reacciona en directo en vez de quedarse
+// solo con lo que fuera cierto al lanzar la partida.
+try {
+  window.matchMedia('(hover: none) and (pointer: coarse)').addEventListener('change', isoUpdateJoystickVisibility);
+} catch (e) { /* navegador muy viejo: se queda con el valor de al lanzar la partida, no pasa nada grave */ }
 // Avisa a la página padre de que el menú ya está listo para recibir un
 // dragonbarbudo:start_multiplayer (si venimos de aceptar una invitación,
 // el padre puede estar esperando justo esta señal — ver isoJoinMatch en

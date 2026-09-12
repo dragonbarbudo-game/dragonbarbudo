@@ -48,6 +48,17 @@ function worldToScreen(wx, wy) {
 // pero al menos ya no obliga a girar antes de andar ni fuerza los 4 ejes.
 window.isoJoystick = { active: false, dx: 0, dy: 0 };
 
+// ¿El dispositivo se maneja principalmente por tacto? (hover:none +
+// pointer:coarse = no hay ratón/trackpad como entrada principal, solo
+// dedo). Es justo lo que distingue tablet/móvil de un PC con pantalla
+// táctil pero ratón de verdad — un táctil "de sobra" en PC no cuenta.
+// Se usa para no mostrar el joystick en pantalla si de todas formas
+// nadie va a usarlo con el dedo (ver isoUpdateJoystickVisibility en
+// main.js).
+function isoIsTouchDevice() {
+  try { return window.matchMedia('(hover: none) and (pointer: coarse)').matches; } catch (e) { return false; }
+}
+
 // Contrato de comunicación con la página padre (ver README.md). Sigue
 // funcionando en modo standalone: si no hay padre real, postMessage
 // simplemente se manda a la propia ventana y no lo escucha nadie.

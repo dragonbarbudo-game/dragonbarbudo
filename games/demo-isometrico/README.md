@@ -115,6 +115,15 @@ y abrir `http://localhost:5510/games/demo-isometrico/`.
 |-----------|----------------|------------------------------------------|
 | Moverse   | Flechas / WASD (8 direcciones) | Joystick en pantalla (cualquier ángulo, arrastre libre) |
 
+El joystick en pantalla solo aparece en dispositivos que se manejan
+principalmente por tacto (`isoIsTouchDevice()` en `config.js`, mira
+`(hover: none) and (pointer: coarse)` — no el ancho de pantalla): en PC
+no sirve de nada y se queda oculto, aunque la pantalla sea táctil pero
+el ratón sea la entrada principal. Se reevalúa en directo
+(`isoUpdateJoystickVisibility()` en `main.js`, con un listener de
+`matchMedia`), por si el dispositivo cambia de "modo" a media partida
+(un portátil convertible, sobre todo).
+
 ## Contrato `postMessage` con la página padre
 
 Todos los mensajes van a `window.parent` con `postMessage(data, '*')`
