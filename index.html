@@ -1365,6 +1365,26 @@ body.light-mode .auth-tabs button.active { color: #fff; }
     background: rgba(217,164,65,.12); border: 1px solid #d9a441; border-radius: 12px;
     padding: 14px 16px; color: #f1ede4; font-size: 14px; line-height: 1.5; margin-bottom: 15px;
 }
+
+/* EL CABALLERO ERRANTE (plataformas 2D con Phaser, offline y gratis):
+   tarjeta de acceso con el mismo look que las de Conecta 4/Parchís/GM IA. */
+.game-card-art-pf { background: linear-gradient(135deg, #4f9bd6, #1c4a73); }
+.game-card-art-pf .game-card-pf-emoji { font-size: 48px; filter: drop-shadow(0 4px 10px rgba(0,0,0,.4)); }
+.pf-stage-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+#platformerCanvas {
+    width: 100%; max-width: 960px; aspect-ratio: 16 / 9; border-radius: 16px;
+    overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.4); background: #8ed3f0;
+}
+#platformerCanvas canvas { width: 100% !important; height: 100% !important; display: block; }
+.pf-hearts { font-size: 18px; letter-spacing: 3px; }
+.pf-touch-controls { display: flex; justify-content: space-between; width: 100%; max-width: 960px; }
+.pf-touch-left, .pf-touch-right { display: flex; gap: 10px; }
+.pf-btn {
+    width: 56px; height: 56px; border-radius: 50%; border: none; background: var(--panel-2);
+    color: var(--text); font-size: 22px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,.3);
+    user-select: none; touch-action: manipulation;
+}
+.pf-btn:active { transform: scale(.92); background: var(--gold); }
 </style>
 </head>
 <body class="home-active">
@@ -1701,6 +1721,16 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                         <span class="btn btn-primary game-card-cta">▶ Jugar</span>
                     </div>
                 </div>
+                <div class="game-card" onclick="openPlatformerGame()">
+                    <div class="game-card-art game-card-art-pf">
+                        <span class="game-card-pf-emoji">🗡️</span>
+                    </div>
+                    <div class="game-card-body">
+                        <h3>🗡️ El Caballero Errante</h3>
+                        <p>Plataformas 2D en solitario: corre, salta y golpea hasta llegar a la meta.</p>
+                        <span class="btn btn-primary game-card-cta">▶ Jugar</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1918,6 +1948,36 @@ body.light-mode .auth-tabs button.active { color: #fff; }
                  progresa con el inventario que se va consiguiendo. -->
             <div class="section-title" style="margin-top:24px;"><h2>🐉 Tu personaje de aventura</h2></div>
             <div class="rpg-char-panel" id="rpgCharPanel"></div>
+        </div>
+
+        <!-- EL CABALLERO ERRANTE (plataformas 2D, un jugador, con Phaser 3):
+             sin Supabase ni multijugador, todo corre en el navegador y es
+             gratis. Un nivel corto lineal (ver iniciarPlatformerGame). -->
+        <div class="page" id="platformerGame">
+            <div class="c4-header">
+                <h1>🗡️ El Caballero Errante</h1>
+                <div class="pf-hearts" id="platformerHearts">❤️❤️❤️</div>
+                <div class="c4-status" id="platformerStatus">Flechas/A-D moverte · Espacio saltar · X atacar</div>
+            </div>
+
+            <div class="pf-stage-wrap">
+                <div id="platformerCanvas"></div>
+                <div class="pf-touch-controls">
+                    <div class="pf-touch-left">
+                        <button type="button" class="pf-btn" id="pfBtnLeft" aria-label="Izquierda">◀</button>
+                        <button type="button" class="pf-btn" id="pfBtnRight" aria-label="Derecha">▶</button>
+                    </div>
+                    <div class="pf-touch-right">
+                        <button type="button" class="pf-btn" id="pfBtnAttack" aria-label="Atacar">⚔️</button>
+                        <button type="button" class="pf-btn" id="pfBtnJump" aria-label="Saltar">⤴️</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="c4-actions">
+                <button class="btn btn-dark" onclick="leavePlatformerGame()">🚪 Volver a Juegos</button>
+                <button class="btn btn-primary" id="platformerRestartBtn" onclick="restartPlatformerGame()" style="display:none">🔁 Reintentar</button>
+            </div>
         </div>
 
         <!-- AVATAR -->
@@ -3246,6 +3306,7 @@ const PAGE_TITLES = {
   connect4Game: 'Conecta 4',
   parchisGame: 'Parchís',
   gmrpgGame: 'Aventura',
+  platformerGame: 'El Caballero Errante',
   profile: 'Perfil',
   avatarPage: 'Avatar',
   achievements: 'Logros',
@@ -3283,7 +3344,11 @@ function showPage(pageId) {
   // En Conecta 4 (y cualquier futuro juego online) se oculta el resto de
   // la interfaz para jugar a pantalla completa; se reactiva sola al
   // navegar a cualquier otra página, se salga como se salga.
-  document.body.classList.toggle('game-focus', pageId === 'connect4Game' || pageId === 'gmrpgGame');
+  document.body.classList.toggle('game-focus', pageId === 'connect4Game' || pageId === 'gmrpgGame' || pageId === 'platformerGame');
+  // Al salir de El Caballero Errante se apaga el juego de Phaser (deja de
+  // consumir CPU/GPU en segundo plano); si se entra nuevamente se vuelve a
+  // crear desde cero en openPlatformerGame().
+  if (pageId !== 'platformerGame') destroyPlatformerGame();
 }
 
 /* =========================
@@ -6358,6 +6423,8 @@ function initGameUI() {
 
 <!-- Cliente de Supabase (conexión con la base de datos) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Phaser (motor de juego 2D, gratis): solo lo usa El Caballero Errante -->
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
 <script>
 /* =========================
    CONEXIÓN CON SUPABASE
@@ -7807,6 +7874,335 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     enterApp(session.user);
   }
 });
+
+/* =========================
+   EL CABALLERO ERRANTE — plataformas 2D con Phaser 3
+   ---------------------------------------------------
+   Un jugador, offline, sin Supabase ni coste alguno: todo corre en el
+   navegador con la librería Phaser (gratis, cargada por CDN). Mezcla el
+   look colorido/cartoon típico de Clash Royale con una mecánica de
+   plataformas y combate cuerpo a cuerpo estilo Hollow Knight.
+
+   MVP = un único nivel corto y lineal (ver PlatformerScene.buildLevel):
+   3 tramos de suelo con 2 huecos que saltar, 2 plataformas flotantes de
+   apoyo, 3 enemigos de patrulla y una bandera de meta al final. 3
+   corazones de vida; tocar a un enemigo quita 1 (con empuje e
+   invencibilidad breve), golpearlo con X lo elimina de un golpe, y
+   caerse de un hueco también cuenta como golpe y te devuelve al inicio.
+========================= */
+let pfGame = null; // instancia de Phaser.Game activa; null si la página está cerrada
+const PF_WORLD_WIDTH = 2400;
+const PF_WORLD_HEIGHT = 540;
+
+// Estado de los controles táctiles (botones bajo el canvas, para móvil/
+// tablet): se enlaza una sola vez aquí fuera de la escena, así funciona
+// igual la primera vez que tras reiniciar la partida (que recrea la
+// escena de Phaser desde cero, pero no estos botones del DOM).
+const pfTouch = { left: false, right: false, jumpQueued: false, attackQueued: false };
+function pfBindTouchControlsOnce() {
+  if (pfTouch.bound) return;
+  pfTouch.bound = true;
+  const bindHold = (id, prop) => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    const on = (e) => { e.preventDefault(); pfTouch[prop] = true; };
+    const off = (e) => { e.preventDefault(); pfTouch[prop] = false; };
+    btn.addEventListener('pointerdown', on);
+    btn.addEventListener('pointerup', off);
+    btn.addEventListener('pointerleave', off);
+    btn.addEventListener('pointercancel', off);
+  };
+  bindHold('pfBtnLeft', 'left');
+  bindHold('pfBtnRight', 'right');
+  const bindTap = (id, prop) => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.addEventListener('pointerdown', (e) => { e.preventDefault(); pfTouch[prop] = true; });
+  };
+  bindTap('pfBtnJump', 'jumpQueued');
+  bindTap('pfBtnAttack', 'attackQueued');
+}
+
+function openPlatformerGame() {
+  showPage('platformerGame');
+  startPlatformerGame();
+}
+
+function startPlatformerGame() {
+  pfBindTouchControlsOnce();
+  document.getElementById('platformerStatus').textContent = 'Flechas/A-D moverte · Espacio saltar · X atacar';
+  document.getElementById('platformerRestartBtn').style.display = 'none';
+  renderPlatformerHearts(3);
+  destroyPlatformerGame();
+  pfGame = new Phaser.Game({
+    type: Phaser.AUTO,
+    parent: 'platformerCanvas',
+    width: 960,
+    height: PF_WORLD_HEIGHT,
+    backgroundColor: '#8ed3f0',
+    physics: { default: 'arcade', arcade: { gravity: { y: 1500 }, debug: false } },
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_HORIZONTALLY },
+    scene: PlatformerScene
+  });
+}
+
+function restartPlatformerGame() {
+  startPlatformerGame();
+}
+
+function leavePlatformerGame() {
+  destroyPlatformerGame();
+  showPage('lobby');
+}
+
+function destroyPlatformerGame() {
+  if (pfGame) { pfGame.destroy(true); pfGame = null; }
+}
+
+function renderPlatformerHearts(count) {
+  const el = document.getElementById('platformerHearts');
+  if (!el) return;
+  const full = Math.max(0, count);
+  el.textContent = '❤️'.repeat(full) + '🖤'.repeat(Math.max(0, 3 - full));
+}
+
+class PlatformerScene extends Phaser.Scene {
+  constructor() { super('PlatformerScene'); }
+
+  create() {
+    this.hearts = 3;
+    this.invincible = false;
+    this.hasWon = false;
+    this.hasLost = false;
+    this.facing = 1;
+    this.isAttacking = false;
+
+    this.physics.world.setBounds(0, 0, PF_WORLD_WIDTH, PF_WORLD_HEIGHT + 300);
+    this.buildTextures();
+    this.buildBackground();
+    this.buildLevel();
+    this.buildPlayer();
+    this.buildEnemies();
+    this.buildGoal();
+    this.buildAttackHitbox();
+
+    this.physics.add.collider(this.player, this.platforms);
+    this.physics.add.collider(this.enemies, this.platforms);
+    this.physics.add.overlap(this.player, this.enemies, this.onPlayerHitEnemy, null, this);
+    this.physics.add.overlap(this.player, this.goal, this.onReachGoal, null, this);
+    this.physics.add.overlap(this.attackHitbox, this.enemies, this.onSwordHit, null, this);
+
+    this.cameras.main.setBounds(0, 0, PF_WORLD_WIDTH, PF_WORLD_HEIGHT);
+    this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+
+    this.cursors = this.input.keyboard.createCursorKeys();
+    this.keys = this.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D', x: 'X', space: 'SPACE' });
+  }
+
+  buildTextures() {
+    // Todas las texturas se dibujan a mano con Graphics (formas planas,
+    // contorno negro grueso y colores saturados) para conseguir el look
+    // "cartoon" sin depender de ningún archivo de arte externo.
+    const g = this.make.graphics({ x: 0, y: 0, add: false });
+
+    g.clear();
+    g.fillStyle(0x8b5a2b, 1); g.fillRoundedRect(0, 0, 700, 140, 14);
+    g.fillStyle(0x7ac74f, 1); g.fillRoundedRect(0, 0, 700, 34, { tl: 14, tr: 14, bl: 0, br: 0 });
+    g.fillStyle(0x5fa83c, 1); g.fillRect(0, 24, 700, 10);
+    g.lineStyle(6, 0x2b1c10, 1); g.strokeRoundedRect(3, 3, 694, 134, 14);
+    g.generateTexture('pf_ground', 700, 140);
+
+    g.clear();
+    g.fillStyle(0x8b5a2b, 1); g.fillRoundedRect(0, 0, 220, 40, 12);
+    g.fillStyle(0x7ac74f, 1); g.fillRoundedRect(0, 0, 220, 18, { tl: 12, tr: 12, bl: 0, br: 0 });
+    g.lineStyle(5, 0x2b1c10, 1); g.strokeRoundedRect(2.5, 2.5, 215, 35, 12);
+    g.generateTexture('pf_platform', 220, 40);
+
+    g.clear();
+    g.fillStyle(0x2f6fd6, 1); g.fillRoundedRect(6, 10, 36, 46, 14);
+    g.fillStyle(0xbfe0ff, 1); g.fillRoundedRect(14, 34, 20, 20, 8);
+    g.fillStyle(0xffffff, 1); g.fillCircle(18, 22, 6); g.fillCircle(32, 22, 6);
+    g.fillStyle(0x1a1a1a, 1); g.fillCircle(19, 22, 2.6); g.fillCircle(33, 22, 2.6);
+    g.lineStyle(4, 0x111318, 1); g.strokeRoundedRect(6, 10, 36, 46, 14);
+    g.generateTexture('pf_player', 48, 64);
+
+    g.clear();
+    g.fillStyle(0x5fbf5f, 1); g.fillRoundedRect(2, 8, 36, 30, 14);
+    g.fillStyle(0xffffff, 1); g.fillCircle(14, 20, 5); g.fillCircle(26, 20, 5);
+    g.fillStyle(0x1a1a1a, 1); g.fillCircle(15, 20, 2.2); g.fillCircle(27, 20, 2.2);
+    g.lineStyle(4, 0x123312, 1); g.strokeRoundedRect(2, 8, 36, 30, 14);
+    g.generateTexture('pf_enemy', 40, 40);
+
+    g.clear();
+    g.fillStyle(0xffe066, 0.95);
+    g.slice(25, 25, 22, Phaser.Math.DegToRad(-55), Phaser.Math.DegToRad(55), false);
+    g.fillPath();
+    g.lineStyle(3, 0xaa7a00, 1);
+    g.strokePath();
+    g.generateTexture('pf_swipe', 50, 50);
+
+    g.clear();
+    g.fillStyle(0x6b4423, 1); g.fillRect(36, 0, 8, 160);
+    g.fillStyle(0xe23b3b, 1); g.fillTriangle(44, 10, 44, 60, 4, 35);
+    g.lineStyle(3, 0x2b1c10, 1); g.strokeRect(36, 0, 8, 160); g.strokeTriangle(44, 10, 44, 60, 4, 35);
+    g.generateTexture('pf_flag', 80, 160);
+
+    g.clear();
+    g.fillStyle(0xffffff, 0.9);
+    g.fillCircle(30, 30, 22); g.fillCircle(55, 22, 26); g.fillCircle(80, 30, 20);
+    g.fillRoundedRect(20, 30, 70, 20, 14);
+    g.generateTexture('pf_cloud', 110, 55);
+
+    g.destroy();
+  }
+
+  buildBackground() {
+    this.cameras.main.setBackgroundColor(0x8ed3f0);
+    for (let i = 0; i < 6; i++) {
+      this.add.image(300 + i * 500, 60 + (i % 3) * 40, 'pf_cloud').setScrollFactor(0.3).setAlpha(0.9);
+    }
+    const hillG = this.add.graphics().setScrollFactor(0.5);
+    hillG.fillStyle(0x5fa83c, 0.6);
+    for (let i = 0; i < 5; i++) hillG.fillCircle(i * 400 + 100, 480, 140);
+  }
+
+  buildLevel() {
+    this.platforms = this.physics.add.staticGroup();
+    this.platforms.create(350, 500, 'pf_ground');
+    this.platforms.create(1200, 500, 'pf_ground');
+    this.platforms.create(2050, 500, 'pf_ground');
+    this.platforms.create(775, 340, 'pf_platform');
+    this.platforms.create(1625, 320, 'pf_platform');
+  }
+
+  buildPlayer() {
+    this.player = this.physics.add.sprite(80, 300, 'pf_player');
+    this.player.setDragX(1200);
+    this.player.setMaxVelocity(280, 900);
+    this.player.setSize(30, 50).setOffset(9, 12);
+  }
+
+  buildEnemies() {
+    this.enemies = this.physics.add.group();
+    const defs = [
+      { x: 1000, min: 900, max: 1300 },
+      { x: 1420, min: 1350, max: 1500 },
+      { x: 1900, min: 1800, max: 2300 }
+    ];
+    defs.forEach(d => {
+      const e = this.enemies.create(d.x, 300, 'pf_enemy');
+      e.setBounce(0);
+      e.patrolMin = d.min;
+      e.patrolMax = d.max;
+      e.setVelocityX(80);
+      e.alive2 = true;
+    });
+  }
+
+  buildGoal() {
+    this.goal = this.physics.add.staticGroup();
+    const flag = this.goal.create(2340, 300, 'pf_flag');
+    flag.body.setSize(40, 160).setOffset(20, 0);
+  }
+
+  buildAttackHitbox() {
+    this.attackHitbox = this.physics.add.sprite(-100, -100, 'pf_swipe');
+    this.attackHitbox.body.enable = false;
+    this.attackHitbox.setAlpha(0.9);
+  }
+
+  doAttack() {
+    if (this.isAttacking) return;
+    this.isAttacking = true;
+    const offsetX = this.facing >= 0 ? 34 : -34;
+    this.attackHitbox.setPosition(this.player.x + offsetX, this.player.y);
+    this.attackHitbox.flipX = this.facing < 0;
+    this.attackHitbox.body.enable = true;
+    this.time.delayedCall(160, () => {
+      this.attackHitbox.body.enable = false;
+      this.attackHitbox.setPosition(-100, -100);
+    });
+    this.time.delayedCall(220, () => { this.isAttacking = false; });
+  }
+
+  onSwordHit(hitbox, enemy) {
+    if (!enemy.alive2) return;
+    enemy.alive2 = false;
+    enemy.body.enable = false;
+    this.tweens.add({ targets: enemy, alpha: 0, scale: 0.4, duration: 180, onComplete: () => enemy.destroy() });
+  }
+
+  onPlayerHitEnemy(player, enemy) {
+    if (this.invincible || !enemy.alive2) return;
+    this.damagePlayer(enemy.x < player.x ? 1 : -1);
+  }
+
+  damagePlayer(pushDir) {
+    this.hearts -= 1;
+    renderPlatformerHearts(this.hearts);
+    this.invincible = true;
+    this.player.setVelocity(pushDir * 260, -420);
+    this.tweens.add({ targets: this.player, alpha: 0.3, duration: 90, yoyo: true, repeat: 6 });
+    this.time.delayedCall(900, () => { this.invincible = false; this.player.setAlpha(1); });
+    if (this.hearts <= 0) this.loseGame();
+  }
+
+  onReachGoal() {
+    if (this.hasWon || this.hasLost) return;
+    this.winGame();
+  }
+
+  winGame() {
+    this.hasWon = true;
+    this.physics.pause();
+    document.getElementById('platformerStatus').textContent = '🏆 ¡Nivel superado!';
+    document.getElementById('platformerRestartBtn').style.display = '';
+  }
+
+  loseGame() {
+    this.hasLost = true;
+    this.physics.pause();
+    document.getElementById('platformerStatus').textContent = '💀 Has caído... inténtalo de nuevo.';
+    document.getElementById('platformerRestartBtn').style.display = '';
+  }
+
+  update() {
+    if (this.hasWon || this.hasLost) return;
+
+    // Caer por un hueco cuenta como golpe: quita 1 vida y te devuelve al
+    // inicio del nivel (nivel corto: no hace falta un sistema de
+    // checkpoints para el MVP).
+    if (this.player.y > PF_WORLD_HEIGHT + 250) {
+      this.player.setPosition(80, 300);
+      this.player.setVelocity(0, 0);
+      this.damagePlayer(0);
+      return;
+    }
+
+    const left = this.cursors.left.isDown || this.keys.a.isDown || pfTouch.left;
+    const right = this.cursors.right.isDown || this.keys.d.isDown || pfTouch.right;
+    const onGround = this.player.body.blocked.down || this.player.body.touching.down;
+
+    if (left) { this.player.setVelocityX(-220); this.facing = -1; this.player.flipX = true; }
+    else if (right) { this.player.setVelocityX(220); this.facing = 1; this.player.flipX = false; }
+
+    const jumpJustPressed = Phaser.Input.Keyboard.JustDown(this.cursors.up) ||
+      Phaser.Input.Keyboard.JustDown(this.keys.space) || Phaser.Input.Keyboard.JustDown(this.keys.w) ||
+      pfTouch.jumpQueued;
+    pfTouch.jumpQueued = false;
+    if (jumpJustPressed && onGround) this.player.setVelocityY(-680);
+
+    const attackJustPressed = Phaser.Input.Keyboard.JustDown(this.keys.x) || pfTouch.attackQueued;
+    pfTouch.attackQueued = false;
+    if (attackJustPressed) this.doAttack();
+
+    this.enemies.children.iterate(e => {
+      if (!e || !e.active) return;
+      if (e.x <= e.patrolMin) { e.setVelocityX(80); e.flipX = false; }
+      else if (e.x >= e.patrolMax) { e.setVelocityX(-80); e.flipX = true; }
+    });
+  }
+}
 </script>
 </body>
 </html>
