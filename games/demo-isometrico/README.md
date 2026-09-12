@@ -92,6 +92,17 @@ y abrir `http://localhost:5510/games/demo-isometrico/`.
   taberna" — cualquiera de las dos te devuelve al exterior justo donde
   estaba la entrada (con un margen de seguridad para no volver a entrar
   sin querer en el primer paso). Solo disponible en solitario.
+- **Mapa del Reino** (botón "🗺️ Mapa" en la partida): pantalla navegable
+  con todas las zonas del mundo (`WORLD_ZONES`/`WORLD_PATHS` en
+  `config.js`), formas orgánicas y caminos punteados entre ellas — se
+  revela según se explora, como en Hollow Knight. Solo las zonas que ya
+  existen de verdad en el juego (con un `region` de `worldX` asociado)
+  pueden marcarse como visitadas; el resto son zonas propuestas
+  (`prompts/dragonbarbudo-concepto-mapa.md`) que siempre salen en gris
+  con el nombre oculto ("???"), a la espera de construirse. Un camino se
+  insinúa (en gris apagado) en cuanto se descubre uno de sus dos
+  extremos, y se ve "completo" (dorado) cuando ya se han visitado los
+  dos. Pausa el movimiento mientras está abierto (`window.isoMapOpen`).
 
 ## Controles
 

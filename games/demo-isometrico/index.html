@@ -89,6 +89,11 @@
   .iso-spin { display: inline-block; animation: iso-spin 1s linear infinite; }
   @keyframes iso-spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
 
+  /* MAPA DEL REINO: mismo overlay que los menús, pero más ancho — es un
+     panel con dibujo, no una lista de botones. */
+  .iso-map-panel { width: min(760px, 94vw); text-align: center; }
+  #isoMapSvgHost svg { width: 100%; height: auto; display: block; }
+
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -173,6 +178,17 @@
       Táctil/ratón: joystick en pantalla (cualquier ángulo)
     </p>
     <button class="iso-back" onclick="isoShowMainMenu()">← Volver</button>
+  </div>
+</div>
+
+<!-- MAPA DEL REINO: se abre durante la partida (ver el botón "🗺️ Mapa"
+     en GameScene/TavernScene), no forma parte del flujo del menú
+     principal — isoShowMap()/isoCloseMap() la manejan aparte. -->
+<div class="iso-overlay" id="isoMapOverlay" hidden>
+  <div class="iso-map-panel">
+    <h1 class="iso-title" style="margin-bottom:14px;">🗺️ Mapa del Reino</h1>
+    <div id="isoMapSvgHost"></div>
+    <button class="iso-back" onclick="isoCloseMap()" style="margin-top:14px;">← Cerrar</button>
   </div>
 </div>
 

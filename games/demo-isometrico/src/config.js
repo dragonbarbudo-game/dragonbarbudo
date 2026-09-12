@@ -102,3 +102,59 @@ function isoIsMuted() {
 function isoSetMuted(muted) {
   try { localStorage.setItem('isoMuted', muted ? '1' : '0'); } catch (e) { /* no pasa nada */ }
 }
+
+/* =========================
+   MAPA DEL REINO (pantalla navegable, ver prompts/dragonbarbudo-
+   concepto-mapa.md) — se revela según se explora, como en Hollow Knight.
+   -------------------------------------------------------------------
+   Cada zona tiene una forma orgánica fija (cx/cy/rx/ry/seed, en el
+   espacio propio del mapa — nada que ver con las coordenadas del
+   mundo jugable) y, SOLO si ya existe de verdad en el juego, un
+   `region` que dice qué rango de worldX en GameScene cae dentro de
+   ella. Las zonas sin `region` todavía no se pueden pisar — salen
+   siempre bloqueadas (silueta gris, sin nombre) hasta que se
+   construyan y se les añada su region aquí.
+========================= */
+var WORLD_ZONES = [
+  { id: 'bosque', name: 'Claro del Bosque', cx: 480, cy: 680, rx: 125, ry: 85, color: '#6fae63', seed: 55, region: { min: 0, max: 800 } },
+  { id: 'taberna', name: 'La Taberna del Cuervo', cx: 300, cy: 800, rx: 100, ry: 68, color: '#c98a3a', seed: 66, interior: true },
+  { id: 'ruinas', name: 'Camino de las Ruinas', cx: 470, cy: 460, rx: 125, ry: 85, color: '#9a8a5a', seed: 44, region: { min: 800, max: 1600 } },
+  { id: 'cuenca', name: 'Cuenca Antigua', cx: 570, cy: 880, rx: 145, ry: 78, color: '#7d7364', seed: 77 },
+  { id: 'pantano', name: 'Pantano Putrefacto', cx: 230, cy: 550, rx: 130, ry: 92, color: '#6f8a4f', seed: 33 },
+  { id: 'canon', name: 'Cañón de la Niebla', cx: 110, cy: 320, rx: 115, ry: 85, color: '#7fa876', seed: 22 },
+  { id: 'cumbres', name: 'Cumbres Heladas', cx: 160, cy: 110, rx: 115, ry: 78, color: '#8fb3c9', seed: 11 },
+  { id: 'aldea', name: 'Aldea de los Viajeros', cx: 760, cy: 470, rx: 130, ry: 92, color: '#c9a23a', seed: 111 },
+  { id: 'torre', name: 'Torre del Reloj', cx: 730, cy: 200, rx: 115, ry: 85, color: '#8b7fc9', seed: 88 },
+  { id: 'cripta', name: 'Cripta Real', cx: 930, cy: 100, rx: 125, ry: 78, color: '#9c6fa8', seed: 99 },
+  { id: 'cementerio', name: 'Cementerio Olvidado', cx: 1010, cy: 370, rx: 125, ry: 85, color: '#5a6b7a', seed: 122 },
+  { id: 'catacumbas', name: 'Catacumbas', cx: 1050, cy: 610, rx: 115, ry: 85, color: '#4f4a5a', seed: 133 },
+  { id: 'limite', name: 'Límite del Reino', cx: 1150, cy: 220, rx: 108, ry: 78, color: '#a85a5a', seed: 144 },
+  { id: 'castillo', name: 'Castillo del Horizonte', cx: 890, cy: 820, rx: 145, ry: 85, color: '#5a5a8b', seed: 155 }
+];
+var WORLD_PATHS = [
+  ['bosque', 'ruinas'], ['bosque', 'taberna'], ['bosque', 'cuenca'],
+  ['ruinas', 'pantano'], ['pantano', 'canon'], ['canon', 'cumbres'],
+  ['ruinas', 'aldea'], ['aldea', 'torre'], ['torre', 'cripta'],
+  ['aldea', 'cementerio'], ['cementerio', 'catacumbas'], ['cementerio', 'limite'],
+  ['catacumbas', 'castillo']
+];
+
+function isoVisitedKey() { return 'isoVisited_' + ISO_UID; }
+function isoGetVisitedZones() {
+  try {
+    const raw = localStorage.getItem(isoVisitedKey());
+    return raw ? JSON.parse(raw) : ['bosque']; // el Claro del Bosque siempre empieza revelado
+  } catch (e) { return ['bosque']; }
+}
+function isoMarkZoneVisited(zoneId) {
+  const visited = isoGetVisitedZones();
+  if (visited.includes(zoneId)) return;
+  visited.push(zoneId);
+  try { localStorage.setItem(isoVisitedKey(), JSON.stringify(visited)); } catch (e) { /* no pasa nada */ }
+}
+// Zona exterior a la que pertenece un worldX dado (para ir marcando
+// zonas como visitadas al andar, ver GameScene.updateZoneTracking).
+function isoZoneAtWorldX(worldX) {
+  const z = WORLD_ZONES.find(z => z.region && worldX >= z.region.min && worldX < z.region.max);
+  return z ? z.id : null;
+}

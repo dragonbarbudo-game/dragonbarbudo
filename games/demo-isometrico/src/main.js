@@ -65,6 +65,7 @@ function isoCancelWaiting() {
    se destruye primero — pasa al reiniciar desde el propio juego, ver
    isoBackToMenu). ---- */
 function isoLaunch(startData) {
+  window.isoMapOpen = false;
   if (currentGame) { currentGame.destroy(true); currentGame = null; }
   currentGame = new Phaser.Game({
     type: Phaser.AUTO,
@@ -130,6 +131,109 @@ function isoRenderFriendList(friends) {
 }
 function isoInviteFriend(friendId, friendName) {
   emitToParent('dragonbarbudo:invite_friend', { friendId, friendName });
+}
+
+/* =========================
+   MAPA DEL REINO — pantalla navegable, se revela según se explora
+   -------------------------------------------------------------
+   Puro HTML/SVG sobre el juego (igual que los menús): se abre con el
+   botón "🗺️ Mapa" durante la partida (ver GameScene/TavernScene) y
+   pausa el movimiento mientras está abierto (window.isoMapOpen, que las
+   escenas comprueban al principio de su update()). Las zonas y los
+   caminos entre ellas viven en WORLD_ZONES/WORLD_PATHS (config.js); qué
+   está descubierto, en isoGetVisitedZones().
+========================= */
+window.isoMapOpen = false;
+
+function isoShowMap() {
+  window.isoMapOpen = true;
+  renderWorldMap();
+  document.getElementById('isoMapOverlay').hidden = false;
+}
+function isoCloseMap() {
+  window.isoMapOpen = false;
+  document.getElementById('isoMapOverlay').hidden = true;
+}
+
+// Contorno orgánico ("blob"): puntos alrededor de un centro con un
+// poco de ruido determinista (mismo seed → misma forma siempre), unidos
+// con curvas suaves por sus puntos medios para evitar esquinas duras.
+function isoBlobPath(cx, cy, rx, ry, seed, points) {
+  points = points || 10;
+  let s = seed;
+  const rand = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+  const pts = [];
+  for (let i = 0; i < points; i++) {
+    const angle = (i / points) * Math.PI * 2;
+    const jitter = 0.78 + rand() * 0.44;
+    pts.push([cx + Math.cos(angle) * rx * jitter, cy + Math.sin(angle) * ry * jitter]);
+  }
+  let d = `M ${(pts[0][0] + pts[pts.length - 1][0]) / 2} ${(pts[0][1] + pts[pts.length - 1][1]) / 2} `;
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i], n = pts[(i + 1) % pts.length];
+    const mid = [(p[0] + n[0]) / 2, (p[1] + n[1]) / 2];
+    d += `Q ${p[0]} ${p[1]} ${mid[0]} ${mid[1]} `;
+  }
+  return d + 'Z';
+}
+
+function renderWorldMap() {
+  const visited = isoGetVisitedZones();
+  const NS = 'http://www.w3.org/2000/svg';
+  const svgEl = (tag, attrs) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  };
+
+  const svg = svgEl('svg', { viewBox: '0 0 1240 1000' });
+  const byId = {};
+  WORLD_ZONES.forEach(z => { byId[z.id] = z; });
+
+  // Caminos: solo se insinúan si al menos un extremo ya se ha visitado
+  // (has encontrado la salida, aunque no sepas a dónde lleva todavía);
+  // si además el destino está visitado, el camino se ve "completo".
+  WORLD_PATHS.forEach(([a, b]) => {
+    const za = byId[a], zb = byId[b];
+    const aVisited = visited.includes(a), bVisited = visited.includes(b);
+    if (!aVisited && !bVisited) return;
+    const mx = (za.cx + zb.cx) / 2, my = (za.cy + zb.cy) / 2;
+    svg.appendChild(svgEl('path', {
+      d: `M ${za.cx} ${za.cy} Q ${mx} ${my} ${zb.cx} ${zb.cy}`,
+      fill: 'none', stroke: (aVisited && bVisited) ? '#c9b98a' : '#4a483f',
+      'stroke-width': 4, 'stroke-opacity': 0.7, 'stroke-dasharray': '3 9', 'stroke-linecap': 'round'
+    }));
+  });
+
+  WORLD_ZONES.forEach(z => {
+    const isVisited = visited.includes(z.id);
+    svg.appendChild(svgEl('path', {
+      d: isoBlobPath(z.cx, z.cy, z.rx, z.ry, z.seed),
+      fill: '#171320', 'fill-opacity': isVisited ? 0.96 : 0.88,
+      stroke: isVisited ? z.color : '#3a3a42', 'stroke-width': 2.5, 'stroke-opacity': isVisited ? 0.85 : 0.5
+    }));
+  });
+
+  WORLD_ZONES.forEach(z => {
+    const isVisited = visited.includes(z.id);
+    const plateW = Math.min(z.rx * 1.5, 170);
+    svg.appendChild(svgEl('rect', {
+      x: z.cx - plateW / 2, y: z.cy - 18, width: plateW, height: 36, rx: 6,
+      fill: '#0d0a12', 'fill-opacity': isVisited ? 0.55 : 0.35,
+      stroke: isVisited ? z.color : '#3a3a42', 'stroke-width': 1, 'stroke-opacity': 0.6
+    }));
+    const t = svgEl('text', {
+      x: z.cx, y: z.cy + 6, 'text-anchor': 'middle', 'font-size': 15,
+      'font-family': "'Cinzel', Georgia, serif", fill: isVisited ? '#ece3d0' : '#6a6a70',
+      style: 'letter-spacing:1px'
+    });
+    t.textContent = isVisited ? z.name : '???';
+    svg.appendChild(t);
+  });
+
+  const host = document.getElementById('isoMapSvgHost');
+  host.innerHTML = '';
+  host.appendChild(svg);
 }
 
 /* =========================

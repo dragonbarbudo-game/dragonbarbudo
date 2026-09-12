@@ -229,6 +229,13 @@ class GameScene extends Phaser.Scene {
     }).setOrigin(1, 0).setScrollFactor(0).setDepth(999999).setInteractive({ useHandCursor: true });
     menuBtn.on('pointerdown', () => { this.saveNow(); isoBackToMenu(); });
 
+    // Mapa del Reino (ver main.js): pausa el movimiento mientras está
+    // abierto (comprobado al principio de update()).
+    const mapBtn = this.add.text(this.scale.width - 14, 40, '🗺️ Mapa', {
+      fontFamily: 'sans-serif', fontSize: '16px', color: '#ffffff', stroke: '#000000', strokeThickness: 4
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(999999).setInteractive({ useHandCursor: true });
+    mapBtn.on('pointerdown', () => isoShowMap());
+
     if (this.mode === 'friends') {
       this.friendStatusText = this.add.text(14, 40, '🟡 esperando a ' + (this.friendName || 'tu amigo') + '…', {
         fontFamily: 'sans-serif', fontSize: '13px', color: '#ffe066', stroke: '#000000', strokeThickness: 3
@@ -325,6 +332,7 @@ class GameScene extends Phaser.Scene {
     if (this.enteringTavern || this.mode !== 'solo') return;
     this.enteringTavern = true;
     this.saveNow();
+    isoMarkZoneVisited('taberna');
     // Al volver hay que reaparecer FUERA del radio de entrada
     // (TAVERN_ENTER_RADIUS): si no, el primer paso que dieras volvería
     // a meterte dentro sin querer, en bucle.
@@ -354,7 +362,7 @@ class GameScene extends Phaser.Scene {
   }
 
   update(time, delta) {
-    if (this.gameEnded) return;
+    if (this.gameEnded || window.isoMapOpen) return;
     const dt = delta / 1000;
 
     // Vector de teclado: normalizado para que la diagonal no vaya más
@@ -390,6 +398,10 @@ class GameScene extends Phaser.Scene {
       this.player.setPosition(p.x, p.y);
       this.player.setDepth(1000 + p.y);
       this.checkCoinPickup();
+      if (this.mode === 'solo') {
+        const zoneId = isoZoneAtWorldX(this.worldX);
+        if (zoneId) isoMarkZoneVisited(zoneId);
+      }
 
       if (this.mode === 'solo' && Phaser.Math.Distance.Between(this.worldX, this.worldY, this.tavernDoor.worldX, this.tavernDoor.worldY) < TAVERN_ENTER_RADIUS) {
         this.enterTavern();

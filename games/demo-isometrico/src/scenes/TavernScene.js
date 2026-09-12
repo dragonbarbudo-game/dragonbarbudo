@@ -114,6 +114,11 @@ class TavernScene extends Phaser.Scene {
       fontFamily: 'sans-serif', fontSize: '14px', color: '#ffe066', stroke: '#000000', strokeThickness: 4
     }).setOrigin(1, 0).setScrollFactor(0).setDepth(999999).setInteractive({ useHandCursor: true });
     exitBtn.on('pointerdown', () => this.exitTavern());
+
+    const mapBtn = this.add.text(this.scale.width - 14, 66, '🗺️ Mapa', {
+      fontFamily: 'sans-serif', fontSize: '16px', color: '#ffffff', stroke: '#000000', strokeThickness: 4
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(999999).setInteractive({ useHandCursor: true });
+    mapBtn.on('pointerdown', () => isoShowMap());
   }
 
   collidesObstacle(x, y) {
@@ -141,7 +146,7 @@ class TavernScene extends Phaser.Scene {
   }
 
   update() {
-    if (this.exiting) return;
+    if (this.exiting || window.isoMapOpen) return;
     const dt = this.game.loop.delta / 1000;
 
     let ix = 0, iy = 0;
