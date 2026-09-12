@@ -44,6 +44,7 @@ function isoHideAllMenus() {
 
 /* ---- Empezar a jugar (solo) ---- */
 function isoStartSolo(continueSaved) {
+  if (!continueSaved) isoSetHasMap(false); // partida nueva de verdad: hay que volver a encontrar el mapa
   isoHideAllMenus();
   document.getElementById('isoJoystick').style.display = 'block';
   isoLaunch({ mode: 'solo', continueSave: continueSaved ? isoLoadProgress() : null });
@@ -156,6 +157,7 @@ function isoInviteFriend(friendId, friendName) {
 window.isoMapOpen = false;
 
 function isoShowMap() {
+  if (!isoHasMap()) return; // por si se llama sin pasar por el botón (ya oculto en ese caso)
   window.isoMapOpen = true;
   renderWorldMap();
   document.getElementById('isoMapOverlay').hidden = false;

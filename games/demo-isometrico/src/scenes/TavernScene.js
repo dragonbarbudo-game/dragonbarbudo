@@ -25,6 +25,11 @@ const TAVERN_TABLE_SPOTS = [[1, 3], [4, 3]];
 const TAVERN_BARREL_SPOTS = [[0, 2], [5, 2]];
 const TAVERN_DOOR_TILE = [3, 4];
 const TAVERN_EXIT_RADIUS = 40;
+// El mapa viejo que desbloquea el Mapa del Reino descansa sobre la
+// segunda mesa — la "misión" es, de momento, simplemente encontrar la
+// taberna y acercarse a la mesa correcta.
+const TAVERN_MAP_ITEM_SPOT = [4, 3];
+const TAVERN_MAP_ITEM_RADIUS = 34;
 
 class TavernScene extends Phaser.Scene {
   constructor() { super('TavernScene'); }
@@ -41,6 +46,7 @@ class TavernScene extends Phaser.Scene {
     this.buildRoom();
     this.buildFurniture();
     this.buildPlayer();
+    this.buildMapItem();
     this.buildHud();
 
     const roomW = TAVERN_COLS * TILE_SIZE, roomH = TAVERN_ROWS * TILE_SIZE;
@@ -100,10 +106,36 @@ class TavernScene extends Phaser.Scene {
     this.player.setDepth(1000 + p.y);
   }
 
+  // Objeto sobre la mesa (sin colisión, solo recolectable): si ya se
+  // había encontrado en una partida anterior, ni se dibuja.
+  buildMapItem() {
+    if (isoHasMap()) { this.mapItem = null; return; }
+    const wx = TAVERN_MAP_ITEM_SPOT[0] * TILE_SIZE + TILE_SIZE / 2, wy = TAVERN_MAP_ITEM_SPOT[1] * TILE_SIZE + TILE_SIZE / 2;
+    const p = worldToScreen(wx, wy - 14); // un poco más arriba: "sobre" la mesa, no en el suelo
+    const img = this.add.image(p.x, p.y, 'map_item').setOrigin(0.5, 0.8);
+    img.setDepth(1000 + p.y);
+    this.tweens.add({ targets: img, y: img.y - 4, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.mapItem = { img, worldX: wx, worldY: wy };
+  }
+
+  collectMapItem() {
+    if (!this.mapItem) return;
+    isoSetHasMap(true);
+    this.tweens.add({ targets: this.mapItem.img, alpha: 0, scale: 1.6, duration: 260, onComplete: () => this.mapItem.img.destroy() });
+    this.mapItem = null;
+    this.mapBtn.setVisible(true);
+    this.pickupText.setText('🗺️ Has encontrado un mapa viejo — ya puedes abrir el Mapa del Reino').setVisible(true);
+    this.time.delayedCall(3200, () => this.pickupText.setVisible(false));
+  }
+
   buildHud() {
     this.add.text(14, 12, '🍺 La Taberna del Cuervo', {
       fontFamily: 'sans-serif', fontSize: '16px', color: '#f4c430', stroke: '#000000', strokeThickness: 4
     }).setScrollFactor(0).setDepth(999999);
+
+    this.pickupText = this.add.text(14, 40, '', {
+      fontFamily: 'sans-serif', fontSize: '13px', color: '#ffe066', stroke: '#000000', strokeThickness: 3
+    }).setScrollFactor(0).setDepth(999999).setVisible(false);
 
     const menuBtn = this.add.text(this.scale.width - 14, 12, '☰ Menú', {
       fontFamily: 'sans-serif', fontSize: '16px', color: '#ffffff', stroke: '#000000', strokeThickness: 4
@@ -115,10 +147,11 @@ class TavernScene extends Phaser.Scene {
     }).setOrigin(1, 0).setScrollFactor(0).setDepth(999999).setInteractive({ useHandCursor: true });
     exitBtn.on('pointerdown', () => this.exitTavern());
 
-    const mapBtn = this.add.text(this.scale.width - 14, 66, '🗺️ Mapa', {
+    // Oculto hasta encontrar el mapa viejo (ver buildMapItem/collectMapItem).
+    this.mapBtn = this.add.text(this.scale.width - 14, 66, '🗺️ Mapa', {
       fontFamily: 'sans-serif', fontSize: '16px', color: '#ffffff', stroke: '#000000', strokeThickness: 4
-    }).setOrigin(1, 0).setScrollFactor(0).setDepth(999999).setInteractive({ useHandCursor: true });
-    mapBtn.on('pointerdown', () => isoShowMap());
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(999999).setInteractive({ useHandCursor: true }).setVisible(isoHasMap());
+    this.mapBtn.on('pointerdown', () => isoShowMap());
   }
 
   collidesObstacle(x, y) {
@@ -174,6 +207,10 @@ class TavernScene extends Phaser.Scene {
       const p = worldToScreen(this.worldX, this.worldY);
       this.player.setPosition(p.x, p.y);
       this.player.setDepth(1000 + p.y);
+
+      if (this.mapItem && Phaser.Math.Distance.Between(this.worldX, this.worldY, this.mapItem.worldX, this.mapItem.worldY) < TAVERN_MAP_ITEM_RADIUS) {
+        this.collectMapItem();
+      }
 
       if (Phaser.Math.Distance.Between(this.worldX, this.worldY, this.doorSpot.worldX, this.doorSpot.worldY) < TAVERN_EXIT_RADIUS) {
         this.exitTavern();

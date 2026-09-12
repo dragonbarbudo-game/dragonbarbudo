@@ -103,6 +103,19 @@ function isoSetMuted(muted) {
   try { localStorage.setItem('isoMuted', muted ? '1' : '0'); } catch (e) { /* no pasa nada */ }
 }
 
+// El Mapa del Reino no está disponible desde el principio: hay que
+// encontrarlo (un mapa viejo escondido en La Taberna del Cuervo, ver
+// TavernScene.buildMapItem) antes de que el botón "🗺️ Mapa" aparezca.
+// Ligado a la partida en solitario, igual que el resto del progreso —
+// "Nueva partida" lo reinicia (ver isoStartSolo en main.js).
+function isoHasMapKey() { return 'isoHasMap_' + ISO_UID; }
+function isoHasMap() {
+  try { return localStorage.getItem(isoHasMapKey()) === '1'; } catch (e) { return false; }
+}
+function isoSetHasMap(has) {
+  try { localStorage.setItem(isoHasMapKey(), has ? '1' : '0'); } catch (e) { /* no pasa nada */ }
+}
+
 /* =========================
    MAPA DEL REINO (pantalla navegable, ver prompts/dragonbarbudo-
    concepto-mapa.md) — se revela según se explora, como en Hollow Knight.

@@ -103,6 +103,11 @@ y abrir `http://localhost:5510/games/demo-isometrico/`.
   insinúa (en gris apagado) en cuanto se descubre uno de sus dos
   extremos, y se ve "completo" (dorado) cuando ya se han visitado los
   dos. Pausa el movimiento mientras está abierto (`window.isoMapOpen`).
+  El botón "🗺️ Mapa" está **oculto hasta que se encuentra un mapa viejo**
+  sobre una mesa de La Taberna del Cuervo (`TavernScene.buildMapItem`,
+  guardado en `isoHasMap()`) — no está disponible desde el principio, se
+  consigue explorando. "Nueva partida" lo reinicia; "Continuar" lo
+  conserva.
 
 ## Controles
 

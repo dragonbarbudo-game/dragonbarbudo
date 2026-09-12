@@ -230,10 +230,11 @@ class GameScene extends Phaser.Scene {
     menuBtn.on('pointerdown', () => { this.saveNow(); isoBackToMenu(); });
 
     // Mapa del Reino (ver main.js): pausa el movimiento mientras está
-    // abierto (comprobado al principio de update()).
+    // abierto (comprobado al principio de update()). Oculto hasta
+    // encontrar el mapa viejo en La Taberna del Cuervo.
     const mapBtn = this.add.text(this.scale.width - 14, 40, '🗺️ Mapa', {
       fontFamily: 'sans-serif', fontSize: '16px', color: '#ffffff', stroke: '#000000', strokeThickness: 4
-    }).setOrigin(1, 0).setScrollFactor(0).setDepth(999999).setInteractive({ useHandCursor: true });
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(999999).setInteractive({ useHandCursor: true }).setVisible(isoHasMap());
     mapBtn.on('pointerdown', () => isoShowMap());
 
     if (this.mode === 'friends') {

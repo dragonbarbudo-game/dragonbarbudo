@@ -36,10 +36,11 @@
      elige una opción de jugar). */
   .iso-overlay {
     position: fixed; inset: 0; z-index: 20;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; align-items: flex-start; justify-content: center;
     background: radial-gradient(circle at 50% 30%, #2a3550, #12151d 75%);
+    overflow-y: auto; padding: 40px 0;
   }
-  .iso-panel { width: min(360px, 88vw); text-align: center; }
+  .iso-panel { width: min(360px, 88vw); text-align: center; margin: auto 0; }
   .iso-title { font-size: 26px; font-weight: 800; margin: 0 0 6px; letter-spacing: .5px; }
   .iso-subtitle { font-size: 14px; color: #b7b2a6; margin: 0 0 26px; }
   .iso-btn-menu {
@@ -91,8 +92,8 @@
 
   /* MAPA DEL REINO: mismo overlay que los menús, pero más ancho — es un
      panel con dibujo, no una lista de botones. */
-  .iso-map-panel { width: min(760px, 94vw); text-align: center; }
-  #isoMapSvgHost svg { width: 100%; height: auto; display: block; }
+  .iso-map-panel { width: min(760px, 94vw); text-align: center; margin: auto 0; }
+  #isoMapSvgHost svg { width: 100%; height: auto; max-height: 55vh; display: block; margin: 0 auto; }
 
   [hidden] { display: none !important; }
 </style>

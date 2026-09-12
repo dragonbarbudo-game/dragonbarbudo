@@ -219,6 +219,18 @@ class BootScene extends Phaser.Scene {
     g.lineStyle(2, P.glow, 0.9); g.strokeRect(2, 2, TILE_SIZE - 4, tileH - 4);
     g.generateTexture('tavern_door_mark', TILE_SIZE, tileH);
 
+    // Mapa viejo (28x24): el objeto que desbloquea el Mapa del Reino —
+    // un pergamino enrollado con un brillo suave para que destaque
+    // sobre una mesa (ver TavernScene.buildMapItem).
+    g.clear();
+    g.fillStyle(P.glow, 0.25); g.fillEllipse(14, 20, 26, 8);
+    g.fillStyle(0xd8c9a0, 1); g.fillRoundedRect(2, 6, 24, 12, 6);
+    g.fillStyle(0xb8a678, 1); g.fillCircle(4, 12, 4); g.fillCircle(24, 12, 4);
+    g.lineStyle(1.5, 0x8a7a52, 1);
+    g.lineBetween(8, 9, 20, 9); g.lineBetween(8, 12, 20, 12); g.lineBetween(8, 15, 18, 15);
+    g.strokeRoundedRect(2, 6, 24, 12, 6);
+    g.generateTexture('map_item', 28, 26);
+
     g.destroy();
   }
 }
