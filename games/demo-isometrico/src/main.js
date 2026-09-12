@@ -88,6 +88,16 @@ function isoBackToMenu() {
   isoShowMainMenu();
 }
 
+/* Botón "Salir" del menú principal: el juego no puede cerrarse a sí
+   mismo (vive en un <iframe>) — se lo pide a la página padre, que
+   corta el iframe y vuelve al Lobby (ver leavePlatformerGame en el
+   sitio principal). En modo standalone (sin padre) no hay nada que
+   hacer, así que no pasa nada visible. */
+function isoExitGame() {
+  if (currentGame) { currentGame.destroy(true); currentGame = null; }
+  emitToParent('dragonbarbudo:exit_game', {});
+}
+
 /* =========================
    Puente con la página padre
 ========================= */

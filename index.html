@@ -8054,6 +8054,12 @@ window.addEventListener('message', (event) => {
       const event = data.type === 'dragonbarbudo:position' ? 'position' : 'coin_taken';
       isoMatchChannel.send({ type: 'broadcast', event, payload: data.payload });
     }
+  } else if (data.type === 'dragonbarbudo:exit_game') {
+    // Botón "Salir" del propio menú del juego: el juego no puede
+    // cerrarse a sí mismo (vive en un iframe), así que nos lo pide a
+    // nosotros — mismo camino que el botón "🚪 Volver a Juegos" de
+    // fuera del iframe.
+    leavePlatformerGame();
   }
   // 'dragonbarbudo:ready' no necesita acción por ahora.
 });
