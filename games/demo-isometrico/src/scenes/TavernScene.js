@@ -16,19 +16,19 @@
    sincronizar una escena interior aparte con un amigo en tiempo real
    queda fuera del alcance de esta primera versión.
 ========================= */
-const TAVERN_COLS = 6;
-const TAVERN_ROWS = 5;
+const TAVERN_COLS = 11;
+const TAVERN_ROWS = 9;
 const TAVERN_WALL_ROW = 0; // fila del fondo, bloqueada por completo (ver blockedByWall)
-const TAVERN_FIREPLACE_COL = 3;
-const TAVERN_BAR_SPOTS = [[1.5, 1, 55], [3.5, 1, 55]]; // [gx, gy, radio] — dos tramos que cubren la barra
-const TAVERN_TABLE_SPOTS = [[1, 3], [4, 3]];
-const TAVERN_BARREL_SPOTS = [[0, 2], [5, 2]];
-const TAVERN_DOOR_TILE = [3, 4];
+const TAVERN_FIREPLACE_COL = 5;
+const TAVERN_BAR_SPOTS = [[1.5, 1, 55], [3.5, 1, 55], [5.5, 1, 55], [7.5, 1, 55]]; // [gx, gy, radio] — tramos que cubren la barra
+const TAVERN_TABLE_SPOTS = [[2, 3], [8, 3], [2, 6], [8, 6], [5, 4]];
+const TAVERN_BARREL_SPOTS = [[0, 2], [10, 2], [0, 7], [10, 7]];
+const TAVERN_DOOR_TILE = [5, 8];
 const TAVERN_EXIT_RADIUS = 40;
-// El mapa viejo que desbloquea el Mapa del Reino descansa sobre la
-// segunda mesa — la "misión" es, de momento, simplemente encontrar la
-// taberna y acercarse a la mesa correcta.
-const TAVERN_MAP_ITEM_SPOT = [4, 3];
+// El mapa viejo que desbloquea el Mapa del Reino descansa sobre la mesa
+// del fondo a la derecha — la "misión" es, de momento, simplemente
+// explorar un poco la taberna hasta encontrarla.
+const TAVERN_MAP_ITEM_SPOT = [8, 3];
 const TAVERN_MAP_ITEM_RADIUS = 34;
 
 class TavernScene extends Phaser.Scene {
